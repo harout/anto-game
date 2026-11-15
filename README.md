@@ -1,0 +1,31 @@
+# anto-game — Podracer
+
+A pseudo-3D pod racing game that runs in the browser and is built to be flown with a
+**Thrustmaster HOTAS Warthog throttle** (left and right levers drive the left and right engines).
+
+**Play:** https://harout.github.io/anto-game/
+
+## How to play
+- Open the page in **Chrome** (Safari can't see HOTAS controllers).
+- Move a throttle lever or press a button on the Warthog so Chrome wakes the controller up,
+  then use **Map throttles** in the controller panel to calibrate. Calibration is saved in the browser.
+- Push both levers to go faster; split them to steer.
+
+| Control | Warthog | Keyboard |
+|---|---|---|
+| Throttle / steer | left + right levers | W / S both, Q / A left, E / D right, ← → steer |
+| Boost | button 14 | Space |
+| Super boost | button 13 | L |
+| Laser (tap) / homing missile (hold) | button 0 | F |
+| Shield | button 23 | G |
+
+## Tracks
+- **Dune Cup** — desert canyons, a cave and slot-canyon shortcuts with chasm jumps
+- **Frost Canyon** — ice world (unlocked by your first win)
+- **Forest Run** — one long lap climbing through 15 caves to an Everest-high summit, with forks, secret paths and frozen rivers
+- **Swamp Run** — dead flat; skim across the swamp water at full speed
+
+Seven AI rivals race you. Each 1st place on a track makes that track's rivals 1% smarter —
+up to an exact copy of you and your pod — and at level 50 they learn that track's shortcuts.
+
+Everything is in a single self-contained `index.html` — no build step, no dependencies.
