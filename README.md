@@ -24,6 +24,9 @@ A pseudo-3D pod racing game that runs in the browser and is built to be flown wi
 - **Frost Canyon** — ice world (unlocked by your first win)
 - **Forest Run** — one long lap climbing through 15 caves to an Everest-high summit, with forks, secret paths and frozen rivers
 - **Swamp Run** — dead flat; skim across the swamp water at full speed
+- **Bryce Canyon** — a rim road above a hoodoo amphitheater, switchbacks down through the hoodoos, and the Wall Street slot-canyon shortcut
+- **🌌 Grand Tour** — all five worlds in one race. Between worlds your pod lifts off and flies at the speed of light:
+  steer with the throttles, push both levers up to climb, fly through rings to save time and dodge space rocks
 
 Seven AI rivals race you. Each 1st place on a track makes that track's rivals 1% smarter —
 up to an exact copy of you and your pod — and at level 50 they learn that track's shortcuts.
