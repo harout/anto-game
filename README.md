@@ -31,4 +31,9 @@ A pseudo-3D pod racing game that runs in the browser and is built to be flown wi
 Seven AI rivals race you. Each 1st place on a track makes that track's rivals 1% smarter —
 up to an exact copy of you and your pod — and at level 50 they learn that track's shortcuts.
 
+**Beat the Grand Tour in 1st place** to unlock two extras in the menu:
+- **AI smartness** — a slider to set the rivals' level yourself on each track (0–50; at 50 they know the shortcuts)
+- **👻 Ghost race** — no rivals, just you against a see-through replay of your own best run on that track,
+  with a live “ahead / behind your best” readout. Beat it and your new run becomes the ghost.
+
 Everything is in a single self-contained `index.html` — no build step, no dependencies.

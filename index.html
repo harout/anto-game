@@ -96,6 +96,10 @@
   .tcard { background:#2a160a; border:2px solid #4a2a12; border-radius:10px; padding:12px; cursor:pointer; font-size:14px; letter-spacing:2px; }
   .tcard small { display:block; margin-top:4px; font-size:11px; color:#b8916a; letter-spacing:1px; }
   .tcard.sel { border-color:#ffb347; box-shadow:0 0 14px rgba(255,160,60,.5); } .tcard.locked { opacity:.5; cursor:not-allowed; }
+  #ghostDelta { text-align:center; font-size:18px; font-weight:700; letter-spacing:2px; margin-top:4px; text-shadow:0 0 10px rgba(0,0,0,.8); }
+  #masterRow { margin-top:10px; font-size:12px; letter-spacing:1px; color:#b8916a; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; }
+  #masterRow input[type=range] { width:220px; accent-color:#ffb347; vertical-align:middle; }
+  #masterRow b { color:#ffd36b; letter-spacing:2px; }
   #aiLvl { margin-top:14px; font-size:13px; letter-spacing:3px; color:#ffd36b; } #aiLvl small { display:block; font-size:11px; letter-spacing:1px; color:#b8916a; margin-top:3px; }
   #optRow { margin-top:12px; } #optRow button { font-size:13px; padding:8px 16px; letter-spacing:2px; margin:0 4px; }
   #startBtn { margin-top:16px; font-size:18px; padding:12px 34px; letter-spacing:4px; }
@@ -132,7 +136,7 @@
   <div id="status"></div>
 </div>
 
-<div class="hud" id="warnBox" style="top:18px;left:50%;transform:translateX(-50%)"><div id="warn"></div></div>
+<div class="hud" id="warnBox" style="top:18px;left:50%;transform:translateX(-50%)"><div id="warn"></div><div id="ghostDelta"></div></div>
 <div class="hud" id="throttles">
   <div><div class="tpct" id="lp">0%</div><div class="tbar"><div class="tfill" id="lf"></div></div><div class="tlabel">LEFT</div></div>
   <div><div class="tpct" id="rp">0%</div><div class="tbar"><div class="tfill" id="rf"></div></div><div class="tlabel">RIGHT</div></div>
@@ -169,6 +173,7 @@
   <div class="msub">Choose your track</div>
   <div id="trackGrid"></div>
   <div id="aiLvl"></div>
+  <div id="masterRow"></div>
   <div id="optRow"><button id="timeBtn" class="secondary"></button> <button id="aimBtn" class="secondary"></button> <button id="resetAiBtn" class="secondary">↺ RESET AI</button></div>
   <button id="startBtn">START RACE</button>
   <div class="hint">Win a race in 1st place to unlock the next pod · first win also unlocks Frost Canyon<br>←/→ change pod · Enter or boost button (14) to start<br>Laser: tap button 0 (F) · Homing missile: hold button 0 (5 per race) · Shield: hold button 23 (G key) · Boost: button 14 (Space)<br>Super boost: button 13 (L) — once per race, light-speed jump into 1st place<br>Rivals use shields too — shoot a shield to destroy it, then shoot again to hit them</div>
@@ -1249,11 +1254,45 @@
   let AI_LEVEL = loadAILevel();
   const AI_SHORTCUT_LEVEL = 50;                                // at level 50 on a track, rivals learn its shortcuts
   let AI_SHORTCUTS = aiWinsHere() >= AI_SHORTCUT_LEVEL;
+  // 👻 GHOST: your best run on each track is recorded; after you win the Grand Tour you can race it (no rivals, just you vs you)
+  const GHOST_DT = 0.1, ghostKey = () => 'podracer.ghost.' + TRACK_ID;
+  let GHOST = null, ghostRec = [];
+  try { GHOST = TOUR ? null : JSON.parse(localStorage.getItem(ghostKey()) || 'null'); } catch (e) {}
+  const masterUnlocked = () => !!loadUnlocks().master;
+  let GHOST_MODE = false;
+  try { GHOST_MODE = !TOUR && masterUnlocked() && localStorage.getItem('podracer.ghostMode') === '1'; } catch (e) {}
+  const ghostPod = { name: 'YOUR BEST', col: [150, 220, 255], wobble: 0, x: 0, y: 0, speed: 0, boosting: false, shOn: false, shFx: 0, zap: 0 };
+  function ghostAt(t) {                                        // where your best run was at race time t
+    if (!GHOST || !GHOST.s || !GHOST.s.length) return null;
+    const S = GHOST.s, f = Math.max(0, t / GHOST_DT), i = Math.min(S.length - 1, Math.floor(f)), j = Math.min(S.length - 1, i + 1), u = Math.min(1, f - i);
+    const a = S[i], b = S[j], same = a[3] === b[3];
+    return { p: a[0] + (b[0] - a[0]) * u, x: (a[1] + (b[1] - a[1]) * u) / 100, y: a[2] + (b[2] - a[2]) * u, tr: a[3], tp: same ? a[4] + (b[4] - a[4]) * u : a[4], done: f >= S.length - 1 };
+  }
+  function ghostDelta() {                                      // + = you're behind your best, − = ahead
+    if (!GHOST || !GHOST.s || !GHOST.s.length) return null;
+    const S = GHOST.s, me = playerProgress(); let lo = 0, hi = S.length - 1;
+    if (S[hi][0] < me) return raceTime - GHOST.time;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (S[m][0] < me) lo = m + 1; else hi = m; }
+    const p0 = lo ? S[lo - 1][0] : S[0][0], u = S[lo][0] > p0 ? (me - p0) / (S[lo][0] - p0) : 0;
+    return raceTime - (Math.max(0, lo - 1) + Math.max(0, Math.min(1, u))) * GHOST_DT;
+  }
+  function recordGhost() {
+    if (TOUR || raceState !== 'racing') return;
+    while (ghostRec.length * GHOST_DT <= raceTime) ghostRec.push([Math.round(playerProgress()), Math.round(playerX * 100), Math.round(Math.max(0, podY)), T.main ? -1 : T.idx, T.main ? 0 : Math.round(position + PLAYER_Z)]);
+  }
+  function saveGhostIfBest(time) {
+    if (TOUR || !ghostRec.length) return false;
+    if (GHOST && GHOST.time <= time) return false;
+    GHOST = { time, s: ghostRec.slice() };
+    try { localStorage.setItem(ghostKey(), JSON.stringify(GHOST)); } catch (e) {}
+    return true;
+  }
   function resetAIs() {
     finishOrder = [];
     ais = AI_DEFS.map((d, k) => ({ ...d, skill: aiSkillFor(d), copy: d.skill * (1 + 0.01 * aiWinsHere()) >= POD.top, zap: 0, dist: PLAYER_Z - GRID_BACK + 2600 + k * 1500, x: k % 2 ? 0.5 : -0.5, lane: k % 2 ? 0.5 : -0.5,
       speed: 0, y: 0, vy: 0, onRamp: false, boostE: 1, boosting: false, hitT: 0, finished: false, finishTime: 0,
       wobble: Math.random() * 6, lastObs: -1, shE: 1, shOn: false, shT: 0, shBroken: 0, shFx: 0, shDecide: 0 }));
+    if (GHOST_MODE) ais = [];                                  // ghost race: no rivals, just your best run
   }
   resetAIs();
   const modL = z => ((z % TRACK_LEN) + TRACK_LEN) % TRACK_LEN;
@@ -1874,6 +1913,16 @@
     }
     // which AI pods sit in which visible segment
     const aiBuckets = new Map();
+    if (GHOST_MODE && (raceState === 'racing' || raceState === 'countdown')) {   // 👻 your best run, see-through
+      const g = ghostAt(raceTime);
+      if (g) {
+        ghostPod.x = g.x; ghostPod.y = g.y; ghostPod.speed = MAX_KMH;
+        let n = -1, fz = 0;
+        if (T.main && g.tr === -1) { let za = modL(g.p); if (za < bi * SEG) za += TRACK_LEN; n = Math.floor(za / SEG) - bi; fz = za / SEG - Math.floor(za / SEG); }
+        else if (!T.main && g.tr === T.idx) { n = Math.floor(g.tp / SEG) - bi; fz = g.tp / SEG - Math.floor(g.tp / SEG); }
+        if (n >= 1 && n < DRAW) { if (!aiBuckets.has(n)) aiBuckets.set(n, []); aiBuckets.get(n).push({ ai: ghostPod, f: fz, ghost: true }); }
+      }
+    }
     for (const ai of ais) if (!T.main && ai.trail === T) {                 // racing you down the same trail
       const n = Math.floor(ai.tp / SEG) - bi;
       if (n >= 1 && n < DRAW) { if (!aiBuckets.has(n)) aiBuckets.set(n, []); aiBuckets.get(n).push({ ai, f: ai.tp / SEG - Math.floor(ai.tp / SEG) }); }
@@ -2106,7 +2155,7 @@
       if (sg.walker && T.main && n > 0) drawWalker(sg.walker, p1, fog);
       // AI pods in this segment
       const bucket = aiBuckets.get(n);
-      if (bucket) for (const { ai, f } of bucket.sort((a, b) => b.f - a.f)) drawAIPod(ai, p1, p2, f, fog, n);
+      if (bucket) for (const { ai, f, ghost } of bucket.sort((a, b) => b.f - a.f)) { if (ghost) { ctx.save(); ctx.globalAlpha = 0.55; } drawAIPod(ai, p1, p2, f, fog, n); if (ghost) ctx.restore(); }
       // sprites
       if (n > 2) for (const s of sg.sprites) {
         const sx = p1.x + s.off * p1.w, sc = p1.scale * W / 2, sy = p1.y;
@@ -2366,9 +2415,10 @@
     if (!standEl || performance.now() - standT < 250) return; standT = performance.now();
     if (raceState === 'menu') { standEl.style.display = 'none'; return; } standEl.style.display = '';
     const me = playerProgress(), rows = ais.map(a => ({ name: a.name, col: `rgb(${a.col.join(',')})`, d: a.finished ? 1e12 - a.finishTime : a.dist, trail: !!a.trail, fin: a.finished }));
+    if (GHOST_MODE && GHOST) { const g = ghostAt(raceTime); if (g) rows.push({ name: '👻 YOUR BEST', col: 'rgba(150,220,255,.6)', d: g.done ? 1e12 - GHOST.time : g.p, ghost: true }); }
     rows.push({ name: 'YOU', col: '#6fd3ff', d: raceState === 'finished' ? 1e12 - raceTime : me, you: true, trail: !T.main && !!T.path });
     rows.sort((a, b) => b.d - a.d);
-    standEl.innerHTML = rows.map((r, i) => { const gap = r.you || r.fin ? '' : (r.d - me) / SEG / 41; return `<div class="${r.you ? 'me' : ''}"><span class="p">${i + 1}</span><i style="background:${r.col}"></i>${r.name}${r.trail ? ' <em>⑂</em>' : ''}${r.fin ? ' <em>🏁</em>' : r.you ? '' : `<span class="g">${gap >= 0 ? '+' : ''}${gap.toFixed(1)}s</span>`}</div>`; }).join('');
+    standEl.innerHTML = rows.map((r, i) => { const gap = r.you || r.fin ? '' : r.ghost ? (ghostDelta() || 0) : (r.d - me) / SEG / 41; return `<div class="${r.you ? 'me' : ''}"><span class="p">${i + 1}</span><i style="background:${r.col}"></i>${r.name}${r.trail ? ' <em>⑂</em>' : ''}${r.fin ? ' <em>🏁</em>' : r.you ? '' : `<span class="g">${gap >= 0 ? '+' : ''}${gap.toFixed(1)}s</span>`}</div>`; }).join('');
   }
 
 
@@ -2663,11 +2713,16 @@
         countEl = document.getElementById('count'), finishEl = document.getElementById('finish'), lapN = document.getElementById('lapN'), lapT = document.getElementById('lapT'), lapB = document.getElementById('lapB');
   let summitShown = false;
   const altBox = document.getElementById('altBox'), altN = document.getElementById('altN');
-  const speedUnitEl = document.getElementById('speedUnit');
+  const speedUnitEl = document.getElementById('speedUnit'), ghostDeltaEl = document.getElementById('ghostDelta');
   function updateHud() {
     speedEl.textContent = raceState === 'flight' || raceState === 'warp' ? '1,079,252,849' : Math.round(speed);
     speedUnitEl.textContent = raceState === 'flight' || raceState === 'warp' ? 'KM/H · LIGHT SPEED' : 'KM/H';
     speedEl.style.fontSize = raceState === 'flight' || raceState === 'warp' ? '30px' : '';
+    if (GHOST_MODE && raceState === 'racing') {
+      const d = ghostDelta();
+      ghostDeltaEl.textContent = !GHOST ? '👻 no best run yet · this one becomes your ghost' : d == null ? '' : `👻 ${d <= 0 ? 'AHEAD OF' : 'BEHIND'} YOUR BEST · ${d <= 0 ? '−' : '+'}${Math.abs(d).toFixed(1)} s`;
+      ghostDeltaEl.style.color = !GHOST || d == null ? '#cfe8ff' : d <= 0 ? '#7dffb0' : '#ff8a7a';
+    } else ghostDeltaEl.textContent = '';
     boostFill.style.width = (boostEnergy * 100) + '%';
     heatFill.style.width = (laserHeat * 100) + '%'; heatTxt.textContent = laserOver ? 'OVERHEAT' : '';
     supTxt.textContent = superT > 0 ? '⚡ WARP' : superAvail ? 'READY ●' : 'USED ○'; supTxt.style.color = superT > 0 ? '#9fd8ff' : superAvail ? '#ffd36b' : '#777';
@@ -2681,7 +2736,8 @@
     const diff = L - R;
     warnEl.textContent = raceState === 'flight' ? (flightT < 4 ? 'STEER WITH THE THROTTLES · BOTH UP = CLIMB' : `RINGS ${fRings} · ROCKS ${fRocks} · ${Math.max(0, FLIGHT_DUR - flightT).toFixed(0)} s TO ${TRACK_NAMES[TOUR_ORDER[Math.min(4, TOUR.stage + 1)]].toUpperCase()}`)
       : tourCruise && raceState === 'racing' ? '⚙ CRUISE CONTROL · move a throttle lever to take over' : upcomingTurn();
-    posN.textContent = racePosition(); posT.textContent = ais.length + 1;
+    const gh = GHOST_MODE && GHOST && raceState === 'racing' ? 1 : 0;
+    posN.textContent = racePosition() + (gh && (ghostDelta() || 0) > 0 ? 1 : 0); posT.textContent = ais.length + 1 + gh;
     if (THEME.forest) {
       altBox.style.display = '';
       const m = Math.max(0, Math.round(groundY(position + PLAYER_Z) * EVEREST_M / SUMMIT_Y));
@@ -2800,7 +2856,23 @@
       tg.appendChild(d);
     });
   }
+  function renderMaster() {
+    const row = document.getElementById('masterRow');
+    if (!masterUnlocked()) { row.innerHTML = '🔒 Win the GRAND TOUR in 1st place to unlock: set how smart the AI is · race your own ghost'; return; }
+    const wn = aiWinsHere();
+    const what = wn >= AI_SHORTCUT_LEVEL ? 'knows the shortcuts' : `+${wn}% · ${Math.min(AI_MAX_LEVEL, wn)}/${AI_MAX_LEVEL} boost tricks`;
+    const gTxt = TOUR ? '👻 GHOST: not in the Grand Tour' : `👻 GHOST RACE: ${GHOST_MODE ? 'ON' : 'OFF'}${GHOST ? ' · best ' + fmtTime(GHOST.time) : ' · no best run yet'}`;
+    row.innerHTML = `<span>AI SMARTNESS ON ${TRACK_NAMES[AI_TRACK].toUpperCase()}</span><input type="range" id="aiSlider" min="0" max="${AI_SHORTCUT_LEVEL}" step="1" value="${Math.min(AI_SHORTCUT_LEVEL, wn)}"><b id="aiSliderTxt">LEVEL ${wn} · ${what}</b><button id="ghostBtn" class="secondary"${TOUR ? ' disabled' : ''}>${gTxt}</button>`;
+    document.getElementById('aiSlider').oninput = e => {
+      const w = loadAIWins(); w[AI_TRACK] = +e.target.value; saveAIWins(w);
+      AI_LEVEL = loadAILevel(); AI_SHORTCUTS = aiWinsHere() >= AI_SHORTCUT_LEVEL; resetAIs();
+      const v = aiWinsHere(); document.getElementById('aiSliderTxt').textContent = `LEVEL ${v} · ${v >= AI_SHORTCUT_LEVEL ? 'knows the shortcuts' : `+${v}% · ${Math.min(AI_MAX_LEVEL, v)}/${AI_MAX_LEVEL} boost tricks`}`;
+    };
+    document.getElementById('aiSlider').onchange = () => renderMenu();
+    if (!TOUR) document.getElementById('ghostBtn').onclick = () => { GHOST_MODE = !GHOST_MODE; try { localStorage.setItem('podracer.ghostMode', GHOST_MODE ? '1' : '0'); } catch (e) {} resetAIs(); renderMenu(); };
+  }
   function renderOpts() {
+    renderMaster();
     document.getElementById('timeBtn').textContent = NIGHT ? '🌙 NIGHT RACE' : '☀️ DAY RACE';
     document.getElementById('aimBtn').textContent = AUTO_AIM ? '🎯 AUTO-AIM: ON' : '🎯 AUTO-AIM: OFF';
   }
@@ -2841,7 +2913,12 @@
     }
     myPlace = 1 + finishOrder.length;
     const msgs = [];
-    if (myPlace === 1) {
+    const prevGhost = GHOST ? GHOST.time : null, newBest = !TOUR && saveGhostIfBest(raceTime);
+    if (GHOST_MODE) {
+      msgs.push(prevGhost == null ? '👻 Your first run on this track is saved — now race your ghost!' : newBest ? `👻 NEW PERSONAL BEST! ${(prevGhost - raceTime).toFixed(1)} s faster than your ghost` : `👻 ${(raceTime - prevGhost).toFixed(1)} s slower than your best — try again!`);
+    } else if (newBest && prevGhost != null && !TOUR) msgs.push(`👻 New best run on this track saved as your ghost (${fmtTime(raceTime)})`);
+    if (TOUR && myPlace === 1) { const u = loadUnlocks(); if (!u.master) { u.master = true; saveUnlocks(u); msgs.push('🏆 GRAND TOUR CHAMPION! Unlocked: set how smart the AI is, and race your own ghost'); } }
+    if (myPlace === 1 && !GHOST_MODE) {
       unlocks = loadUnlocks();
       if (unlocks.pods < PODS.length) { unlocks.pods++; msgs.push(`NEW POD UNLOCKED: ${PODS[unlocks.pods - 1].name}!`); }
       if (!unlocks.track2) { unlocks.track2 = true; msgs.push('NEW TRACK UNLOCKED: Frost Canyon!'); }
@@ -2869,6 +2946,7 @@
     document.getElementById('finPlace').textContent = `${ordinal(myPlace).toUpperCase()} PLACE`;
     document.getElementById('finPlace').style.color = myPlace === 1 ? '#ffd36b' : '#fff3dc';
     const rows = finishOrder.map((a, i) => `<div><span style="color:rgb(${a.col})">${i + 1}. ${a.name}</span><span>${fmtTime(a.finishTime)}</span></div>`);
+    if (GHOST_MODE && prevGhost != null) rows.push(`<div><span style="color:#9fd8ff">👻 Your best before</span><span>${fmtTime(prevGhost)}</span></div>`);
     rows.push(`<div><span style="color:#6fd3ff">${myPlace}. You</span><span>${fmtTime(myTime)}</span></div>`);
     document.getElementById('finOrder').innerHTML = rows.join('');
     finishEl.style.display = 'flex';
@@ -2883,6 +2961,7 @@
     laserHeat = 0; laserOver = false; shieldE = 1; shieldOn = false; beams = []; sparks = [];
     superAvail = true; superT = 0; whiteFlash = 0; summitShown = false;
     missilesLeft = MISSILES_PER_RACE; missiles = []; blasts = []; fireHeld = 0; missileThisHold = false;
+    ghostRec = [];
   }
   // ---------- Super boost (button 13 / L): one light-speed jump per race, straight into 1st place ----------
   const SUPER_BTN = 13, SUPER_TIME = 1.4;
@@ -3069,6 +3148,7 @@
     stepWalkers(dt);
     stepTrack(dt);
     stepAIs(dt);
+    recordGhost();
   }
   window.__pod = { setPod(i) { POD = PODS[i]; }, setAILevel(l) { const w = loadAIWins(); w[AI_TRACK] = l; saveAIWins(w); AI_LEVEL = loadAILevel(); AI_SHORTCUTS = aiWinsHere() >= AI_SHORTCUT_LEVEL; resetAIs(); raceTime = 0; }, get aiWins() { return loadAIWins(); }, get aiSkills() { return ais.map(a => +a.skill.toFixed(4) + (a.copy ? "*" : "")); }, aiShield(name, on) { const a = ais.find(x => x.name === name); a.shOn = on; a.shT = 5; a.shE = 1; }, get aiSh() { return ais.map(a => ({ name: a.name, shOn: a.shOn, shE: +a.shE.toFixed(2), shBroken: +a.shBroken.toFixed(1) })); }, setNight(v) { NIGHT = v; }, get aim() { return aimTarget && aimTarget.name; }, pathInfo() { return shortcuts.filter(x => x.path).map(x => ({ idx: x.idx, entry: x.entry, exit: x.exit, side: x.side, secret: x.secret, len: x.segs.length, skip: x.exit - x.entry, y0: x.segs[0].y, yEnd: x.segs[x.segs.length - 1].y, mainExitY: segments[x.exit].y })); }, forestInfo() { return { inclines: mark.inclines, rough: mark.rough, banked: segments.filter(x => x.bank).length, summit: mark.summit, winterSegs: segments.filter(x => x.winter).length, climbCaves: Math.max(...segments.map(x => x.caveNo)), turns: (() => { let n = 0, prev = 0; for (const x of segments) { const c = Math.abs(x.curve) >= 3 ? Math.sign(x.curve) : 0; if (c && c !== prev) n++; prev = c; } return n; })(), tunnels: mark.tunnels, tunnel: mark.tunnel, maxY: Math.max(...segments.map(x => x.y)), endY: segments[segments.length - 1].y, rivers: mark.rivers, walk: mark.walk, len: segments.length, trees: segments.reduce((t, x) => t + x.obs.filter(o => o.kind === 'tree').length + x.sprites.filter(o => o.kind === 'pine' || o.kind === 'oak').length, 0), sideRamps: ramps.length }; }, get water() { return inWater; }, get missiles() { return { left: missilesLeft, flying: missiles.map(m => ({ target: m.target && m.target.name, x: +m.x.toFixed(2) })) }; }, get weapons() { return { laserHeat, laserOver, shieldE, shieldOn, removed: removedObs.length }; }, fire() { fireLaser(); }, setShield(on) { shieldOn = on; }, obsAhead() { const b = Math.floor((position + PLAYER_Z) / SEG); for (let n = 1; n < 45; n++) { const sg = segFor(b + n); if (sg.obs.length) return { n, off: sg.obs[0].off, w: sg.obs[0].w }; } return null; }, get state() { return raceState; }, superState() { return { superAvail, superT: +superT.toFixed(2), pos: racePosition(), lap, lapTimes: lapTimes.slice(), prog: Math.round(playerProgress()) }; }, forceWin() { finishOrder = []; raceTime = 150; lapTimes = [50, 50, 50]; finishRace(); }, get unlocks() { return loadUnlocks(); }, sim(k, startSpeed, boostAt) {
       const c = shortcuts[k].chasm; T = shortcuts[k]; position = c.runup * SEG; speed = startSpeed; playerX = 0; podY = 0; podVY = 0; onRamp = false; boostEnergy = 1; fade = 0;
@@ -3082,7 +3162,7 @@
         if (now >= c.c0 + CHASM_LEN && podY >= 0 && podY <= 1) return { result: 'CLEARED', peak: Math.round(peak), speedAtLanding: Math.round(speed) };
       }
       return { result: 'timeout', peak };
-    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
+    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, autoRace(maxSec, lazy = 0) { menuEl.style.display = "none"; restartRace(); raceState = "racing"; countdown = 0; let t = 0; while (t < maxSec && raceState === "racing") { L = R = 1 - lazy; const sg = segAt(position + PLAYER_Z); playerX += (sg.curve * 0.09 - playerX) * 0.2; physicsStep(1 / 60, false); t += 1 / 60; } return { state: raceState, time: raceTime, lap }; }, get ghostPos() { return ghostAt(raceTime); }, get ghost() { return { mode: GHOST_MODE, have: !!GHOST, time: GHOST && GHOST.time, n: GHOST && GHOST.s.length, rec: ghostRec.length, delta: ghostDelta() }; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
   refreshPadList(); buildAxisRows();
   if (TOUR) { const lb = document.getElementById('lapBox'); if (lb && lb.firstChild) lb.firstChild.textContent = 'WORLD '; }
   if (TOUR && TOUR.stage > 0 && TOUR.arriving) { TOUR.arriving = false; saveTour(); beginTourStage(); }
