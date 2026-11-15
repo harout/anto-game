@@ -939,8 +939,22 @@
     }
   });
   if (THEME.forest) segments.forEach(sg => { if (sg.y > snowLine(sg) * 0.6 || sg.winter) { for (const t of sg.sprites) t.snowy = true; for (const o of sg.obs) if (o.tree) o.tree.snowy = true; } });
-  const POD_HALF = 0.3;
-  let lastObsHit = -1;
+  // ---- collision shapes that match what you see ----
+  const podHalf = () => 0.13 + 0.055 * (POD.size ? POD.size[0] : 1);   // your pod's drawn half-width (engine edge to engine edge)
+  const AI_HALF = 0.225, POD_H = 240, AI_H = 260;                     // AI pods' drawn half-width; pod heights
+  function obsSpan(o, sg) {                                            // how high each obstacle really is (world units)
+    const tall = o.w * ROAD_W;
+    switch (o.kind) {
+      case 'stalactite': return [140, (sg && sg.wallH) || 2500];         // hangs from the ceiling down to just above the ground
+      case 'stalagmite': return [0, 1600];
+      case 'pillar': return [0, tall * 9];
+      case 'stump': return [0, tall * 1.7];
+      case 'tree': return [0, 4000];
+      default: return [0, tall * 1.2];                                  // boulders
+    }
+  }
+  const hitsVert = (o, sg, y, h) => { const [lo, hi] = obsSpan(o, sg); return y < hi && y + h > lo; };
+  let lastObsHit = -1, lastObsT = -9;                           // the obstacle you just hit (forgotten after 1.5 s, so the next lap's is solid again)
   // ---------- Canyon shortcuts: hidden slot canyons that rejoin the main track further on ----------
   const MAIN = { main: true, segs: segments, len: TRACK_LEN };
   const shortcuts = [];
@@ -1225,7 +1239,7 @@
     if (sg.chasm && ai.y < -300) { ai.tp = (sc.respawn || 0) * SEG; ai.speed *= 0.3; ai.y = 0; ai.vy = 0; ai.onRamp = false; ai.falls = (ai.falls || 0) + 1; }   // fell in: back to the run-up
     ai.tp += v * dt;
     const nk = Math.floor(ai.tp / SEG);
-    if (nk !== k && A[nk] && ai.y < 260) for (const o of A[nk].obs) if (Math.abs(ai.x - o.off) < o.w + 0.22 && ai.lastObs !== 'T' + nk) { ai.lastObs = 'T' + nk; if (ai.shOn) ai.shE = Math.max(0, ai.shE - 0.15); else { ai.speed *= 0.4; ai.hitT = 0.6; } }
+    if (nk !== k && A[nk]) for (const o of A[nk].obs) if (hitsVert(o, A[nk], ai.y, AI_H) && Math.abs(ai.x - o.off) < o.w + AI_HALF && (ai.lastObs !== 'T' + nk || raceTime - (ai.lastObsT || -9) > 1.5)) { ai.lastObs = 'T' + nk; ai.lastObsT = raceTime; if (ai.shOn) ai.shE = Math.max(0, ai.shE - 0.15); else { ai.speed *= 0.4; ai.hitT = 0.6; } }
     ai.dist = ai.tBase + (sc.entry + Math.min(1, ai.tp / sc.len) * (sc.exit - sc.entry)) * SEG;
     if (ai.tp >= sc.len) { ai.dist = ai.tBase + sc.exit * SEG + (ai.tp - sc.len); ai.trail = null; ai.x = 0; ai.y = 0; ai.vy = 0; ai.trailsTaken = (ai.trailsTaken || 0) + 1; }
     if (!ai.finished && ai.dist >= RACE_END()) { ai.finished = true; ai.finishTime = raceTime; finishOrder.push(ai); }
@@ -1324,19 +1338,43 @@
       // obstacles they fail to dodge
       const prevSi = si; ai.dist += v * dt;
       const nsi = Math.floor(modL(ai.dist) / SEG);
-      if (nsi !== prevSi && ai.y < 260) for (const o of obsOf(segments[nsi])) if (Math.abs(ai.x - o.off) < o.w + 0.28 && ai.lastObs !== nsi) { ai.lastObs = nsi; if (ai.shOn) ai.shE = Math.max(0, ai.shE - 0.15); else { ai.speed *= 0.4; ai.hitT = 0.6; } }
+      if (nsi !== prevSi) for (const o of obsOf(segments[nsi])) if (hitsVert(o, segments[nsi], ai.y, AI_H) && Math.abs(ai.x - o.off) < o.w + AI_HALF && (ai.lastObs !== nsi || raceTime - (ai.lastObsT || -9) > 1.5)) { ai.lastObs = nsi; ai.lastObsT = raceTime; if (ai.shOn) ai.shE = Math.max(0, ai.shE - 0.15); else { ai.speed *= 0.4; ai.hitT = 0.6; } }
       if (!ai.finished && ai.dist >= RACE_END()) { ai.finished = true; ai.finishTime = raceTime; finishOrder.push(ai); }
     }
-    // bumping into the player (only on the main track)
+    // pods bump each other: the same road, overlapping for real, pushed apart cleanly (never through each other or into a wall)
     bumpCool = Math.max(0, bumpCool - dt);
-    if (T.main && superT <= 0) {
-      const pz = modL(position + PLAYER_Z);
+    const sameRoad = ai => T.main ? !ai.trail : ai.trail === T;
+    const aiZ = ai => ai.trail ? ai.tp : modL(ai.dist);
+    const zDiff = (a, b, wrap) => { let d = a - b; if (wrap) { if (d > TRACK_LEN / 2) d -= TRACK_LEN; if (d < -TRACK_LEN / 2) d += TRACK_LEN; } return d; };
+    const latLim = (sg, isAI) => sg.canyon ? sg.wall - (isAI ? 0.3 : 0.32) : isAI ? 1.0 : 3.4;
+    // AI ↔ AI
+    for (let a = 0; a < ais.length; a++) for (let b = a + 1; b < ais.length; b++) {
+      const A = ais[a], B = ais[b]; if (A.finished || B.finished || A.trail !== B.trail) continue;
+      const dz = zDiff(aiZ(B), aiZ(A), !A.trail), dx = B.x - A.x, need = AI_HALF * 2;
+      if (Math.abs(dz) < 300 && Math.abs(dx) < need && Math.abs(A.y - B.y) < AI_H) {
+        const sgn = dx >= 0 ? 1 : -1, push = (need - Math.abs(dx)) / 2 + 0.005;
+        const sgA = A.trail ? A.trail.segs[Math.min(A.trail.segs.length - 1, Math.floor(A.tp / SEG))] : segments[Math.floor(modL(A.dist) / SEG)];
+        const lA = latLim(sgA, true);
+        A.x = Math.max(-lA, Math.min(lA, A.x - sgn * push)); B.x = Math.max(-lA, Math.min(lA, B.x + sgn * push));
+        if (Math.abs(dx) < need * 0.5) { const back = dz > 0 ? A : B, front = dz > 0 ? B : A; if (back.speed > front.speed) back.speed = front.speed * 0.98; }   // nose to tail: the one behind can't drive through
+      }
+    }
+    // you ↔ AI
+    if (superT <= 0) {
+      const pz = T.main ? modL(position + PLAYER_Z) : position + PLAYER_Z, need = podHalf() + AI_HALF;
+      const mySeg = segAt(position + PLAYER_Z), myLim = latLim(mySeg, false);
       for (const ai of ais) {
-        if (ai.trail) continue;
-        let dz = modL(ai.dist) - pz; if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN;
-        if (Math.abs(dz) < 420 && Math.abs(ai.x - playerX) < 0.62 && Math.abs(ai.y - podY) < 350) {
-          const sgn = playerX >= ai.x ? 1 : -1;
-          playerX += sgn * 0.09; ai.x -= sgn * 0.09;
+        if (!sameRoad(ai) || ai.finished) continue;
+        const dz = zDiff(aiZ(ai), pz, T.main), dx = ai.x - playerX;
+        if (Math.abs(dz) < 320 && Math.abs(dx) < need && Math.abs(ai.y - podY) < 300) {
+          const sgn = playerX >= ai.x ? 1 : -1, push = (need - Math.abs(dx)) / 2 + 0.005;
+          playerX = Math.max(-myLim, Math.min(myLim, playerX + sgn * push));
+          const aiSeg = ai.trail ? ai.trail.segs[Math.min(ai.trail.segs.length - 1, Math.floor(ai.tp / SEG))] : segments[Math.floor(modL(ai.dist) / SEG)], aLim = latLim(aiSeg, true);
+          ai.x = Math.max(-aLim, Math.min(aLim, ai.x - sgn * push));
+          if (Math.abs(dx) < need * 0.5) {                     // nose to tail: no driving through each other
+            if (dz > 0 && speed > ai.speed) { ai.speed = Math.min(MAX_KMH * 1.6, ai.speed + (speed - ai.speed) * 0.4); speed = ai.speed * 0.97; }
+            else if (dz < 0 && ai.speed > speed) { speed = Math.min(speed + (ai.speed - speed) * 0.4, MAX_KMH * 1.6); ai.speed = speed * 0.97; }
+          }
           if (bumpCool <= 0) { if (ai.shOn && !shieldOn) { speed *= 0.75; hitFlash = Math.max(hitFlash, 0.8); thud(); } else if (shieldOn) { if (!ai.shOn) ai.speed *= 0.8; shieldHit(); } else { speed *= 0.9; ai.speed *= 0.9; hitFlash = Math.max(hitFlash, 0.5); thud(); } bumpCool = 0.5; }
         }
       }
@@ -1558,8 +1596,8 @@
       for (let idx = ia + 1; idx <= ib && idx <= ia + 40; idx++) {
         const sx = segFor(idx);
         for (const o of obsOf(sx)) {
-          if (sx !== lastObsHit && podY < 260 && Math.abs(playerX - o.off) < o.w + POD_HALF) {
-            lastObsHit = sx; if (shieldOn) shieldHit(); else { speed *= 0.3; hitFlash = 1.2; thud(); }
+          if ((sx !== lastObsHit || performance.now() / 1000 - lastObsT > 1.5) && hitsVert(o, sx, podY, POD_H) && Math.abs(playerX - o.off) < o.w + podHalf()) {
+            lastObsHit = sx; lastObsT = performance.now() / 1000; if (shieldOn) shieldHit(); else { speed *= 0.3; hitFlash = 1.2; thud(); }
             playerX += (playerX >= o.off ? 1 : -1) * 0.12;   // knocked sideways
           }
         }
@@ -2833,7 +2871,7 @@
         if (now >= c.c0 + CHASM_LEN && podY >= 0 && podY <= 1) return { result: 'CLEARED', peak: Math.round(peak), speedAtLanding: Math.round(speed) };
       }
       return { result: 'timeout', peak };
-    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; } };
+    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
   refreshPadList(); buildAxisRows();
   openMenu();
   requestAnimationFrame(frame);
