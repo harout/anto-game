@@ -214,6 +214,8 @@
   .tcard { background:#2a160a; border:2px solid #4a2a12; border-radius:10px; padding:12px; cursor:pointer; font-size:14px; letter-spacing:2px; }
   .tcard small { display:block; margin-top:4px; font-size:11px; color:#b8916a; letter-spacing:1px; }
   .tcard.sel { border-color:#ffb347; box-shadow:0 0 14px rgba(255,160,60,.5); } .tcard.locked { opacity:.5; cursor:not-allowed; }
+  #exitBtn { position:fixed; top:16px; right:362px; display:none; z-index:6; background:#4a1a10dd; color:#ffe2c8; border:1px solid #ff8a4a; border-radius:8px; padding:8px 14px; font:bold 13px Menlo, monospace; letter-spacing:2px; cursor:pointer; }
+  #exitBtn:hover { background:#7a2a14; box-shadow:0 0 12px #ff8a4a88; }
   #testBar { position:fixed; top:96px; left:50%; transform:translateX(-50%); display:none; z-index:6; background:#1f4a2acc; color:#c8ffd8; border:1px solid #3aa860; border-radius:8px; padding:7px 14px; font:bold 13px Menlo, monospace; letter-spacing:2px; cursor:pointer; }
   #ghostDelta { text-align:center; font-size:18px; font-weight:700; letter-spacing:2px; margin-top:4px; text-shadow:0 0 10px rgba(0,0,0,.8); }
   #masterRow { margin-top:10px; font-size:12px; letter-spacing:1px; color:#b8916a; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; }
@@ -255,6 +257,7 @@
   <div id="status"></div>
 </div>
 
+<button id="exitBtn" title="Leave this level and go back to the main menu (Esc)">⏏ EXIT LEVEL</button>
 <button id="testBar">🧪 TEST DRIVE · ✎ BACK TO EDITOR (Esc)</button>
 <div class="hud" id="warnBox" style="top:18px;left:50%;transform:translateX(-50%)"><div id="warn"></div><div id="ghostDelta"></div></div>
 <div class="hud" id="throttles">
@@ -291,7 +294,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v99</span></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v100</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -590,6 +593,10 @@
   const statusEl = document.getElementById('status'); let flashMsg = '', flashUntil = 0;
   function flash(m) { flashMsg = m; flashUntil = performance.now() + 3500; }
   function updateStatus(p) {
+    try {                                                        // ⏏ the EXIT LEVEL button shows whenever you're in a level
+      const eb = document.getElementById('exitBtn'), showExit = menuEl.style.display !== 'flex' && raceState !== 'menu' && !(typeof v3open !== 'undefined' && v3open) && edEl.style.display !== 'flex';
+      if ((eb.style.display === 'block') !== showExit) eb.style.display = showExit ? 'block' : 'none';
+    } catch (e) {}
     let html;
     if (gamepadBlocked) html = `<span class="warn">This window blocks game controllers (it's a preview frame). Download the file and open it directly in Chrome: drag it onto Chrome or File → Open File. Keyboard still works here: W/S, Q/A, E/D, Space.</span>`;
     else if (performance.now() < flashUntil) html = `<span class="ok">${flashMsg}</span>`;
@@ -5028,6 +5035,12 @@
     finishEl.style.display = 'none'; restartRace(); raceState = 'menu'; countEl.style.display = 'none';
     unlocks = loadUnlocks(); renderMenu(); menuEl.style.display = 'flex'; menuOpenedAt = performance.now() / 1000; menuHeld = true;
   }
+  function exitLevel() {                                       // ⏏ leave the level: back to the editor from a test drive, otherwise the main menu
+    if (TEST_MODE) { backToEditor(); return; }
+    openMenu();
+  }
+  document.getElementById('exitBtn').onclick = e => { e.currentTarget.blur(); exitLevel(); };
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !TEST_MODE && raceState !== 'menu' && menuEl.style.display !== 'flex' && !(typeof v3open !== 'undefined' && v3open) && edEl.style.display !== 'flex') exitLevel(); });
   function startFromMenu() { menuEl.style.display = 'none'; if (TOUR) { TOUR = { stage: 0, total: 0, aiTotals: AI_DEFS.map(() => 0), log: [] }; saveTour(); } restartRace(); }
   document.getElementById('startBtn').onclick = startFromMenu;
   addEventListener('keydown', e => {
