@@ -117,6 +117,7 @@
   .ed-legend { font-size:10px; color:#b8916a; display:flex; flex-wrap:wrap; gap:3px 8px; align-items:center; } .ed-legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:-4px; }
   #edPlay { background:#ff9a2e; color:#1a0e06; font-weight:bold; letter-spacing:3px; padding:11px; border:0; border-radius:8px; cursor:pointer; font-size:15px; }
   #edSave { padding:8px; }
+  #edTest { background:#3aa860; color:#fff; font-weight:bold; letter-spacing:2px; padding:9px; border:0; border-radius:8px; cursor:pointer; font-size:13px; }
   #edMsg { font-size:12px; color:#8dffb0; min-height:16px; }
   #edCode { width:100%; height:62px; background:#0d0603; color:#ffe7c2; border:1px solid #4a2a12; border-radius:6px; font:10px Menlo, monospace; resize:none; }
   .tcard.custom { border-style:dashed; } .tcard .edit { float:right; font-size:11px; color:#ffb347; padding:0 4px; } .tcard .edit:hover { color:#fff; } .tcard .del { color:#ff8a7a; } .tcard.addlvl { text-align:center; color:#ffb347; }
@@ -136,12 +137,14 @@
   .v3-legend { position:absolute; bottom:14px; left:18px; font:11px Menlo, monospace; color:#b8916a; display:flex; gap:4px 12px; flex-wrap:wrap; align-items:center; }
   .v3-legend i { display:inline-block; width:11px; height:11px; border-radius:2px; margin-right:-6px; border:1px solid #0006; }
   .ed-add button.auto { background:#1f4a2a; border-color:#3aa860; color:#c8ffd8; } .ed-add button.auto:hover { border-color:#8dffb0; }
+  #v3bld button#blTest { background:#3aa860; color:#fff; border-color:#3aa860; font-weight:bold; }
   #v3bld button#blAuto { background:#1f4a2a; border-color:#3aa860; color:#c8ffd8; }
   .ed-add button.sub { background:#4a1a12; border-color:#a2442e; color:#ffd0c4; } .ed-add button.sub:hover { border-color:#ff8a7a; }
   #trackGrid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; max-height:300px; overflow:auto; }
   .tcard { background:#2a160a; border:2px solid #4a2a12; border-radius:10px; padding:12px; cursor:pointer; font-size:14px; letter-spacing:2px; }
   .tcard small { display:block; margin-top:4px; font-size:11px; color:#b8916a; letter-spacing:1px; }
   .tcard.sel { border-color:#ffb347; box-shadow:0 0 14px rgba(255,160,60,.5); } .tcard.locked { opacity:.5; cursor:not-allowed; }
+  #testBar { position:fixed; top:96px; left:50%; transform:translateX(-50%); display:none; z-index:6; background:#1f4a2acc; color:#c8ffd8; border:1px solid #3aa860; border-radius:8px; padding:7px 14px; font:bold 13px Menlo, monospace; letter-spacing:2px; cursor:pointer; }
   #ghostDelta { text-align:center; font-size:18px; font-weight:700; letter-spacing:2px; margin-top:4px; text-shadow:0 0 10px rgba(0,0,0,.8); }
   #masterRow { margin-top:10px; font-size:12px; letter-spacing:1px; color:#b8916a; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; }
   #masterRow input[type=range] { width:220px; accent-color:#ffb347; vertical-align:middle; }
@@ -182,6 +185,7 @@
   <div id="status"></div>
 </div>
 
+<button id="testBar">🧪 TEST DRIVE · ✎ BACK TO EDITOR (Esc)</button>
 <div class="hud" id="warnBox" style="top:18px;left:50%;transform:translateX(-50%)"><div id="warn"></div><div id="ghostDelta"></div></div>
 <div class="hud" id="throttles">
   <div><div class="tpct" id="lp">0%</div><div class="tbar"><div class="tfill" id="lf"></div></div><div class="tlabel">LEFT</div></div>
@@ -246,7 +250,7 @@
         <button data-add="straight">▮ Straight</button><button data-add="left">↰ Left turn</button><button data-add="right">↱ Right turn</button>
         <button data-add="up">▲ Climb</button><button data-add="down">▼ Drop</button><button data-add="canyon">⛰ Canyon</button>
         <button data-add="tunnel">◖ Tunnel</button><button data-add="river">≈ River</button><button data-add="swamp">≋ Swamp water</button>
-        <button data-add="ramp">⤴ Ramp jump</button><button data-add="rocks">● Rock field</button><button data-add="split">⑂ Split</button><button id="edAuto" class="auto" title="Add the pieces that join the end of the track back to the start">🔄 Auto-complete</button><button data-add="random">🎲 Random</button>
+        <button data-add="ramp">⤴ Ramp jump</button><button data-add="rocks">● Rock field</button><button data-add="split">⑂ Split</button><button id="edAuto" class="auto" title="Add the pieces that join the end of the track back to the start">🔄 Auto-complete</button><button id="edNoWater" class="sub" title="Remove every river and swamp-water stretch">≈✕ Remove water</button><button data-add="random">🎲 Random</button>
       </div>
       <div id="edList"></div>
     </div>
@@ -255,6 +259,7 @@
       <canvas id="edProf" width="360" height="90"></canvas>
       <div id="edStats"></div>
       <div class="ed-legend"><i style="background:#e8c79a"></i>road <i style="background:#9a5a32"></i>canyon <i style="background:#555"></i>tunnel <i style="background:#4aa3ff"></i>river <i style="background:#6f9a52"></i>swamp <i style="background:#ffd23f"></i>ramp <i style="background:#ff5a4a"></i>rocks</div>
+      <button id="edTest">🧪 TEST DRIVE (no saving)</button>
       <button class="secondary" id="ed3d">🧊 3D VIEW</button>
       <button class="secondary" id="edBuild">🎢 BUILD IN 3D (Planet Coaster style)</button>
       <button id="edPlay">▶ SAVE &amp; RACE IT</button>
@@ -272,7 +277,7 @@
     <div class="bl-row"><b>SLOPE</b><button data-slope="-2000">⬇⬇ steep</button><button data-slope="-800">⬇ down</button><button data-slope="0">flat</button><button data-slope="800">⬆ up</button><button data-slope="2000">⬆⬆ steep</button></div>
     <div class="bl-row"><b>TYPE</b><button data-type="road">road</button><button data-type="canyon">canyon</button><button data-type="tunnel">tunnel</button><button data-type="river">river</button><button data-type="swamp">swamp</button><button data-type="ramp">ramp jump</button><button data-type="rocks">rocks</button></div>
     <div class="bl-row"><b>SPLIT</b><button data-split="">none</button><button data-split="left">⑂ left</button><button data-split="right">⑂ right</button><span id="blSplitNote" style="color:#b8916a"></span></div>
-    <div class="bl-row"><button id="blPlace" class="go">✔ PLACE PIECE <small>Enter</small></button><button id="blUndo">⌫ UNDO <small>Backspace</small></button><button id="blClear">🗑 CLEAR ALL</button><button id="blAuto">🔄 AUTO-COMPLETE</button><button id="blDone" class="go2">✔ DONE</button></div>
+    <div class="bl-row"><button id="blPlace" class="go">✔ PLACE PIECE <small>Enter</small></button><button id="blUndo">⌫ UNDO <small>Backspace</small></button><button id="blClear">🗑 CLEAR ALL</button><button id="blAuto">🔄 AUTO-COMPLETE</button><button id="blTest">🧪 TEST</button><button id="blDone" class="go2">✔ DONE</button></div>
     <div id="blInfo"></div>
   </div>
   <div id="v3smooth"><b>SMOOTHING</b><input type="range" id="v3sm" min="0" max="100" step="1"><span id="v3smv"></span>
@@ -658,10 +663,13 @@
   // ✎ CUSTOM LEVELS from the level editor (track 7 + the chosen level's id)
   const loadLevels = () => { try { const a = JSON.parse(localStorage.getItem('podracer.levels') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
   const saveLevels = a => { try { localStorage.setItem('podracer.levels', JSON.stringify(a)); } catch (e) {} };
-  let CUSTOM = null;
+  let CUSTOM = null, TEST_MODE = false;
   if (TRACK_ID === 7) {
     let id = null; try { id = localStorage.getItem('podracer.customId'); } catch (e) {}
-    CUSTOM = loadLevels().find(l => l.id === id) || null;
+    if (id === '__test') {                                     // 🧪 TEST DRIVE of the level being edited (not saved)
+      try { CUSTOM = JSON.parse(localStorage.getItem('podracer.testLevel') || 'null'); } catch (e) {}
+      if (CUSTOM) { TEST_MODE = true; CUSTOM = Object.assign({}, CUSTOM, { id: '__test' }); }
+    } else CUSTOM = loadLevels().find(l => l.id === id) || null;
     if (!CUSTOM || !CUSTOM.sections || !CUSTOM.sections.length) { CUSTOM = null; TRACK_ID = 1; }
   }
   const saveTour = () => { try { sessionStorage.setItem('podracer.tour', JSON.stringify(TOUR)); } catch (e) {} };
@@ -677,7 +685,7 @@
   if (CUSTOM) THEMES[7] = Object.assign({}, THEMES[CUSTOM.world] || THEMES[1], { name: (CUSTOM.name || 'MY LEVEL').toUpperCase() });
   if (!THEMES[TRACK_ID]) TRACK_ID = 1;
   const THEME = THEMES[TRACK_ID];
-  TOTAL_LAPS = CUSTOM ? Math.max(1, Math.min(9, CUSTOM.laps | 0 || 3)) : TOUR || TRACK_ID === 3 ? 1 : 3;
+  TOTAL_LAPS = TEST_MODE ? 1 : CUSTOM ? Math.max(1, Math.min(9, CUSTOM.laps | 0 || 3)) : TOUR || TRACK_ID === 3 ? 1 : 3;
   let NIGHT = false, AUTO_AIM = true;
   try { NIGHT = localStorage.getItem('podracer.night') === '1'; AUTO_AIM = localStorage.getItem('podracer.autoAim') !== '0'; } catch (e) {}
   const NIGHT_FOG = TRACK_ID === 2 ? [14, 22, 46] : TRACK_ID === 4 ? [16, 26, 20] : [22, 20, 38];
@@ -1423,10 +1431,10 @@
   // 👻 GHOST: your best run on each track is recorded; after you win the Grand Tour you can race it (no rivals, just you vs you)
   const GHOST_DT = 0.1, ghostKey = () => 'podracer.ghost.' + (CUSTOM ? 'c' + CUSTOM.id : TRACK_ID);
   let GHOST = null, ghostRec = [];
-  try { GHOST = TOUR ? null : JSON.parse(localStorage.getItem(ghostKey()) || 'null'); } catch (e) {}
+  try { GHOST = TOUR || TEST_MODE ? null : JSON.parse(localStorage.getItem(ghostKey()) || 'null'); } catch (e) {}
   const masterUnlocked = () => !!loadUnlocks().master;
   let GHOST_MODE = false;
-  try { GHOST_MODE = !TOUR && masterUnlocked() && localStorage.getItem('podracer.ghostMode') === '1'; } catch (e) {}
+  try { GHOST_MODE = !TOUR && !TEST_MODE && masterUnlocked() && localStorage.getItem('podracer.ghostMode') === '1'; } catch (e) {}
   const ghostPod = { name: 'YOUR BEST', col: [150, 220, 255], wobble: 0, x: 0, y: 0, speed: 0, boosting: false, shOn: false, shFx: 0, zap: 0 };
   function ghostAt(t) {                                        // where your best run was at race time t
     if (!GHOST || !GHOST.s || !GHOST.s.length) return null;
@@ -1458,7 +1466,7 @@
     ais = AI_DEFS.map((d, k) => ({ ...d, skill: aiSkillFor(d), copy: d.skill * (1 + 0.01 * aiWinsHere()) >= POD.top, zap: 0, dist: PLAYER_Z - GRID_BACK + 2600 + k * 1500, x: k % 2 ? 0.5 : -0.5, lane: k % 2 ? 0.5 : -0.5,
       speed: 0, y: 0, vy: 0, onRamp: false, boostE: 1, boosting: false, hitT: 0, finished: false, finishTime: 0,
       wobble: Math.random() * 6, lastObs: -1, shE: 1, shOn: false, shT: 0, shBroken: 0, shFx: 0, shDecide: 0 }));
-    if (GHOST_MODE) ais = [];                                  // ghost race: no rivals, just your best run
+    if (GHOST_MODE || TEST_MODE) ais = [];                     // ghost race / test drive: no rivals
   }
   resetAIs();
   const modL = z => ((z % TRACK_LEN) + TRACK_LEN) % TRACK_LEN;
@@ -3102,11 +3110,30 @@
   const defaultLevel = () => ({ id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: 'My Level ' + (loadLevels().length + 1), world: 1, laps: 3,
     sections: ['straight', 'right', 'canyon', 'up', 'ramp', 'left', 'down', 'river', 'rocks', 'right'].map(newSection) });
   let ED = null, edSel = 0, edDirty = false, edGeom = null;
-  function openEditor(id) {
-    const lv = loadLevels().find(l => l.id === id);
-    ED = lv ? JSON.parse(JSON.stringify(lv)) : defaultLevel(); edSel = 0; edDirty = false;
+  function openEditor(id, obj) {
+    const lv = obj || loadLevels().find(l => l.id === id);
+    ED = lv ? JSON.parse(JSON.stringify(lv)) : defaultLevel(); edSel = obj && obj.edSel != null ? Math.min(obj.edSel, ED.sections.length - 1) : 0; edDirty = !!obj && !!obj.edDirty;
+    delete ED.edSel; delete ED.edDirty;
     menuEl.style.display = 'none'; edEl.style.display = 'flex';
     edRenderAll(); edMsg('');
+  }
+  function testLevel() {                                       // 🧪 drive the level as it is right now — no saving, no rivals, one lap
+    if (!ED.sections.length) { edMsg('Add some track first.'); return; }
+    let back = { track: '1', id: null }; try { back = { track: localStorage.getItem('podracer.track') || '1', id: localStorage.getItem('podracer.customId') }; } catch (e) {}
+    try {
+      localStorage.setItem('podracer.testLevel', JSON.stringify(Object.assign({}, ED, { edSel, edDirty })));
+      localStorage.setItem('podracer.testReturn', JSON.stringify(back));
+      localStorage.setItem('podracer.track', '7'); localStorage.setItem('podracer.customId', '__test'); localStorage.setItem('podracer.pod', String(podIdx));
+    } catch (e) {}
+    location.reload();
+  }
+  function backToEditor() {                                    // leave the test drive: back to the editor with the level exactly as it was
+    try {
+      const back = JSON.parse(localStorage.getItem('podracer.testReturn') || '{}');
+      localStorage.setItem('podracer.openEditor', localStorage.getItem('podracer.testLevel') || 'null');
+      localStorage.setItem('podracer.track', back.track || '1'); if (back.id) localStorage.setItem('podracer.customId', back.id);
+    } catch (e) {}
+    location.reload();
   }
   function closeEditor() { edEl.style.display = 'none'; openMenu(); }
   const edMsg = t => { document.getElementById('edMsg').textContent = t; };
@@ -3280,6 +3307,13 @@
     ED.sections.splice(edSel + 1, 0, newSection(b.dataset.add)); edSel = Math.min(ED.sections.length - 1, edSel + 1); edDirty = true; edRenderList(); edPreview();
   });
   document.getElementById('edAuto').onclick = () => { runAutoComplete(); edRenderList(); edPreview(); };
+  document.getElementById('edNoWater').onclick = () => {      // ≈✕ every river and swamp stretch becomes plain track
+    const wet = ED.sections.filter(sc => sc.water);
+    if (!wet.length) { edMsg('There is no water in this level.'); return; }
+    wet.forEach(sc => { sc.water = ''; delete sc.auto; }); edDirty = true; edRenderList(); edPreview();
+    edMsg(`≈✕ Removed water from ${wet.length} section${wet.length > 1 ? 's' : ''}`);
+  };
+  document.getElementById('edTest').onclick = () => testLevel();
   document.getElementById('edSub').onclick = () => {          // − remove the selected section
     if (ED.sections.length <= 1) { edMsg('A level needs at least one section.'); return; }
     ED.sections.splice(edSel, 1); edSel = Math.max(0, Math.min(edSel, ED.sections.length - 1)); edDirty = true; edRenderList(); edPreview(); edMsg('− Removed section ' + (edSel + 1 > ED.sections.length ? ED.sections.length : edSel + 1));
@@ -3385,6 +3419,7 @@
   document.querySelectorAll('#v3bld [data-type]').forEach(b => b.onclick = () => { BP.type = b.dataset.type; blRefresh(); });
   document.querySelectorAll('#v3bld [data-split]').forEach(b => b.onclick = () => { BP.split = b.dataset.split; blRefresh(); });
   document.getElementById('blPlace').onclick = blPlace;
+  document.getElementById('blTest').onclick = () => testLevel();
   document.getElementById('blAuto').onclick = () => { const m = runAutoComplete(); blRefresh(); document.getElementById('blInfo').innerHTML = m + '<br>' + document.getElementById('blInfo').innerHTML; chime(); };
   document.getElementById('blUndo').onclick = blUndo;
   let blClearArm = -1e9;
@@ -3498,7 +3533,7 @@
   v3c.addEventListener('dblclick', () => { v3yaw = 0.6; v3pitch = 0.75; v3zoom = 1; });
   document.getElementById('v3close').onclick = v3hide;
   document.getElementById('v3spin').onclick = e => { v3spin = !v3spin; e.target.textContent = '⟳ AUTO-SPIN: ' + (v3spin ? 'ON' : 'OFF'); };
-  addEventListener('keydown', e => { if (v3open && e.key === 'Escape') v3hide(); });
+  addEventListener('keydown', e => { if (v3open && e.key === 'Escape') v3hide(); else if (TEST_MODE && e.key === 'Escape') backToEditor(); });
   function trackGeom() {                                       // the loaded track (built-in or your own), laid out like the minimap
     const N = segments.length, k = 0.006, net = segments.reduce((t, sg) => t + sg.curve, 0) * k, dir = net < 0 ? -1 : 1, fix = (dir * 2 * Math.PI - net) / N;
     let a = 0, x = 0, z = 0; const raw = [];
@@ -3559,6 +3594,7 @@
     return ais.map(a => a.finished ? a.finishTime : raceTime + Math.max(0, RACE_END() - a.dist) / (Math.max(a.speed, MAX_KMH * a.skill * 0.85) / MAX_KMH * TOP_V));
   }
   function finishRace() {
+    if (TEST_MODE) { raceState = 'finished'; flash(`🧪 TEST LAP ${fmtTime(raceTime)} · back to the editor…`); setTimeout(backToEditor, 2600); return; }
     if (TOUR && TOUR.stage < TOUR_ORDER.length - 1) { startFlight(); return; }   // not the last world: take off for the next one
     if (TOUR) {                                                // Grand Tour results: total time across every world and flight
       const st = stageTimes(), me = TOUR.total + raceTime;
@@ -3819,12 +3855,20 @@
         if (now >= c.c0 + CHASM_LEN && podY >= 0 && podY <= 1) return { result: 'CLEARED', peak: Math.round(peak), speedAtLanding: Math.round(speed) };
       }
       return { result: 'timeout', peak };
-    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, edSet(S) { ED.sections = S.map(x => Object.assign(newSection("straight"), x)); edSel = 0; edRenderList(); edPreview(); }, randSec() { return randomSection(); }, acTest() { const before = ED.sections.length; const m = runAutoComplete(); const segs = levelLayout(ED, -1, { open: true }); const p = segs.pts, L = p[p.length - 1], P2 = p[p.length - 2]; return { msg: m, added: ED.sections.length - before, endX: +L[0].toFixed(1), endY: +L[1].toFixed(1), heading: +(Math.atan2(L[0] - P2[0], -(L[1] - P2[1])) * 180 / Math.PI).toFixed(1), hillSum: ED.sections.reduce((t, s) => t + (+s.hill || 0), 0) }; }, get build() { return { on: v3build, pieces: ED && ED.sections.length, last: ED && ED.sections[ED.sections.length - 1], bp: { ...BP } }; }, segCurves() { return segments.map(g => g.curve); }, segYs() { return segments.map(g => g.y); }, get v3() { return { open: v3open, src: v3src, pts: v3geo && v3geo.P.length }; }, get custom() { return CUSTOM && { id: CUSTOM.id, name: CUSTOM.name, laps: TOTAL_LAPS, segs: segments.length, theme: THEME.name }; }, edCode(lv) { return edCodeOf(lv); }, edFrom(c) { return edFromCode(c); }, autoRace(maxSec, lazy = 0) { menuEl.style.display = "none"; restartRace(); raceState = "racing"; countdown = 0; let t = 0; while (t < maxSec && raceState === "racing") { L = R = 1 - lazy; const sg = segAt(position + PLAYER_Z); playerX += (sg.curve * 0.09 - playerX) * 0.2; physicsStep(1 / 60, false); t += 1 / 60; } return { state: raceState, time: raceTime, lap }; }, get ghostPos() { return ghostAt(raceTime); }, get ghost() { return { mode: GHOST_MODE, have: !!GHOST, time: GHOST && GHOST.time, n: GHOST && GHOST.s.length, rec: ghostRec.length, delta: ghostDelta() }; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
+    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, get testMode() { return TEST_MODE; }, edSet(S) { ED.sections = S.map(x => Object.assign(newSection("straight"), x)); edSel = 0; edRenderList(); edPreview(); }, randSec() { return randomSection(); }, acTest() { const before = ED.sections.length; const m = runAutoComplete(); const segs = levelLayout(ED, -1, { open: true }); const p = segs.pts, L = p[p.length - 1], P2 = p[p.length - 2]; return { msg: m, added: ED.sections.length - before, endX: +L[0].toFixed(1), endY: +L[1].toFixed(1), heading: +(Math.atan2(L[0] - P2[0], -(L[1] - P2[1])) * 180 / Math.PI).toFixed(1), hillSum: ED.sections.reduce((t, s) => t + (+s.hill || 0), 0) }; }, get build() { return { on: v3build, pieces: ED && ED.sections.length, last: ED && ED.sections[ED.sections.length - 1], bp: { ...BP } }; }, segCurves() { return segments.map(g => g.curve); }, segYs() { return segments.map(g => g.y); }, get v3() { return { open: v3open, src: v3src, pts: v3geo && v3geo.P.length }; }, get custom() { return CUSTOM && { id: CUSTOM.id, name: CUSTOM.name, laps: TOTAL_LAPS, segs: segments.length, theme: THEME.name }; }, edCode(lv) { return edCodeOf(lv); }, edFrom(c) { return edFromCode(c); }, autoRace(maxSec, lazy = 0) { menuEl.style.display = "none"; restartRace(); raceState = "racing"; countdown = 0; let t = 0; while (t < maxSec && raceState === "racing") { L = R = 1 - lazy; const sg = segAt(position + PLAYER_Z); playerX += (sg.curve * 0.09 - playerX) * 0.2; physicsStep(1 / 60, false); t += 1 / 60; } return { state: raceState, time: raceTime, lap }; }, get ghostPos() { return ghostAt(raceTime); }, get ghost() { return { mode: GHOST_MODE, have: !!GHOST, time: GHOST && GHOST.time, n: GHOST && GHOST.s.length, rec: ghostRec.length, delta: ghostDelta() }; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
   refreshPadList(); buildAxisRows();
   if (TOUR) { const lb = document.getElementById('lapBox'); if (lb && lb.firstChild) lb.firstChild.textContent = 'WORLD '; }
   if (TOUR && TOUR.stage > 0 && TOUR.arriving) { TOUR.arriving = false; saveTour(); beginTourStage(); }
   else if (TOUR && TOUR.stage > 0) { clearTour(); location.reload(); }   // reopened mid-tour: start the Grand Tour over
-  else openMenu();
+  else if (TEST_MODE) {                                          // 🧪 straight into the test drive
+    menuEl.style.display = 'none'; restartRace();
+    const tb = document.getElementById('testBar'); tb.style.display = 'block'; tb.onclick = backToEditor;
+  }
+  else {
+    openMenu();
+    let pend = null; try { pend = JSON.parse(localStorage.getItem('podracer.openEditor') || 'null'); localStorage.removeItem('podracer.openEditor'); } catch (e) {}
+    if (pend && pend.sections) { openEditor(pend.id, pend); edMsg('🧪 Back from the test drive'); }
+  }
   requestAnimationFrame(frame);
 })();
 </script>
