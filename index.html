@@ -290,7 +290,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v96</span></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v97</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -2259,7 +2259,8 @@
       ctx.fillStyle = ctx.strokeStyle; ctx.font = `bold ${12 * DPR}px Menlo, monospace`; ctx.textAlign = 'center';
       ctx.fillText(missilesLeft > 0 ? (k >= 1 ? 'LOCK' : 'LOCKING') : 'EMPTY', x, y - r - 6 * DPR);
     }
-    const engY = H * 0.57, lx = W / 2 - W * 0.13, rx = W / 2 + W * 0.13;
+    const inv = ctx.getTransform().inverse(), fg = FIGHTER && fighterGuns && fighterGuns.length === 2 ? fighterGuns.map(([x, y]) => { const q = inv.transformPoint(new DOMPoint(x, y)); return [q.x, q.y]; }) : null;   // 🚀 starfighter: from the wing cannons
+    const engY = H * 0.57, lx = fg ? fg[0][0] : W / 2 - W * 0.13, rx = fg ? fg[1][0] : W / 2 + W * 0.13, ly = fg ? fg[0][1] : engY, ry = fg ? fg[1][1] : engY;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     for (const b of beams) {
       let tx = W / 2, ty = hor;
@@ -2272,7 +2273,7 @@
       const a = b.t / b.max;
       for (const [w, col] of [[14, `rgba(255,40,30,${0.35 * a})`], [6, `rgba(255,120,90,${0.8 * a})`], [2, `rgba(255,255,230,${a})`]]) {
         ctx.strokeStyle = col; ctx.lineWidth = w * DPR; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(lx, engY); ctx.lineTo(tx, ty); ctx.moveTo(rx, engY); ctx.lineTo(tx, ty); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(tx, ty); ctx.moveTo(rx, ry); ctx.lineTo(tx, ty); ctx.stroke();
       }
       if (b.ai || b.o) { const g = ctx.createRadialGradient(tx, ty, 0, tx, ty, 60 * DPR * a + 10); g.addColorStop(0, `rgba(255,240,200,${a})`); g.addColorStop(1, 'rgba(255,80,30,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(tx, ty, 60 * DPR * a + 10, 0, 7); ctx.fill(); }
     }
@@ -3565,6 +3566,11 @@
       // wingtip light (blinks) and a small up-turned fin at the tip
       c.fillStyle = '#1d1e23'; c.beginPath(); c.moveTo(sx * s * 2.2, s * .27); c.lineTo(sx * s * 2.34, s * .02); c.lineTo(sx * s * 2.36, s * .3); c.closePath(); c.fill();
       if (Math.sin(t * 5 + sx) > 0) glow(sx * s * 2.34, s * .03, s * .14, .9);
+      // 🔫 a laser cannon on each wing (the lasers fire from its tip)
+      c.fillStyle = '#0b0b0e'; c.fillRect(sx * s * 1.5 - s * .07, s * .02, s * .14, s * .12);
+      c.fillStyle = '#2b2c33'; c.beginPath(); c.arc(sx * s * 1.5, s * .03, s * .06, 0, 7); c.fill();
+      c.fillStyle = `rgba(${BL.join(',')},.95)`; c.beginPath(); c.arc(sx * s * 1.5, s * .03, s * .03, 0, 7); c.fill();
+      if (o.guns) { const r = o.roll || 0, gx = sx * s * 1.5, gy = s * .03; const q = c.getTransform().transformPoint(new DOMPoint(gx, gy)); o.guns.push([q.x, q.y]); }   // remembered in screen pixels
     }
     // two angled tail fins
     for (const sx of [-1, 1]) { c.fillStyle = '#1d1e23'; c.beginPath(); c.moveTo(sx * s * .14, -s * .18); c.lineTo(sx * s * .42, -s * .62); c.lineTo(sx * s * .5, -s * .6); c.lineTo(sx * s * .34, -s * .12); c.closePath(); c.fill();
@@ -3596,6 +3602,7 @@
     c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(-s * .1, -s * .48, s * .07, s * .03, -.5, 0, 7); c.fill();   // shine
     c.restore();
   }
+  let fighterGuns = null;                                       // where the starfighter's wing cannons are on screen
   function drawFighterPortrait(cv) {
     const c = cv.getContext('2d'), w = cv.width, h = cv.height;
     const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#1a0808'); g.addColorStop(1, '#3a1212'); c.fillStyle = g; c.fillRect(0, 0, w, h);
@@ -3606,7 +3613,7 @@
     if (FIGHTER) {                                               // 🚀 flying the starfighter instead of the pod
       const t = performance.now() / 1000, shake = (speed / MAX_KMH) * 1.5 * DPR;
       drawFighterShape(ctx, W / 2 + (Math.random() - .5) * shake, H * .8 + Math.sin(t * 2.2) * 3 * DPR + (Math.random() - .5) * shake, W * .085,
-        { t, L, R, boost: boostVis, roll: Math.max(-0.35, Math.min(0.35, -yawRate * 0.25)), dog: DOG_DRIVER, helmet: POD.helmet });
+        { t, L, R, boost: boostVis, roll: Math.max(-0.35, Math.min(0.35, -yawRate * 0.25)), dog: DOG_DRIVER, helmet: POD.helmet, guns: (fighterGuns = []) });
       return;
     }
     const t = performance.now() / 1000;
