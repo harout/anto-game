@@ -31,6 +31,13 @@ A pseudo-3D pod racing game that runs in the browser and is built to be flown wi
 Seven AI rivals race you. Each 1st place on a track makes that track's rivals 1% smarter —
 up to an exact copy of you and your pod — and at level 50 they learn that track's shortcuts.
 
+## ✎ Level editor
+Open **＋ LEVEL EDITOR** in the track menu to build your own track from sections — straights, turns, climbs and drops,
+canyons with arches, tunnels, rivers (slow you down) or swamp water (full speed), ramp jumps and rock fields — in any of the
+five worlds, with 1–9 laps. A live map and height profile show the track as you build it. Your levels appear as cards in
+the menu and race with the AI rivals, ghosts and standings like the built-in tracks. **⧉ SHARE CODE** gives a code
+(starting with `POD1:`) a friend can paste into **⇩ IMPORT CODE**.
+
 **Beat the Grand Tour in 1st place** to unlock two extras in the menu:
 - **AI smartness** — a slider to set the rivals' level yourself on each track (0–50; at 50 they know the shortcuts)
 - **👻 Ghost race** — no rivals, just you against a see-through replay of your own best run on that track,

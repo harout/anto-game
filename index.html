@@ -92,7 +92,35 @@
   .pcard .lock { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:26px; }
   #podInfo { margin-top:10px; display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; font-size:11px; letter-spacing:2px; }
   #podInfo .bar { height:7px; background:#2a160a; border-radius:4px; overflow:hidden; margin-top:4px; } #podInfo .bar i { display:block; height:100%; background:linear-gradient(90deg,#ff7a1a,#ffd36b); }
-  #trackGrid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  #editor { position:fixed; inset:0; display:none; flex-direction:column; background:#140a04f2; z-index:9; color:#ffe7c2; font-family:Menlo, monospace; padding:14px 18px; gap:10px; }
+  #editor button { font-family:inherit; }
+  .ed-top { display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .ed-top b { letter-spacing:4px; color:#ffb347; margin-right:8px; } .ed-sp { flex:1; }
+  .ed-top select, .ed-meta select, .ed-row select { width:auto !important; max-width:260px; }
+  .ed-top select, .ed-meta input, .ed-meta select, .ed-row select { background:#2a160a; color:#ffe7c2; border:1px solid #6a3a18; border-radius:6px; padding:5px 7px; font-family:inherit; }
+  .ed-main { display:flex; gap:16px; flex:1; min-height:0; }
+  .ed-left { flex:1; display:flex; flex-direction:column; gap:8px; min-height:0; }
+  .ed-meta { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; letter-spacing:2px; color:#ffd36b; } .ed-meta input#edLaps { width:52px; } .ed-meta input#edName { width:190px; }
+  .ed-add { font-size:11px; letter-spacing:2px; color:#b8916a; display:flex; gap:5px; flex-wrap:wrap; align-items:center; }
+  .ed-add button { background:#3a200e; color:#ffe7c2; border:1px solid #6a3a18; border-radius:6px; padding:5px 8px; font-size:12px; cursor:pointer; }
+  .ed-add button:hover { border-color:#ffb347; }
+  #edList { flex:1; overflow:auto; display:flex; flex-direction:column; gap:6px; padding-right:4px; }
+  .ed-row { background:#24130a; border:1px solid #4a2a12; border-radius:8px; padding:7px 9px; display:grid; grid-template-columns:28px 1fr 1fr 1fr auto; gap:6px 12px; align-items:center; font-size:11px; }
+  .ed-row.on { border-color:#ffb347; } .ed-row .n { color:#ffb347; font-size:13px; }
+  .ed-row label { display:flex; flex-direction:column; gap:2px; color:#b8916a; letter-spacing:1px; } .ed-row label span { color:#ffe7c2; }
+  .ed-row input[type=range] { width:100%; accent-color:#ffb347; }
+  .ed-row .tg { grid-column:2 / 5; display:flex; gap:10px; flex-wrap:wrap; color:#d9b48a; } .ed-row .tg label { flex-direction:row; align-items:center; gap:4px; color:#d9b48a; }
+  .ed-row .bt { grid-row:1 / 3; grid-column:5; display:flex; flex-direction:column; gap:3px; }
+  .ed-row .bt button { background:#3a200e; color:#ffe7c2; border:1px solid #6a3a18; border-radius:5px; padding:2px 7px; cursor:pointer; font-size:11px; }
+  .ed-right { width:372px; display:flex; flex-direction:column; gap:8px; }
+  #edMap, #edProf { background:#0d0603; border:1px solid #4a2a12; border-radius:8px; width:360px; }
+  #edStats { font-size:12px; color:#ffd36b; letter-spacing:1px; line-height:1.6; }
+  .ed-legend { font-size:10px; color:#b8916a; display:flex; flex-wrap:wrap; gap:3px 8px; align-items:center; } .ed-legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:-4px; }
+  #edPlay { background:#ff9a2e; color:#1a0e06; font-weight:bold; letter-spacing:3px; padding:11px; border:0; border-radius:8px; cursor:pointer; font-size:15px; }
+  #edSave { padding:8px; }
+  #edMsg { font-size:12px; color:#8dffb0; min-height:16px; }
+  #edCode { width:100%; height:62px; background:#0d0603; color:#ffe7c2; border:1px solid #4a2a12; border-radius:6px; font:10px Menlo, monospace; resize:none; }
+  .tcard.custom { border-style:dashed; } .tcard .edit { float:right; font-size:11px; color:#ffb347; padding:0 2px; } .tcard.addlvl { text-align:center; color:#ffb347; }
+  #trackGrid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; max-height:300px; overflow:auto; }
   .tcard { background:#2a160a; border:2px solid #4a2a12; border-radius:10px; padding:12px; cursor:pointer; font-size:14px; letter-spacing:2px; }
   .tcard small { display:block; margin-top:4px; font-size:11px; color:#b8916a; letter-spacing:1px; }
   .tcard.sel { border-color:#ffb347; box-shadow:0 0 14px rgba(255,160,60,.5); } .tcard.locked { opacity:.5; cursor:not-allowed; }
@@ -174,10 +202,48 @@
   <div id="trackGrid"></div>
   <div id="aiLvl"></div>
   <div id="masterRow"></div>
-  <div id="optRow"><button id="timeBtn" class="secondary"></button> <button id="aimBtn" class="secondary"></button> <button id="resetAiBtn" class="secondary">↺ RESET AI</button></div>
+  <div id="optRow"><button id="timeBtn" class="secondary"></button> <button id="aimBtn" class="secondary"></button> <button id="resetAiBtn" class="secondary">↺ RESET AI</button> <button id="editLvlBtn" class="secondary" style="display:none">✎ EDIT THIS LEVEL</button></div>
   <button id="startBtn">START RACE</button>
   <div class="hint">Win a race in 1st place to unlock the next pod · first win also unlocks Frost Canyon<br>←/→ change pod · Enter or boost button (14) to start<br>Laser: tap button 0 (F) · Homing missile: hold button 0 (5 per race) · Shield: hold button 23 (G key) · Boost: button 14 (Space)<br>Super boost: button 13 (L) — once per race, light-speed jump into 1st place<br>Rivals use shields too — shoot a shield to destroy it, then shoot again to hit them</div>
 </div></div>
+<div id="editor">
+  <div class="ed-top">
+    <b>✎ LEVEL EDITOR</b>
+    <select id="edPick"></select>
+    <button class="secondary" id="edNew">＋ NEW</button>
+    <button class="secondary" id="edDel">🗑 DELETE</button>
+    <span class="ed-sp"></span>
+    <button class="secondary" id="edShare">⧉ SHARE CODE</button>
+    <button class="secondary" id="edImport">⇩ IMPORT CODE</button>
+    <button class="secondary" id="edClose">✕ CLOSE</button>
+  </div>
+  <div class="ed-main">
+    <div class="ed-left">
+      <div class="ed-meta">
+        <label>NAME <input id="edName" maxlength="28"></label>
+        <label>WORLD <select id="edWorld"><option value="1">Dune Cup desert</option><option value="2">Frost Canyon ice</option><option value="3">Forest</option><option value="4">Swamp</option><option value="5">Bryce Canyon hoodoos</option></select></label>
+        <label>LAPS <input id="edLaps" type="number" min="1" max="9"></label>
+      </div>
+      <div class="ed-add">ADD:
+        <button data-add="straight">▮ Straight</button><button data-add="left">↰ Left turn</button><button data-add="right">↱ Right turn</button>
+        <button data-add="up">▲ Climb</button><button data-add="down">▼ Drop</button><button data-add="canyon">⛰ Canyon</button>
+        <button data-add="tunnel">◖ Tunnel</button><button data-add="river">≈ River</button><button data-add="swamp">≋ Swamp water</button>
+        <button data-add="ramp">⤴ Ramp jump</button><button data-add="rocks">● Rock field</button><button data-add="random">🎲 Random</button>
+      </div>
+      <div id="edList"></div>
+    </div>
+    <div class="ed-right">
+      <canvas id="edMap" width="360" height="300"></canvas>
+      <canvas id="edProf" width="360" height="90"></canvas>
+      <div id="edStats"></div>
+      <div class="ed-legend"><i style="background:#e8c79a"></i>road <i style="background:#9a5a32"></i>canyon <i style="background:#555"></i>tunnel <i style="background:#4aa3ff"></i>river <i style="background:#6f9a52"></i>swamp <i style="background:#ffd23f"></i>ramp <i style="background:#ff5a4a"></i>rocks</div>
+      <button id="edPlay">▶ SAVE &amp; RACE IT</button>
+      <button class="secondary" id="edSave">💾 SAVE</button>
+      <div id="edMsg"></div>
+      <textarea id="edCode" placeholder="Share code appears here — or paste one and press IMPORT CODE"></textarea>
+    </div>
+  </div>
+</div>
 <div id="finish"><div class="card">
   <h1>RACE COMPLETE</h1>
   <div id="finPlace">1ST PLACE</div>
@@ -351,7 +417,8 @@
 
   // ---------- Keyboard fallback ----------
   const keys = {}; let kbL = 0, kbR = 0, usingKeyboard = false;
-  addEventListener('keydown', e => { if (e.key === ' ') e.preventDefault(); keys[e.key.toLowerCase()] = true; if (e.key.toLowerCase() === 'h') togglePanel(); });
+  const inEditor = e => e.target && e.target.closest && e.target.closest('#editor');
+  addEventListener('keydown', e => { if (inEditor(e)) return; if (e.key === ' ') e.preventDefault(); keys[e.key.toLowerCase()] = true; if (e.key.toLowerCase() === 'h') togglePanel(); });
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   function updateKeyboard(dt) {
     const r = 0.6 * dt; let touched = false;
@@ -436,6 +503,7 @@
   soundBtn.addEventListener('click', e => { e.stopPropagation(); if (!audio) { initAudio(); muted = false; } else { muted = !muted; initAudio(); } setSoundUi(); });
   addEventListener('pointerdown', e => { if (e.target === soundBtn) return; if (!audio) { initAudio(); setSoundUi(); } });
   addEventListener('keydown', e => {
+    if (e.target && e.target.closest && e.target.closest('#editor')) return;
     if (e.key.toLowerCase() === 'm') { muted = !muted; }
     if (!audio || audio.ctx.state !== 'running') initAudio();
     setSoundUi();
@@ -545,6 +613,15 @@
     if (!TOUR || !(TOUR.stage >= 0 && TOUR.stage < TOUR_ORDER.length)) TOUR = { stage: 0 };
     TRACK_ID = TOUR_ORDER[TOUR.stage];
   }
+  // ✎ CUSTOM LEVELS from the level editor (track 7 + the chosen level's id)
+  const loadLevels = () => { try { const a = JSON.parse(localStorage.getItem('podracer.levels') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+  const saveLevels = a => { try { localStorage.setItem('podracer.levels', JSON.stringify(a)); } catch (e) {} };
+  let CUSTOM = null;
+  if (TRACK_ID === 7) {
+    let id = null; try { id = localStorage.getItem('podracer.customId'); } catch (e) {}
+    CUSTOM = loadLevels().find(l => l.id === id) || null;
+    if (!CUSTOM || !CUSTOM.sections || !CUSTOM.sections.length) { CUSTOM = null; TRACK_ID = 1; }
+  }
   const saveTour = () => { try { sessionStorage.setItem('podracer.tour', JSON.stringify(TOUR)); } catch (e) {} };
   const clearTour = () => { try { sessionStorage.removeItem('podracer.tour'); } catch (e) {} };
   const THEMES = {
@@ -555,9 +632,10 @@
     2: { name: 'FROST CUP', map: c => [c[2] * 0.85 + c[0] * 0.15 + 40, c[1] * 0.9 + 35, c[0] * 0.9 + 40], fog: [205, 222, 245],
          sky: ['#1d2a5a', '#7f9bd6', '#dbe8ff'], ridges: ['#a7b9de', '#8296c4'], ground: '#a9bde8', snow: true },
   };
+  if (CUSTOM) THEMES[7] = Object.assign({}, THEMES[CUSTOM.world] || THEMES[1], { name: (CUSTOM.name || 'MY LEVEL').toUpperCase() });
   if (!THEMES[TRACK_ID]) TRACK_ID = 1;
   const THEME = THEMES[TRACK_ID];
-  TOTAL_LAPS = TOUR || TRACK_ID === 3 ? 1 : 3;
+  TOTAL_LAPS = CUSTOM ? Math.max(1, Math.min(9, CUSTOM.laps | 0 || 3)) : TOUR || TRACK_ID === 3 ? 1 : 3;
   let NIGHT = false, AUTO_AIM = true;
   try { NIGHT = localStorage.getItem('podracer.night') === '1'; AUTO_AIM = localStorage.getItem('podracer.autoAim') !== '0'; } catch (e) {}
   const NIGHT_FOG = TRACK_ID === 2 ? [14, 22, 46] : TRACK_ID === 4 ? [16, 26, 20] : [22, 20, 38];
@@ -664,6 +742,26 @@
     addRoad(0, 90, 0, 0, Object.assign({ hill: -5000 }, CLEAR));     // ★ Moss straight
     addRoad(30, 40, 30, -3.5, { hill: -5000 });   // home turn, down to the valley floor
     addRoad(0, 70, 0, 0, CLEAR);                  // finish straight
+  } else if (TRACK_ID === 7) {
+    // ✎ a level made in the level editor
+    mark.rivers = []; mark.tunnels = []; mark.custom = []; mark.walk = []; mark.tunnel = [];
+    addRoad(0, 50, 0, 0, CLEAR);                               // start straight
+    let hillSum = 0;
+    for (const sc of CUSTOM.sections) {
+      const len = Math.max(20, Math.min(400, sc.len | 0)), ease = Math.min(30, Math.floor(len * 0.25)), o = {};
+      if (sc.hill) { o.hill = +sc.hill; hillSum += +sc.hill; }
+      if (sc.canyon) Object.assign(o, { canyon: true, wall: 1.8, arch: !!sc.arch });
+      if (sc.tunnel) Object.assign(o, { canyon: true, cave: true, wall: 1.6, mtn: true });
+      if (sc.water) o.river = true;
+      if (sc.obs === 'none') o.clear = true;
+      const a = segments.length;
+      addRoad(ease, len - 2 * ease, ease, Math.max(-7, Math.min(7, +sc.curve || 0)), o);
+      if (sc.water === 'fast') for (let k = a; k < segments.length; k++) segments[k].swamp = true;
+      if (sc.tunnel) mark.tunnels.push([a, segments.length]);
+      mark.custom.push({ a, b: segments.length, sc });
+    }
+    if (hillSum) addRoad(30, 60, 30, 0, { hill: -hillSum });   // ease back down (or up) to the start height
+    addRoad(0, 60, 0, 0, CLEAR);                               // finish straight
   } else if (TRACK_ID === 5) {
     // 🏜 BRYCE CANYON: a rim road above a hoodoo amphitheater, switchbacks down through the hoodoos, back up to the rim
     addRoad(0, 50, 0, 0, CLEAR);                  // start straight on the rim
@@ -939,10 +1037,17 @@
     while (i < segments.length) {
       if (!segments[i].clear) { i++; continue; }
       let j = i; while (j < segments.length && segments[j].clear) j++;
-      if (j - i >= 60 && !THEME.swamp) addRamp(i + 25, 9, 750, 0, 1.0);
+      if (j - i >= 60 && !THEME.swamp && !CUSTOM) addRamp(i + 25, 9, 750, 0, 1.0);
       i = j;
     }
-    if (THEME.forest) {
+    if (CUSTOM) for (const { a, b, sc } of mark.custom) {
+      if (sc.ramp) { const at = a + Math.floor((b - a) / 2) - 4; for (let k = at - 6; k < at + 12; k++) segments[k].obs = []; addRamp(at, 9, 750, 0, 1.0); }
+      if (sc.obs === 'lots') for (let k = a + 12; k < b - 8; k += 18) {
+        const g = segments[k]; if (g.river || g.ramp || g.cave) continue;
+        g.obs.push({ off: (Math.random() * 2 - 1) * 0.6, w: 0.16 + Math.random() * 0.08, kind: THEME.swamp ? 'stump' : g.canyon && Math.random() < .4 ? 'pillar' : 'boulder' });
+      }
+    }
+    if (THEME.forest && !CUSTOM) {
       for (const r of mark.rivers) {
         addRamp(r - 22, 9, 750, -1.8, 0.4); addRamp(r - 22, 9, 750, 1.8, 0.4);
         for (let k = r - 6; k < r + 16; k++) segments[k].obs = segments[k].obs.filter(o => o.kind !== 'tree' || Math.abs(o.off) > 2.4);
@@ -1105,7 +1210,7 @@
       addRoad(0, 20, 0, 0, { path: true, roadW: rw, hill: y1 - tgt.lastY });
     };
   }
-  if (THEME.forest) {
+  if (THEME.forest && TRACK_ID === 3) {
     // ⑂ every fork trail gets a name and a signature challenge, plus whoops and glowing mushrooms
     const TRAIL_TYPES = [['logs', 'Log Jump Trail'], ['creek', 'Creek Trail'], ['tunnel', 'Rock Tunnel Trail'], ['rocks', 'Boulder Garden Trail']];
     let forkNo = 0;
@@ -1239,7 +1344,8 @@
   // 🧠 each track keeps its own AI: every 1st place there makes the AI on THAT track 1% smarter —
   //    up to the limit: an exact copy of you (your pod's top speed, boost power and boost length)
   const TRACK_NAMES = { 1: 'Dune Cup', 2: 'Frost Canyon', 3: 'Forest Run', 4: 'Swamp Run', 5: 'Bryce Canyon', 6: 'Grand Tour' };
-  const AI_TRACK = TOUR ? 6 : TRACK_ID;                        // the Grand Tour keeps its own AI level
+  const AI_TRACK = TOUR ? 6 : CUSTOM ? 'c' + CUSTOM.id : TRACK_ID;
+  if (CUSTOM) TRACK_NAMES[AI_TRACK] = CUSTOM.name || 'My Level';                        // the Grand Tour keeps its own AI level
   function loadAIWins() {
     try { const w = JSON.parse(localStorage.getItem('podracer.aiWins')); if (w && typeof w === 'object') return w; } catch (e) {}
     let old = 0; try { old = Math.max(0, Math.min(AI_MAX_LEVEL, +(localStorage.getItem('podracer.aiLevel') || 0))); } catch (e) {}
@@ -1255,7 +1361,7 @@
   const AI_SHORTCUT_LEVEL = 50;                                // at level 50 on a track, rivals learn its shortcuts
   let AI_SHORTCUTS = aiWinsHere() >= AI_SHORTCUT_LEVEL;
   // 👻 GHOST: your best run on each track is recorded; after you win the Grand Tour you can race it (no rivals, just you vs you)
-  const GHOST_DT = 0.1, ghostKey = () => 'podracer.ghost.' + TRACK_ID;
+  const GHOST_DT = 0.1, ghostKey = () => 'podracer.ghost.' + (CUSTOM ? 'c' + CUSTOM.id : TRACK_ID);
   let GHOST = null, ghostRec = [];
   try { GHOST = TOUR ? null : JSON.parse(localStorage.getItem(ghostKey()) || 'null'); } catch (e) {}
   const masterUnlocked = () => !!loadUnlocks().master;
@@ -2779,6 +2885,7 @@
   }
   function raceTick(dt, p) {
     if (raceState === 'menu') {
+      if (edEl.style.display === 'flex') { menuHeld = true; return; }   // editing a level: no race starts behind the editor
       const b = p && p.buttons[BOOST_BUTTON], pressed = !!(b && b.pressed) || !!keys['enter'];
       if (pressed && !menuHeld && menuOpenedAt + 0.6 < performance.now() / 1000) startFromMenu();
       menuHeld = pressed; return;
@@ -2855,7 +2962,189 @@
       };
       tg.appendChild(d);
     });
+    for (const lv of loadLevels()) {                           // your own levels
+      const d = document.createElement('div'), sel = CUSTOM && CUSTOM.id === lv.id;
+      d.className = 'tcard custom' + (sel ? ' sel' : '');
+      d.innerHTML = `<span class="edit" title="Edit this level">✎ EDIT</span>✎ ${escHtml((lv.name || 'My Level').toUpperCase())}<small>${['', 'Desert', 'Ice', 'Forest', 'Swamp', 'Bryce'][lv.world] || 'Desert'} · ${lv.sections.length} sections · ${lv.laps} lap${lv.laps > 1 ? 's' : ''}</small>`;
+      d.onclick = e => {
+        if (e.target.classList.contains('edit')) { openEditor(lv.id); return; }
+        if (sel) return;
+        playLevel(lv.id);
+      };
+      tg.appendChild(d);
+    }
+    const ad = document.createElement('div'); ad.className = 'tcard addlvl'; ad.innerHTML = '＋ LEVEL EDITOR<small>build your own track</small>'; ad.onclick = () => openEditor(CUSTOM ? CUSTOM.id : null); tg.appendChild(ad);
   }
+  const escHtml = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function playLevel(id) {
+    clearTour();
+    try { localStorage.setItem('podracer.track', '7'); localStorage.setItem('podracer.customId', id); localStorage.setItem('podracer.pod', String(podIdx)); } catch (e) {}
+    location.reload();
+  }
+
+  // ===================== ✎ LEVEL EDITOR =====================
+  const edEl = document.getElementById('editor'), edList = document.getElementById('edList');
+  const ED_PRESETS = {
+    straight: { len: 90, curve: 0 }, left: { len: 90, curve: -3.5 }, right: { len: 90, curve: 3.5 },
+    up: { len: 110, curve: 0, hill: 1500 }, down: { len: 110, curve: 0, hill: -1500 },
+    canyon: { len: 120, curve: 1.5, canyon: true, arch: true }, tunnel: { len: 110, curve: -1, tunnel: true },
+    river: { len: 60, curve: 0, water: 'slow' }, swamp: { len: 120, curve: 1, water: 'fast' },
+    ramp: { len: 90, curve: 0, ramp: true, obs: 'none' }, rocks: { len: 120, curve: 0.5, obs: 'lots' },
+  };
+  const newSection = kind => Object.assign({ len: 90, curve: 0, hill: 0, canyon: false, arch: false, tunnel: false, water: '', ramp: false, obs: 'some' }, kind === 'random' ? randomSection() : ED_PRESETS[kind] || {});
+  function randomSection() {
+    const r = Math.random(), sc = { len: 60 + (Math.random() * 120 | 0), curve: +((Math.random() * 2 - 1) * (Math.random() < .3 ? 6 : 3)).toFixed(1), hill: Math.random() < .4 ? Math.round((Math.random() * 2 - 1) * 2500 / 100) * 100 : 0 };
+    if (r < .2) sc.canyon = true, sc.arch = Math.random() < .5; else if (r < .3) sc.tunnel = true; else if (r < .4) sc.water = Math.random() < .5 ? 'slow' : 'fast';
+    if (Math.random() < .2) sc.ramp = true, sc.obs = 'none'; else if (Math.random() < .2) sc.obs = 'lots';
+    return sc;
+  }
+  const defaultLevel = () => ({ id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: 'My Level ' + (loadLevels().length + 1), world: 1, laps: 3,
+    sections: ['straight', 'right', 'canyon', 'up', 'ramp', 'left', 'down', 'river', 'rocks', 'right'].map(newSection) });
+  let ED = null, edSel = 0, edDirty = false;
+  function openEditor(id) {
+    const lv = loadLevels().find(l => l.id === id);
+    ED = lv ? JSON.parse(JSON.stringify(lv)) : defaultLevel(); edSel = 0; edDirty = false;
+    menuEl.style.display = 'none'; edEl.style.display = 'flex';
+    edRenderAll(); edMsg('');
+  }
+  function closeEditor() { edEl.style.display = 'none'; openMenu(); }
+  const edMsg = t => { document.getElementById('edMsg').textContent = t; };
+  function edSaveLevel() {
+    if (!ED.sections.length) { edMsg('Add at least one section first.'); return false; }
+    const all = loadLevels(), i = all.findIndex(l => l.id === ED.id), before = i >= 0 ? JSON.stringify(all[i].sections) : null;
+    ED.name = (ED.name || '').trim() || 'My Level'; ED.updated = Date.now();
+    if (i >= 0) all[i] = ED; else all.push(ED);
+    saveLevels(all);
+    if (before !== null && before !== JSON.stringify(ED.sections)) try { localStorage.removeItem('podracer.ghost.c' + ED.id); } catch (e) {}   // track changed: old ghost no longer fits
+    edDirty = false; edRenderPick(); edMsg('💾 Saved “' + ED.name + '”'); return true;
+  }
+  function edRenderPick() {
+    const pk = document.getElementById('edPick'), all = loadLevels();
+    pk.innerHTML = all.map(l => `<option value="${l.id}"${l.id === ED.id ? ' selected' : ''}>${escHtml(l.name)}</option>`).join('') + (all.some(l => l.id === ED.id) ? '' : `<option value="${ED.id}" selected>${escHtml(ED.name)} (unsaved)</option>`);
+  }
+  function edRenderAll() {
+    edRenderPick();
+    document.getElementById('edName').value = ED.name; document.getElementById('edWorld').value = String(ED.world); document.getElementById('edLaps').value = ED.laps;
+    edRenderList(); edPreview();
+  }
+  const curveTxt = c => c === 0 ? 'straight' : `${Math.abs(c) >= 5 ? 'hairpin' : Math.abs(c) >= 3 ? 'hard' : Math.abs(c) >= 1.5 ? 'medium' : 'gentle'} ${c < 0 ? 'left' : 'right'}`;
+  const hillTxt = h => h === 0 ? 'flat' : `${h > 0 ? 'climb' : 'drop'} ${Math.abs(h)}`;
+  function edRenderList() {
+    edList.innerHTML = '';
+    ED.sections.forEach((sc, i) => {
+      const r = document.createElement('div'); r.className = 'ed-row' + (i === edSel ? ' on' : '');
+      r.innerHTML = `<div class="n">${i + 1}</div>
+        <label>LENGTH <span>${sc.len} segs</span><input type="range" min="20" max="400" step="5" value="${sc.len}" data-k="len"></label>
+        <label>TURN <span>${curveTxt(+sc.curve)}</span><input type="range" min="-7" max="7" step="0.5" value="${sc.curve}" data-k="curve"></label>
+        <label>HILL <span>${hillTxt(+sc.hill)}</span><input type="range" min="-4000" max="4000" step="100" value="${sc.hill}" data-k="hill"></label>
+        <div class="bt"><button data-a="up" title="Move up">↑</button><button data-a="down" title="Move down">↓</button><button data-a="dup" title="Duplicate">⧉</button><button data-a="del" title="Delete">✕</button></div>
+        <div class="tg">
+          <label><input type="checkbox" data-k="canyon"${sc.canyon ? ' checked' : ''}>canyon walls</label>
+          <label><input type="checkbox" data-k="arch"${sc.arch ? ' checked' : ''}${sc.canyon ? '' : ' disabled'}>arches</label>
+          <label><input type="checkbox" data-k="tunnel"${sc.tunnel ? ' checked' : ''}>tunnel</label>
+          <label><input type="checkbox" data-k="ramp"${sc.ramp ? ' checked' : ''}>ramp jump</label>
+          <label>water <select data-k="water"><option value="">none</option><option value="slow"${sc.water === 'slow' ? ' selected' : ''}>river (slows you)</option><option value="fast"${sc.water === 'fast' ? ' selected' : ''}>swamp (full speed)</option></select></label>
+          <label>obstacles <select data-k="obs"><option value="none"${sc.obs === 'none' ? ' selected' : ''}>none</option><option value="some"${sc.obs === 'some' ? ' selected' : ''}>some</option><option value="lots"${sc.obs === 'lots' ? ' selected' : ''}>lots</option></select></label>
+        </div>`;
+      r.onclick = () => { if (edSel !== i) { edSel = i; edList.querySelectorAll('.ed-row').forEach((x, j) => x.classList.toggle('on', j === i)); edPreview(); } };
+      r.querySelectorAll('[data-k]').forEach(inp => {
+        const k = inp.dataset.k;
+        inp.oninput = inp.onchange = () => {
+          sc[k] = inp.type === 'checkbox' ? inp.checked : inp.type === 'range' ? +inp.value : inp.value;
+          if (k === 'canyon' && !sc.canyon) sc.arch = false;
+          if (k === 'tunnel' && sc.tunnel) sc.canyon = false;
+          if (k === 'canyon' && sc.canyon) sc.tunnel = false;
+          edDirty = true;
+          if (inp.type === 'range') { inp.previousElementSibling.textContent = k === 'len' ? sc.len + ' segs' : k === 'curve' ? curveTxt(sc.curve) : hillTxt(sc.hill); edPreview(); }
+          else edRenderList(), edPreview();
+        };
+      });
+      r.querySelectorAll('[data-a]').forEach(b => b.onclick = e => {
+        e.stopPropagation(); const a = b.dataset.a, L = ED.sections;
+        if (a === 'up' && i > 0) { [L[i - 1], L[i]] = [L[i], L[i - 1]]; edSel = i - 1; }
+        if (a === 'down' && i < L.length - 1) { [L[i + 1], L[i]] = [L[i], L[i + 1]]; edSel = i + 1; }
+        if (a === 'dup') { L.splice(i + 1, 0, JSON.parse(JSON.stringify(sc))); edSel = i + 1; }
+        if (a === 'del') { L.splice(i, 1); edSel = Math.max(0, Math.min(edSel, L.length - 1)); }
+        edDirty = true; edRenderList(); edPreview();
+      });
+      edList.appendChild(r);
+    });
+    const on = edList.querySelector('.ed-row.on'); if (on) on.scrollIntoView({ block: 'nearest' });
+  }
+  function edPreview() {                                       // top-down map (closed into a loop like the in-race minimap) + height profile
+    const segs = [];
+    const push = (n, curve, dy, kind, sel) => { for (let k = 0; k < n; k++) segs.push({ curve, dy: dy / n, kind, sel }); };
+    push(50, 0, 0, 'road', false);
+    let hs = 0;
+    ED.sections.forEach((sc, i) => {
+      const kind = sc.tunnel ? 'tunnel' : sc.water === 'fast' ? 'swamp' : sc.water ? 'river' : sc.canyon ? 'canyon' : 'road', n = Math.max(20, Math.min(400, sc.len));
+      const ease = Math.min(30, Math.floor(n * 0.25));
+      for (let k = 0; k < n; k++) { const c = +sc.curve * (k < ease ? k / ease : k >= n - ease ? (n - k) / ease : 1); segs.push({ curve: c, dy: (+sc.hill || 0) / n, kind, sel: i === edSel, ramp: sc.ramp && k === (n >> 1), rocks: sc.obs === 'lots' && k % 18 === 9 }); }
+      hs += +sc.hill || 0;
+    });
+    if (hs) push(120, 0, -hs, 'road', false);
+    push(60, 0, 0, 'road', false);
+    const N = segs.length, kk = 0.006, net = segs.reduce((t, g) => t + g.curve, 0) * kk, dir = net < 0 ? -1 : 1, fix = (dir * 2 * Math.PI - net) / N;
+    let a = 0, x = 0, y = 0, h = 0; const pts = [];
+    for (const g of segs) { a += g.curve * kk + fix; x += Math.sin(a); y -= Math.cos(a); h += g.dy; pts.push([x, y, h]); }
+    const ex = pts[N - 1][0], ey = pts[N - 1][1]; pts.forEach((p, i) => { p[0] -= ex * (i + 1) / N; p[1] -= ey * (i + 1) / N; });
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), mnx = Math.min(...xs), mxx = Math.max(...xs), mny = Math.min(...ys), mxy = Math.max(...ys);
+    const cv = document.getElementById('edMap'), c = cv.getContext('2d'), sc = 260 / Math.max(mxx - mnx, mxy - mny, 1);
+    const P = p => [20 + (p[0] - mnx) * sc + (320 - (mxx - mnx) * sc) / 2, 20 + (p[1] - mny) * sc + (260 - (mxy - mny) * sc) / 2];
+    c.clearRect(0, 0, 360, 300);
+    const COL = { road: '#e8c79a', canyon: '#9a5a32', tunnel: '#666', river: '#4aa3ff', swamp: '#6f9a52' };
+    c.lineCap = 'round';
+    for (let i = 1; i < N; i++) { const [x0, y0] = P(pts[i - 1]), [x1, y1] = P(pts[i]); c.strokeStyle = segs[i].sel ? '#ffb347' : COL[segs[i].kind]; c.lineWidth = segs[i].sel ? 7 : 4; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); }
+    segs.forEach((g, i) => { if (g.ramp || g.rocks) { const [px, py] = P(pts[i]); c.fillStyle = g.ramp ? '#ffd23f' : '#ff5a4a'; c.beginPath(); c.arc(px, py, g.ramp ? 5 : 3, 0, 7); c.fill(); } });
+    const [sx0, sy0] = P(pts[0]); c.fillStyle = '#fff'; c.fillRect(sx0 - 6, sy0 - 2, 12, 4); c.font = '10px Menlo'; c.fillText('START', sx0 + 8, sy0 + 4);
+    const pc = document.getElementById('edProf').getContext('2d'), hsArr = pts.map(p => p[2]), mnh = Math.min(0, ...hsArr), mxh = Math.max(1, ...hsArr);
+    pc.clearRect(0, 0, 360, 90); pc.fillStyle = '#b8916a'; pc.font = '10px Menlo'; pc.fillText('HEIGHT', 6, 12);
+    pc.beginPath(); pts.forEach((p, i) => { const px = 6 + i / (N - 1) * 348, py = 84 - (p[2] - mnh) / (mxh - mnh) * 62; i ? pc.lineTo(px, py) : pc.moveTo(px, py); });
+    pc.strokeStyle = '#ffb347'; pc.lineWidth = 2; pc.stroke();
+    const km = N * 200 / 1000 * ED.laps / 10;
+    document.getElementById('edStats').innerHTML = `${ED.sections.length} sections · ${N} segments a lap · ${ED.laps} lap${ED.laps > 1 ? 's' : ''}<br>about ${Math.round(N / 45 * ED.laps)} s of racing · highest +${Math.round(Math.max(0, ...hsArr))} · lowest ${Math.round(Math.min(0, ...hsArr))}${hs ? ' · eases back to the start height' : ''}`;
+  }
+  const edCodeOf = lv => 'POD1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ n: lv.name, w: lv.world, l: lv.laps, s: lv.sections.map(sc => [sc.len, sc.curve, sc.hill, (sc.canyon ? 1 : 0) | (sc.arch ? 2 : 0) | (sc.tunnel ? 4 : 0) | (sc.ramp ? 8 : 0), sc.water || '', sc.obs || 'some']) }))));
+  function edFromCode(code) {
+    const m = String(code).trim().match(/^POD1:([A-Za-z0-9+/=]+)$/); if (!m) throw new Error('That is not a level code (it should start with POD1:)');
+    const o = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+    if (!o || !Array.isArray(o.s) || !o.s.length || o.s.length > 300) throw new Error('That level code is broken');
+    const num = (v, a, b, d) => Number.isFinite(+v) ? Math.max(a, Math.min(b, +v)) : d;
+    return { id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: String(o.n || 'Shared level').slice(0, 28), world: num(o.w, 1, 5, 1) | 0, laps: num(o.l, 1, 9, 3) | 0,
+      sections: o.s.map(a => ({ len: num(a[0], 20, 400, 90) | 0, curve: num(a[1], -7, 7, 0), hill: num(a[2], -4000, 4000, 0) | 0, canyon: !!(a[3] & 1), arch: !!(a[3] & 2), tunnel: !!(a[3] & 4), ramp: !!(a[3] & 8),
+        water: a[4] === 'fast' || a[4] === 'slow' ? a[4] : '', obs: ['none', 'some', 'lots'].includes(a[5]) ? a[5] : 'some' })) };
+  }
+  document.querySelectorAll('.ed-add [data-add]').forEach(b => b.onclick = () => {
+    if (ED.sections.length >= 120) { edMsg('That is the most sections a level can have (120).'); return; }
+    ED.sections.splice(edSel + 1, 0, newSection(b.dataset.add)); edSel = Math.min(ED.sections.length - 1, edSel + 1); edDirty = true; edRenderList(); edPreview();
+  });
+  document.getElementById('edName').oninput = e => { ED.name = e.target.value; edDirty = true; };
+  document.getElementById('edWorld').onchange = e => { ED.world = +e.target.value; edDirty = true; };
+  document.getElementById('edLaps').oninput = e => { ED.laps = Math.max(1, Math.min(9, +e.target.value || 1)); edDirty = true; edPreview(); };
+  document.getElementById('edPick').onchange = e => { if (edDirty && !confirmLeave()) { edRenderPick(); return; } openEditor(e.target.value); };
+  const confirmLeave = () => { edSaveLevel(); return true; };   // switching levels keeps your work: save first
+  document.getElementById('edNew').onclick = () => { if (edDirty) edSaveLevel(); ED = defaultLevel(); edSel = 0; edDirty = false; edRenderAll(); edMsg('New level — edit it, then SAVE or RACE IT'); };
+  let delArm = 0;
+  document.getElementById('edDel').onclick = () => {
+    if (performance.now() - delArm > 2500) { delArm = performance.now(); edMsg('Press 🗑 DELETE again to delete “' + ED.name + '”'); return; }
+    saveLevels(loadLevels().filter(l => l.id !== ED.id)); try { localStorage.removeItem('podracer.ghost.c' + ED.id); } catch (e) {}
+    const rest = loadLevels(); ED = rest.length ? JSON.parse(JSON.stringify(rest[0])) : defaultLevel(); edSel = 0; edDirty = false; edRenderAll(); edMsg('Deleted.');
+  };
+  document.getElementById('edSave').onclick = () => edSaveLevel();
+  document.getElementById('edPlay').onclick = () => { if (edSaveLevel()) playLevel(ED.id); };
+  document.getElementById('edClose').onclick = () => { if (edDirty) edSaveLevel(); closeEditor(); };
+  document.getElementById('edShare').onclick = () => {
+    const t = document.getElementById('edCode'); t.value = edCodeOf(ED); t.select();
+    try { navigator.clipboard.writeText(t.value).then(() => edMsg('⧉ Code copied — send it to a friend; they press IMPORT CODE'), () => edMsg('Copy the code below and send it to a friend')); } catch (e) { edMsg('Copy the code below and send it to a friend'); }
+  };
+  document.getElementById('edImport').onclick = () => {
+    const t = document.getElementById('edCode');
+    if (!t.value.trim()) { edMsg('Paste a level code into the box below, then press IMPORT CODE'); t.focus(); return; }
+    try { if (edDirty) edSaveLevel(); ED = edFromCode(t.value); edSel = 0; edDirty = true; edSaveLevel(); edRenderAll(); edMsg('⇩ Imported “' + ED.name + '”'); t.value = ''; }
+    catch (err) { edMsg('✕ ' + err.message); }
+  };
+
+  { const b = document.getElementById('editLvlBtn'); if (CUSTOM) { b.style.display = ''; b.onclick = () => openEditor(CUSTOM.id); } }
   function renderMaster() {
     const row = document.getElementById('masterRow');
     if (!masterUnlocked()) { row.innerHTML = '🔒 Win the GRAND TOUR in 1st place to unlock: set how smart the AI is · race your own ghost'; return; }
@@ -2892,7 +3181,7 @@
   function startFromMenu() { menuEl.style.display = 'none'; if (TOUR) { TOUR = { stage: 0, total: 0, aiTotals: AI_DEFS.map(() => 0), log: [] }; saveTour(); } restartRace(); }
   document.getElementById('startBtn').onclick = startFromMenu;
   addEventListener('keydown', e => {
-    if (raceState !== 'menu') return;
+    if (raceState !== 'menu' || edEl.style.display === 'flex') return;
     const k = e.key.toLowerCase();
     if (k === 'arrowright' || k === 'arrowleft') { const n = unlocks.pods; selectPod((podIdx + (k === 'arrowright' ? 1 : n - 1)) % n); }
   });
@@ -3162,7 +3451,7 @@
         if (now >= c.c0 + CHASM_LEN && podY >= 0 && podY <= 1) return { result: 'CLEARED', peak: Math.round(peak), speedAtLanding: Math.round(speed) };
       }
       return { result: 'timeout', peak };
-    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, autoRace(maxSec, lazy = 0) { menuEl.style.display = "none"; restartRace(); raceState = "racing"; countdown = 0; let t = 0; while (t < maxSec && raceState === "racing") { L = R = 1 - lazy; const sg = segAt(position + PLAYER_Z); playerX += (sg.curve * 0.09 - playerX) * 0.2; physicsStep(1 / 60, false); t += 1 / 60; } return { state: raceState, time: raceTime, lap }; }, get ghostPos() { return ghostAt(raceTime); }, get ghost() { return { mode: GHOST_MODE, have: !!GHOST, time: GHOST && GHOST.time, n: GHOST && GHOST.s.length, rec: ghostRec.length, delta: ghostDelta() }; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
+    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, get custom() { return CUSTOM && { id: CUSTOM.id, name: CUSTOM.name, laps: TOTAL_LAPS, segs: segments.length, theme: THEME.name }; }, edCode(lv) { return edCodeOf(lv); }, edFrom(c) { return edFromCode(c); }, autoRace(maxSec, lazy = 0) { menuEl.style.display = "none"; restartRace(); raceState = "racing"; countdown = 0; let t = 0; while (t < maxSec && raceState === "racing") { L = R = 1 - lazy; const sg = segAt(position + PLAYER_Z); playerX += (sg.curve * 0.09 - playerX) * 0.2; physicsStep(1 / 60, false); t += 1 / 60; } return { state: raceState, time: raceTime, lap }; }, get ghostPos() { return ghostAt(raceTime); }, get ghost() { return { mode: GHOST_MODE, have: !!GHOST, time: GHOST && GHOST.time, n: GHOST && GHOST.s.length, rec: ghostRec.length, delta: ghostDelta() }; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
   refreshPadList(); buildAxisRows();
   if (TOUR) { const lb = document.getElementById('lapBox'); if (lb && lb.firstChild) lb.firstChild.textContent = 'WORLD '; }
   if (TOUR && TOUR.stage > 0 && TOUR.arriving) { TOUR.arriving = false; saveTour(); beginTourStage(); }
