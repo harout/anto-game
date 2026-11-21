@@ -2691,30 +2691,61 @@
   function fogMix(c, f) { if (FOG !== CAVE_FOG) { if (THEME.map) c = THEME.map(c); if (NIGHT) c = nightMap(c); } return fogMixRaw(c, f); }
   function fogMixRaw(c, f) { const s = FOG; return `rgb(${(c[0] + (s[0] - c[0]) * f) | 0},${(c[1] + (s[1] - c[1]) * f) | 0},${(c[2] + (s[2] - c[2]) * f) | 0})`; }
 
-  function drawDogDriver(cx, cy, cw, t) {                     // 🐶 Bedo, a medium-sized yellow dog, seen from behind in the cockpit
-    const fur = '#e8b84a', furD = '#c8942c', furL = '#f6d27a', sp = Math.min(1, speed / MAX_KMH), flap = Math.sin(t * (6 + sp * 14)) * (0.15 + sp * 0.5);
-    // shoulders and back, all fur
-    ctx.fillStyle = fur; ctx.beginPath(); ctx.ellipse(cx, cy + H * .012, cw * .5, H * .03, 0, Math.PI, 0); ctx.fill();
-    // wagging tail, poking up over the side of the cockpit
-    const wag = Math.sin(t * 9);
-    ctx.strokeStyle = furD; ctx.lineCap = 'round'; ctx.lineWidth = cw * .09; ctx.beginPath(); ctx.moveTo(cx + cw * .42, cy + H * .02);
-    ctx.quadraticCurveTo(cx + cw * (.62 + wag * .08), cy - H * .005, cx + cw * (.6 + wag * .2), cy - H * .045); ctx.stroke(); ctx.lineCap = 'butt';
-    // the back of the head, a little lighter on top
-    ctx.fillStyle = fur; ctx.beginPath(); ctx.ellipse(cx, cy - H * .024, cw * .3, H * .034, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = furL; ctx.beginPath(); ctx.ellipse(cx - cw * .05, cy - H * .04, cw * .16, H * .012, -0.2, 0, 7); ctx.fill();
-    // floppy ears on the outside of the head, flapping in the wind
-    for (const sd of [-1, 1]) {
-      ctx.save(); ctx.translate(cx + sd * cw * .27, cy - H * .042); ctx.rotate(-sd * (0.35 + 0.35 * sp + flap * 0.5));
-      ctx.fillStyle = furD; ctx.beginPath(); ctx.ellipse(sd * cw * .05, H * .024, cw * .095, H * .03, sd * 0.2, 0, 7); ctx.fill();
-      ctx.fillStyle = '#b07c22'; ctx.beginPath(); ctx.ellipse(sd * cw * .055, H * .03, cw * .05, H * .018, sd * 0.2, 0, 7); ctx.fill();
-      ctx.restore();
+  function drawDogDriver(cx, cy, cw, t) {                     // 🐶 Bedo: a medium-sized yellow dog, extra cute
+    const fur = '#f0c24e', furD = '#d29a2e', furL = '#fbe08e', sp = Math.min(1, speed / MAX_KMH), flap = Math.sin(t * (6 + sp * 14)) * (0.15 + sp * 0.5);
+    const look = podY > 60 || (t % 7) < 1.6;                    // every few seconds (and in the air) Bedo turns round to look at you
+    const hy = cy - H * .028 + Math.sin(t * 3) * H * .002;      // a happy little bob
+    // fluffy shoulders
+    ctx.fillStyle = fur; ctx.beginPath(); ctx.ellipse(cx, cy + H * .014, cw * .5, H * .032, 0, Math.PI, 0); ctx.fill();
+    // wagging tail over the side of the cockpit (faster when happy)
+    const wag = Math.sin(t * (look ? 16 : 9));
+    ctx.strokeStyle = furD; ctx.lineCap = 'round'; ctx.lineWidth = cw * .1; ctx.beginPath(); ctx.moveTo(cx + cw * .42, cy + H * .02);
+    ctx.quadraticCurveTo(cx + cw * (.62 + wag * .08), cy - H * .005, cx + cw * (.6 + wag * .2), cy - H * .045); ctx.stroke();
+    ctx.strokeStyle = furL; ctx.lineWidth = cw * .05; ctx.beginPath(); ctx.moveTo(cx + cw * (.6 + wag * .2), cy - H * .045); ctx.lineTo(cx + cw * (.6 + wag * .2), cy - H * .04); ctx.stroke(); ctx.lineCap = 'butt';
+    // floppy ears (behind the head when looking at you, flapping in the wind)
+    const ear = front => { for (const sd of [-1, 1]) {
+      ctx.save(); ctx.translate(cx + sd * cw * .3, hy - H * .02); ctx.rotate(-sd * (0.35 + 0.35 * sp + flap * 0.5));
+      ctx.fillStyle = furD; ctx.beginPath(); ctx.ellipse(sd * cw * .05, H * .026, cw * .1, H * .032, sd * 0.2, 0, 7); ctx.fill();
+      if (front) { ctx.fillStyle = '#f7a8b4'; ctx.beginPath(); ctx.ellipse(sd * cw * .055, H * .03, cw * .05, H * .018, sd * 0.2, 0, 7); ctx.fill(); }
+      ctx.restore(); } };
+    if (look) ear(true);
+    // a big round head with a fluffy tuft on top
+    ctx.fillStyle = fur; ctx.beginPath(); ctx.ellipse(cx, hy, cw * .34, H * .04, 0, 0, 7); ctx.fill();
+    for (const [dx, r] of [[-.08, .07], [0, .085], [.08, .07]]) { ctx.beginPath(); ctx.arc(cx + cw * dx, hy - H * .036, cw * r, 0, 7); ctx.fill(); }
+    ctx.fillStyle = furL; ctx.beginPath(); ctx.ellipse(cx - cw * .06, hy - H * .018, cw * .14, H * .011, -0.2, 0, 7); ctx.fill();
+    if (look) {                                                 // 🥰 the face: shiny eyes, rosy cheeks, a black nose and a happy mouth
+      ctx.fillStyle = furL; ctx.beginPath(); ctx.ellipse(cx, hy + H * .012, cw * .17, H * .018, 0, 0, 7); ctx.fill();   // light muzzle
+      for (const sd of [-1, 1]) {
+        ctx.fillStyle = '#1c1410'; ctx.beginPath(); ctx.ellipse(cx + sd * cw * .13, hy - H * .006, cw * .055, H * .009, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx + sd * cw * .13 - cw * .018, hy - H * .009, cw * .02, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + sd * cw * .13 + cw * .015, hy - H * .003, cw * .009, 0, 7); ctx.fill();
+        ctx.fillStyle = 'rgba(255,120,140,.55)'; ctx.beginPath(); ctx.ellipse(cx + sd * cw * .22, hy + H * .008, cw * .05, H * .005, 0, 0, 7); ctx.fill();   // rosy cheeks
+      }
+      ctx.fillStyle = '#1c1410'; ctx.beginPath(); ctx.ellipse(cx, hy + H * .006, cw * .045, H * .006, 0, 0, 7); ctx.fill();   // nose
+      ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.arc(cx - cw * .012, hy + H * .004, cw * .012, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#1c1410'; ctx.lineWidth = Math.max(1, cw * .015); ctx.beginPath();   // a happy "w" mouth
+      ctx.moveTo(cx - cw * .06, hy + H * .014); ctx.quadraticCurveTo(cx - cw * .03, hy + H * .02, cx, hy + H * .013); ctx.quadraticCurveTo(cx + cw * .03, hy + H * .02, cx + cw * .06, hy + H * .014); ctx.stroke();
+      ctx.fillStyle = '#ff7f9a'; ctx.beginPath(); ctx.ellipse(cx + cw * .015, hy + H * .022, cw * .03, H * .007, 0, 0, 7); ctx.fill();   // tongue out
+      ctx.fillStyle = '#2b2b30'; ctx.fillRect(cx - cw * .22, hy - H * .03, cw * .44, H * .005);   // goggles pushed up on the forehead
+      for (const sd of [-1, 1]) { ctx.fillStyle = '#7fd4ff'; ctx.beginPath(); ctx.arc(cx + sd * cw * .1, hy - H * .028, cw * .045, 0, 7); ctx.fill(); }
+    } else {
+      ear(false);
+      ctx.fillStyle = '#2b2b30'; ctx.fillRect(cx - cw * .34, hy - H * .004, cw * .68, H * .006);   // goggle strap round the back
+      if (sp > 0.35) {                                          // tongue flapping out the side when going fast
+        const tl = cw * (0.12 + sp * 0.18), ty = hy + H * .01 + Math.sin(t * 20) * H * .003;
+        ctx.fillStyle = '#ff7f9a'; ctx.beginPath(); ctx.moveTo(cx + cw * .3, ty - H * .004); ctx.quadraticCurveTo(cx + cw * .3 + tl, ty - H * .008 + flap * H * .01, cx + cw * .3 + tl * 1.1, ty + H * .004); ctx.quadraticCurveTo(cx + cw * .3 + tl * 0.5, ty + H * .008, cx + cw * .3, ty + H * .004); ctx.closePath(); ctx.fill();
+      }
     }
-    // goggle strap round the back of the head
-    ctx.fillStyle = '#2b2b30'; ctx.fillRect(cx - cw * .3, cy - H * .028, cw * .6, H * .006);
-    // tongue flapping out the side when going fast
-    if (sp > 0.35) {
-      const tl = cw * (0.12 + sp * 0.18), ty = cy - H * .012 + Math.sin(t * 20) * H * .003;
-      ctx.fillStyle = '#ff7f9a'; ctx.beginPath(); ctx.moveTo(cx + cw * .26, ty - H * .004); ctx.quadraticCurveTo(cx + cw * .26 + tl, ty - H * .008 + flap * H * .01, cx + cw * .26 + tl * 1.1, ty + H * .004); ctx.quadraticCurveTo(cx + cw * .26 + tl * 0.5, ty + H * .008, cx + cw * .26, ty + H * .004); ctx.closePath(); ctx.fill();
+    // little paws on the edge of the cockpit, with pink toe beans
+    for (const sd of [-1, 1]) {
+      const px = cx + sd * cw * .24, py = cy + H * .03;
+      ctx.fillStyle = fur; ctx.beginPath(); ctx.ellipse(px, py, cw * .085, H * .011, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#f7a8b4'; for (const dx of [-.04, 0, .04]) { ctx.beginPath(); ctx.arc(px + cw * dx, py - H * .004, cw * .014, 0, 7); ctx.fill(); }
+    }
+    if (boost) for (let q = 0; q < 3; q++) {                    // 💕 hearts float up when you boost
+      const ph = ((t * 0.9 + q / 3) % 1), hx = cx + cw * (-.3 + q * .3) + Math.sin(t * 4 + q) * cw * .05, hyy = cy - H * (.07 + ph * .09), r = cw * .04 * (1 - ph * .4);
+      ctx.fillStyle = `rgba(255,105,150,${1 - ph})`; ctx.beginPath(); ctx.arc(hx - r * .5, hyy, r * .6, 0, 7); ctx.arc(hx + r * .5, hyy, r * .6, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(hx - r * 1.05, hyy + r * .15); ctx.lineTo(hx, hyy + r * 1.2); ctx.lineTo(hx + r * 1.05, hyy + r * .15); ctx.fill();
     }
   }
   function drawHyperMsg() {                                   // 🌌 a voice in hyperspace: the code drifts past in the stars
