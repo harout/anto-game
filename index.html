@@ -119,7 +119,7 @@
   #edSave { padding:8px; }
   #edMsg { font-size:12px; color:#8dffb0; min-height:16px; }
   #edCode { width:100%; height:62px; background:#0d0603; color:#ffe7c2; border:1px solid #4a2a12; border-radius:6px; font:10px Menlo, monospace; resize:none; }
-  .tcard.custom { border-style:dashed; } .tcard .edit { float:right; font-size:11px; color:#ffb347; padding:0 2px; } .tcard.addlvl { text-align:center; color:#ffb347; }
+  .tcard.custom { border-style:dashed; } .tcard .edit { float:right; font-size:11px; color:#ffb347; padding:0 4px; } .tcard .edit:hover { color:#fff; } .tcard .del { color:#ff8a7a; } .tcard.addlvl { text-align:center; color:#ffb347; }
   #trackGrid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; max-height:300px; overflow:auto; }
   .tcard { background:#2a160a; border:2px solid #4a2a12; border-radius:10px; padding:12px; cursor:pointer; font-size:14px; letter-spacing:2px; }
   .tcard small { display:block; margin-top:4px; font-size:11px; color:#b8916a; letter-spacing:1px; }
@@ -211,7 +211,7 @@
     <b>✎ LEVEL EDITOR</b>
     <select id="edPick"></select>
     <button class="secondary" id="edNew">＋ NEW</button>
-    <button class="secondary" id="edDel">🗑 DELETE</button>
+    <button class="secondary" id="edDel">🗑 DELETE LEVEL</button>
     <span class="ed-sp"></span>
     <button class="secondary" id="edShare">⧉ SHARE CODE</button>
     <button class="secondary" id="edImport">⇩ IMPORT CODE</button>
@@ -1934,7 +1934,21 @@
     o.w = o.scale * ROAD_W * W / 2;
   }
   function poly(pts, fill) { ctx.fillStyle = fill; ctx.beginPath(); ctx.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]); ctx.closePath(); ctx.fill(); }
-  const CAVE_FOG = [8, 5, 4];
+  // ⛰ tunnels look like the world they're in (built-in tracks and editor levels alike)
+  const CAVE_STYLES = {
+    1: { name: 'sandstone', fog: [14, 8, 4], inside: [52, 30, 16], base: [190, 122, 70], ceil: [110, 74, 44], face: [178, 112, 64], mtn: [196, 132, 82], cap: [228, 186, 130], lip: [118, 70, 38],
+         glow: [[255, 214, 140], [255, 160, 60]], drip: [150, 96, 54], strata: [[204, 138, 82], [170, 104, 58]] },
+    2: { name: 'ice', fog: [6, 14, 26], inside: [22, 40, 62], base: [150, 200, 232], ceil: [96, 130, 168], face: [176, 210, 236], mtn: [186, 214, 238], cap: [246, 250, 255], lip: [92, 140, 186],
+         glow: [[200, 250, 255], [90, 200, 255]], drip: [214, 240, 255], icy: true },
+    3: { name: 'mossy rock', fog: [8, 5, 4], inside: [30, 23, 19], base: [104, 78, 62], ceil: [58, 44, 36], face: [70, 54, 44], mtn: [112, 104, 96], cap: [240, 244, 250], lip: [54, 42, 34],
+         glow: [[170, 240, 255], [80, 190, 255]], drip: [96, 72, 58], moss: [64, 104, 46] },
+    4: { name: 'mud and roots', fog: [8, 9, 4], inside: [32, 26, 14], base: [96, 74, 44], ceil: [62, 50, 30], face: [74, 62, 36], mtn: [80, 90, 52], cap: [96, 128, 62], lip: [52, 40, 22],
+         glow: [[230, 255, 140], [170, 230, 60]], drip: [118, 88, 54], moss: [70, 104, 44], roots: true },
+    5: { name: 'banded hoodoo rock', fog: [16, 8, 6], inside: [60, 30, 22], base: [214, 128, 86], ceil: [120, 66, 50], face: [214, 128, 86], mtn: [220, 136, 92], cap: [246, 226, 206], lip: [150, 82, 56],
+         glow: [[255, 200, 150], [255, 130, 80]], drip: [200, 120, 80], bands: [[218, 112, 66], [238, 160, 118], [246, 226, 206], [226, 128, 82], [240, 184, 146]] },
+  };
+  const CAVE_STYLE = CAVE_STYLES[CUSTOM ? CUSTOM.world : TRACK_ID] || CAVE_STYLES[3];
+  const CAVE_FOG = CAVE_STYLE.fog;
   let FOG = THEME.fog;
   function fogMix(c, f) { if (FOG !== CAVE_FOG) { if (THEME.map) c = THEME.map(c); if (NIGHT) c = nightMap(c); } return fogMixRaw(c, f); }
   function fogMixRaw(c, f) { const s = FOG; return `rgb(${(c[0] + (s[0] - c[0]) * f) | 0},${(c[1] + (s[1] - c[1]) * f) | 0},${(c[2] + (s[2] - c[2]) * f) | 0})`; }
@@ -2044,7 +2058,7 @@
       const { p1, p2, sg, idx } = proj[n];
       if (p1.cz <= 10 || p2.y >= p1.y + 0.01 && false) continue;
       const fog = Math.min(1, Math.pow(n / DRAW, 1.6));
-      if (THEME.forest) FOG = sg.cave ? CAVE_FOG : baseFog;
+      if (!(!T.main && T.cave)) FOG = sg.cave ? CAVE_FOG : baseFog;   // dark inside every tunnel
       const alt = (sg.i >> 2) & 1;
       const backface = p2.y >= p1.y;
       // ground
@@ -2602,44 +2616,56 @@
   }
   function ringPath(r) { ctx.moveTo(r[0], r[1]); for (let k = 2; k < r.length; k += 2) ctx.lineTo(r[k], r[k + 1]); ctx.closePath(); }
   function drawCaveSeg(p1, p2, sg, nx, idx, fog, alt) {
-    const r1 = caveRing(p1, sg, idx), r2 = caveRing(p2, nx.cave ? nx : sg, idx + 1);
+    const r1 = caveRing(p1, sg, idx), r2 = caveRing(p2, nx.cave ? nx : sg, idx + 1), CS = CAVE_STYLE;
     const entrance = !segFor(idx - 1).cave;
     if (caveInside) {                                           // solid rock all around the passage
-      ctx.fillStyle = fogMix([30, 23, 19], fog); ctx.beginPath(); ctx.rect(-W, -H * 2, W * 3, H * 5); ringPath(r1); ctx.fill('evenodd');
+      ctx.fillStyle = fogMix(CS.inside, fog); ctx.beginPath(); ctx.rect(-W, -H * 2, W * 3, H * 5); ringPath(r1); ctx.fill('evenodd');
     } else if (entrance && sg.mtn) {                            // the mountainside around the cave mouth
       const cx = p1.x, ww = p1.w * 0.6, hh = p1.scale * sg.wallH * H / 2 * 0.5;
-      ctx.fillStyle = fogMix([112, 104, 96], fog); ctx.beginPath();
+      ctx.fillStyle = fogMix(CS.mtn, fog); ctx.beginPath();
       ctx.moveTo(cx - ww * 18, p1.y); ctx.lineTo(cx - ww * 9, p1.y - hh * 2.4); ctx.lineTo(cx - ww * 4, p1.y - hh * 4.2); ctx.lineTo(cx - ww * 1.5, p1.y - hh * 5.6);
       ctx.lineTo(cx + ww * 0.5, p1.y - hh * 6.4); ctx.lineTo(cx + ww * 3.5, p1.y - hh * 4.6); ctx.lineTo(cx + ww * 8, p1.y - hh * 3.4); ctx.lineTo(cx + ww * 18, p1.y); ctx.closePath();
       ringPath(r1); ctx.fill('evenodd');
-      ctx.fillStyle = fogMix([240, 244, 250], fog); ctx.beginPath();
+      if (CS.strata) for (let q = 1; q <= 3; q++) {              // sandstone layers across the hill
+        ctx.strokeStyle = fogMix(CS.strata[q & 1], fog); ctx.lineWidth = Math.max(1, hh * 0.25); ctx.beginPath(); ctx.moveTo(cx - ww * (18 - q * 3), p1.y - hh * q * 1.1); ctx.lineTo(cx + ww * (18 - q * 3), p1.y - hh * q * 1.1); ctx.stroke();
+      }
+      if (CS.bands) for (let q = 0; q < 5; q++) {                // hoodoo-coloured bands across the hill
+        ctx.fillStyle = fogMix(CS.bands[q], fog); const y0 = p1.y - hh * (q * 1.2 + 0.4), y1 = y0 - hh * 0.6;
+        ctx.fillRect(cx - ww * (16 - q * 3), y1, ww * 2 * (16 - q * 3), y0 - y1);
+      }
+      ctx.fillStyle = fogMix(CS.cap, fog); ctx.beginPath();
       ctx.moveTo(cx - ww * 3.1, p1.y - hh * 4.6); ctx.lineTo(cx - ww * 1.5, p1.y - hh * 5.6); ctx.lineTo(cx + ww * 0.5, p1.y - hh * 6.4); ctx.lineTo(cx + ww * 2.6, p1.y - hh * 5.0);
       ctx.lineTo(cx + ww * 1.2, p1.y - hh * 5.2); ctx.lineTo(cx - ww * 0.5, p1.y - hh * 4.8); ctx.closePath(); ctx.fill();
     } else if (entrance) {                                      // plain rock face around the opening
-      ctx.fillStyle = fogMix([70, 54, 44], fog); ctx.beginPath(); ctx.rect(p1.x - p1.w * 6, p1.y - p1.w * 5, p1.w * 12, p1.w * 5); ringPath(r1); ctx.fill('evenodd');
+      ctx.fillStyle = fogMix(CS.face, fog); ctx.beginPath(); ctx.rect(p1.x - p1.w * 6, p1.y - p1.w * 5, p1.w * 12, p1.w * 5); ringPath(r1); ctx.fill('evenodd');
     }
     // the rock surface of this slice of tunnel: lighter low on the walls, dark on the ceiling
     for (let k = 0; k < CAVE_N - 1; k++) {
       const up = Math.sin(Math.PI * (k + 0.5) / (CAVE_N - 1)), lit = k < CAVE_N / 2 ? 1 : 0.86;
       const n = Math.sin(idx * 2.3 + k * 5.7) * 7;
-      const c = [(104 - 58 * up + n) * lit + (alt ? 6 : 0), (78 - 44 * up + n * 0.8) * lit + (alt ? 4 : 0), (62 - 36 * up + n * 0.6) * lit + (alt ? 3 : 0)];
+      const base = CS.bands ? CS.bands[(k >> 1) % CS.bands.length] : CS.base;
+      let c = [0, 1, 2].map(j => (base[j] - (base[j] - CS.ceil[j]) * up + n * (1 - j * 0.2)) * lit + (alt ? 6 - j : 0));
+      if (CS.moss && up < 0.55 && ((k * 7 + sg.i * 3) % 5) < 2) c = c.map((v, j) => v * 0.45 + CS.moss[j] * 0.55);       // moss on the lower walls
+      if (CS.icy && ((k * 5 + sg.i) % 6) === 0) c = c.map(v => Math.min(255, v + 40));                                    // glints in the ice
       poly([r1[k * 2], r1[k * 2 + 1], r1[k * 2 + 2], r1[k * 2 + 3], r2[k * 2 + 2], r2[k * 2 + 3], r2[k * 2], r2[k * 2 + 1]], fogMix(c, fog * 0.9));
     }
     if (entrance) {                                             // rough lip around the mouth
-      ctx.strokeStyle = fogMix([54, 42, 34], fog); ctx.lineWidth = Math.max(2, p1.w * 0.05);
+      ctx.strokeStyle = fogMix(CS.lip, fog); ctx.lineWidth = Math.max(2, p1.w * 0.05);
       ctx.beginPath(); ctx.moveTo(r1[0], r1[1]); for (let k = 2; k < r1.length; k += 2) ctx.lineTo(r1[k], r1[k + 1]); ctx.stroke();
     }
     if (sg.i % 7 === 0) {                                       // glowing crystals in the rock
       const k = ((sg.i / 7) & 1) ? 3 : CAVE_N - 4, x = r1[k * 2], y = r1[k * 2 + 1], cr = Math.max(2, p1.scale * 240 * W / 2);
       const g = ctx.createRadialGradient(x, y, 0, x, y, cr * 4);
-      g.addColorStop(0, `rgba(170,240,255,${0.95 * (1 - fog)})`); g.addColorStop(.25, `rgba(80,190,255,${0.5 * (1 - fog)})`); g.addColorStop(1, 'rgba(40,120,255,0)');
+      const [ga, gb] = CS.glow;                                // crystals / lanterns / fireflies, by world
+      g.addColorStop(0, `rgba(${ga.join(',')},${0.95 * (1 - fog)})`); g.addColorStop(.25, `rgba(${gb.join(',')},${0.5 * (1 - fog)})`); g.addColorStop(1, `rgba(${gb.join(',')},0)`);
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, cr * 4, 0, 7); ctx.fill();
     }
     for (const d of sg.deco) {                                  // small harmless stalactites hanging from the roof
       const t = Math.max(-0.98, Math.min(0.98, d.off / sg.wall)), yw = Math.pow(Math.sin(Math.acos(t)), 0.7) * sg.wallH;
       const ox = p1.x + d.off * p1.w, hw = d.w * p1.w, top = p1.y - yw * p1.scale * H / 2, tipY = p1.y - Math.min(yw * 0.85, d.tip) * p1.scale * H / 2;
       if (hw < 0.4 || tipY <= top) continue;
-      poly([ox - hw, top, ox + hw, top, ox, tipY], fogMix([96, 72, 58], fog));
+      if (CS.roots) { ctx.strokeStyle = fogMix(CS.drip, fog); ctx.lineWidth = Math.max(1, hw * 0.5); ctx.beginPath(); ctx.moveTo(ox, top); ctx.quadraticCurveTo(ox + hw * 2, (top + tipY) / 2, ox - hw, tipY + (tipY - top) * 0.3); ctx.stroke(); continue; }   // hanging roots
+      poly([ox - hw, top, ox + hw, top, ox, tipY], fogMix(CS.drip, fog));
     }
   }
   function drawTree(t, x, gy, sc, fog) {
@@ -2965,8 +2991,13 @@
     for (const lv of loadLevels()) {                           // your own levels
       const d = document.createElement('div'), sel = CUSTOM && CUSTOM.id === lv.id;
       d.className = 'tcard custom' + (sel ? ' sel' : '');
-      d.innerHTML = `<span class="edit" title="Edit this level">✎ EDIT</span>✎ ${escHtml((lv.name || 'My Level').toUpperCase())}<small>${['', 'Desert', 'Ice', 'Forest', 'Swamp', 'Bryce'][lv.world] || 'Desert'} · ${lv.sections.length} sections · ${lv.laps} lap${lv.laps > 1 ? 's' : ''}</small>`;
+      d.innerHTML = `<span class="edit del" title="Delete this level">🗑</span><span class="edit" title="Edit this level">✎ EDIT</span>✎ ${escHtml((lv.name || 'My Level').toUpperCase())}<small>${['', 'Desert', 'Ice', 'Forest', 'Swamp', 'Bryce'][lv.world] || 'Desert'} · ${lv.sections.length} sections · ${lv.laps} lap${lv.laps > 1 ? 's' : ''}</small>`;
       d.onclick = e => {
+        if (e.target.classList.contains('del')) {               // 🗑 twice to delete
+          if (d.dataset.arm && performance.now() - +d.dataset.arm < 3000) { deleteLevel(lv.id); return; }
+          d.dataset.arm = performance.now(); d.querySelector('small').textContent = 'Click 🗑 again to delete this level';
+          setTimeout(() => { if (d.isConnected) renderMenu(); }, 3000); return;
+        }
         if (e.target.classList.contains('edit')) { openEditor(lv.id); return; }
         if (sel) return;
         playLevel(lv.id);
@@ -2976,6 +3007,13 @@
     const ad = document.createElement('div'); ad.className = 'tcard addlvl'; ad.innerHTML = '＋ LEVEL EDITOR<small>build your own track</small>'; ad.onclick = () => openEditor(CUSTOM ? CUSTOM.id : null); tg.appendChild(ad);
   }
   const escHtml = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function deleteLevel(id) {                                   // remove a level you made, its ghost and its AI level
+    saveLevels(loadLevels().filter(l => l.id !== id));
+    try { localStorage.removeItem('podracer.ghost.c' + id); } catch (e) {}
+    const w = loadAIWins(); delete w['c' + id]; saveAIWins(w);
+    if (CUSTOM && CUSTOM.id === id) { try { localStorage.setItem('podracer.track', '1'); } catch (e) {} location.reload(); return; }
+    renderMenu();
+  }
   function playLevel(id) {
     clearTour();
     try { localStorage.setItem('podracer.track', '7'); localStorage.setItem('podracer.customId', id); localStorage.setItem('podracer.pod', String(podIdx)); } catch (e) {}
@@ -3124,10 +3162,14 @@
   document.getElementById('edPick').onchange = e => { if (edDirty && !confirmLeave()) { edRenderPick(); return; } openEditor(e.target.value); };
   const confirmLeave = () => { edSaveLevel(); return true; };   // switching levels keeps your work: save first
   document.getElementById('edNew').onclick = () => { if (edDirty) edSaveLevel(); ED = defaultLevel(); edSel = 0; edDirty = false; edRenderAll(); edMsg('New level — edit it, then SAVE or RACE IT'); };
-  let delArm = 0;
+  let delArm = -1e9;
   document.getElementById('edDel').onclick = () => {
-    if (performance.now() - delArm > 2500) { delArm = performance.now(); edMsg('Press 🗑 DELETE again to delete “' + ED.name + '”'); return; }
-    saveLevels(loadLevels().filter(l => l.id !== ED.id)); try { localStorage.removeItem('podracer.ghost.c' + ED.id); } catch (e) {}
+    if (!loadLevels().some(l => l.id === ED.id)) { edMsg('This level is not saved yet — nothing to delete.'); return; }
+    if (performance.now() - delArm > 2500) { delArm = performance.now(); edMsg('Press 🗑 DELETE LEVEL again to delete “' + ED.name + '”'); return; }
+    delArm = -1e9;
+    const goneId = ED.id; saveLevels(loadLevels().filter(l => l.id !== goneId)); try { localStorage.removeItem('podracer.ghost.c' + goneId); } catch (e) {}
+    { const w = loadAIWins(); delete w['c' + goneId]; saveAIWins(w); }
+    if (CUSTOM && CUSTOM.id === goneId) { try { localStorage.setItem('podracer.track', '1'); } catch (e) {} location.reload(); return; }
     const rest = loadLevels(); ED = rest.length ? JSON.parse(JSON.stringify(rest[0])) : defaultLevel(); edSel = 0; edDirty = false; edRenderAll(); edMsg('Deleted.');
   };
   document.getElementById('edSave').onclick = () => edSaveLevel();
