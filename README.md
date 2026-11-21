@@ -62,3 +62,13 @@ Everything is in a single self-contained `index.html` — no build step, no depe
 
 ## 🔧 Garage & pod upgrades
 Every race pays credits (300 for 1st down to 90 for 8th, plus about 1 per 2 seconds raced; the Grand Tour pays double, ghost races 60). Spend them in the **🔧 GARAGE** on the menu. Each pod has its own upgrades, 5 levels each: Engine (top speed), Thrusters (acceleration), Steering, Boost power, Boost tank (boost lasts longer) and Armor (keep more speed when you crash). Level costs 100, 200, 300, 400, 500. You can sell all of a pod's upgrades for a full refund. The green part of the stat bars shows your upgrades.
+
+## 📚 Example levels, canyon jumps, rim roads and upside-down rolls
+Ten example levels are added to your levels list the first time you open this version: Canyon Leap, Rim Runner, Barrel Roll Bayou, Frozen Corkscrew, Forest Flipper, Gorge Hopper, Upside-Down Canyon, Twin Rims, Loop the Loop and The Gauntlet. The editor's 📚 EXAMPLES picker opens a fresh copy of any of them.
+
+New editor pieces:
+- **🕳 Canyon jump**: a ramp and a gap in the canyon floor. Hold BOOST up the ramp or you fall in and restart at the run-up with a full tank.
+- **⛰ Wall notch + rim**: on a canyon section, a notch in the left or right wall leads to a road up on the canyon rim, with its own jump across the canyon, then back down.
+- **🙃 Upside down**: a barrel roll onto the ceiling and back. Steering still follows the screen.
+
+Also fixed: AI pods on the main track never refilled their boost after using it.
