@@ -759,10 +759,13 @@
   const saveUps = u => { try { localStorage.setItem('podracer.upgrades', JSON.stringify(u)); } catch (e) {} };
   const loadCredits = () => { try { return Math.max(0, +(localStorage.getItem('podracer.credits') || 0) | 0); } catch (e) { return 0; } };
   const saveCredits = c => { try { localStorage.setItem('podracer.credits', String(Math.max(0, c | 0))); } catch (e) {} };
+  // 🚀 the starfighter beats every pod, even a fully upgraded Neon Storm (top 1.16 · accel 1.44 · turn 1.44 · boost 1.76 · tank 1.95)
+  const FIGHTER_STATS = { top: 1.22, accel: 1.6, turn: 1.55, boost: 1.9, dur: 2.2, armor: UP_MAX };
+  const fighterOn = () => { try { return !!loadUnlocks().fighter && localStorage.getItem('podracer.craft') === 'fighter'; } catch (e) { return false; } };
   function podLook(i) {
     const base = PODS[i] || PODS[0], c = loadPaint()[i] || {}, up = loadUps()[i] || {};
     const tuned = {}; for (const u of UPGRADES) if (u.stat) tuned[u.stat] = base[u.stat] * (1 + u.per * Math.min(UP_MAX, up[u.k] || 0));
-    return Object.assign({}, base, tuned, { armor: Math.min(UP_MAX, up.armor || 0), ups: up }, {
+    return Object.assign({}, base, tuned, { armor: Math.min(UP_MAX, up.armor || 0), ups: up }, fighterOn() ? FIGHTER_STATS : {}, {
       band: c.band || base.band, binder: c.binder || base.binder, glow: c.glow || base.glow,
       finish: c.finish || (base.dark ? 'dark' : 'light'), pattern: c.pattern || 'plain', number: c.number || String(i + 1).padStart(2, '0'),
       helmet: c.helmet || '#d8cbb0', nick: (c.nick || '').slice(0, 14) });
@@ -4088,9 +4091,9 @@
     if (loadUnlocks().fighter) {                                // 🚀 the starfighter's card (name yourself Anakin to get it)
       const d = document.createElement('div'); d.className = 'pcard fighter' + (FIGHTER ? ' sel' : '');
       const cv = document.createElement('canvas'); cv.width = 160; cv.height = 84; drawFighterPortrait(cv); d.appendChild(cv);
-      const nm = document.createElement('div'); nm.textContent = FIGHTER ? '🚀 Starfighter · flying' : '🚀 Starfighter'; nm.style.marginTop = '4px'; d.appendChild(nm);
+      const nm = document.createElement('div'); nm.textContent = FIGHTER ? '🚀 Starfighter · flying · FASTEST' : '🚀 Starfighter · FASTEST'; nm.style.marginTop = '4px'; d.appendChild(nm);
       d.title = FIGHTER ? 'Click to go back to your pod' : 'Click to fly the starfighter';
-      d.onclick = () => { FIGHTER = !FIGHTER; try { localStorage.setItem('podracer.craft', FIGHTER ? 'fighter' : 'pod'); } catch (e) {} if (FIGHTER) try { chime(); } catch (e) {} renderMenu(); };
+      d.onclick = () => { FIGHTER = !FIGHTER; try { localStorage.setItem('podracer.craft', FIGHTER ? 'fighter' : 'pod'); } catch (e) {} POD = podLook(podIdx); if (FIGHTER) try { chime(); } catch (e) {} renderMenu(); };
       grid.appendChild(d);
     }
     const hs = document.createElement('div'); hs.className = 'hidespot'; hs.title = ''; hs.onclick = openScramble; grid.appendChild(hs);   // 📜 the empty space next to Neon Storm
@@ -4907,7 +4910,7 @@
     if (!isAnakin(dn.value)) return;
     if (dn.value !== 'Anakin') { dn.value = 'Anakin'; try { localStorage.setItem('podracer.driverName', 'Anakin'); } catch (e) {} }
     const u = loadUnlocks(); if (u.fighter) return;
-    u.fighter = true; saveUnlocks(u); unlocks = u; FIGHTER = true; try { localStorage.setItem('podracer.craft', 'fighter'); } catch (e) {}
+    u.fighter = true; saveUnlocks(u); unlocks = u; FIGHTER = true; try { localStorage.setItem('podracer.craft', 'fighter'); } catch (e) {} POD = podLook(podIdx);
     try { chime(); } catch (e) {}
     showTx('🚀 <b>STARFIGHTER UNLOCKED!</b><br>Welcome, Anakin. Your new ship is on the menu next to your pods. Click it to switch between the starfighter and your pod.');
     dn.blur(); renderMenu();
