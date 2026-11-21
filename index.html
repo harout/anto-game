@@ -4990,8 +4990,11 @@
       else if (n + 1 < AI_SHORTCUT_LEVEL) msgs.push(`${AI_SHORTCUT_LEVEL - n - 1} more wins here and they learn the shortcuts`);
       saveUnlocks(unlocks);
     }
-    const youSuck = NIGHT && DOG_DRIVER && myPlace > 1 && !GHOST_MODE;   // 😝 lose a night race with Bedo driving…
+    const youSuck = NIGHT && DOG_DRIVER && myPlace > 1;          // 😝 lose a night race with Bedo driving…
     if (youSuck) { const u = loadUnlocks(); if (!u.fighter) { u.fighter = true; saveUnlocks(u); unlocks = u; msgs.unshift('🚀 STARFIGHTER UNLOCKED! (…as a prize for losing 😝) Pick it on the menu next to your pods'); } }
+    else if (myPlace > 1 && !loadUnlocks().fighter && (NIGHT || DOG_DRIVER))                 // 🤏 so close: tell them what's missing
+      msgs.unshift(NIGHT ? '🤫 So close! Lose a NIGHT race with 🐶 BEDO driving to win a secret ship' + (loadUnlocks().bedo ? ' (click Bedo’s card on the menu)' : ' (get Bedo first: name a level BEDO)')
+                         : '🤫 So close! Lose with Bedo at NIGHT (🌙 button on the menu) to win a secret ship');
     document.getElementById('finUnlock').textContent = msgs.join('\n');
     raceState = 'finished'; finishShownAt = performance.now() / 1000;
     const myTime = TOUR ? TOUR.final : raceTime, bestKey = TOUR ? 'podracer.bestTour' : 'podracer.bestRace';
