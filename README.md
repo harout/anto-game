@@ -109,3 +109,6 @@ In the level editor, **🌳 Move all scenery to the ground** stops trees and roc
 
 ## 🤫 Name secrets
 What you call a level can change things... try naming one after a certain yellow dog. 🐶
+
+## ✏ Driver name
+Type a name in **✏ DRIVER NAME** on the main menu. It shows instead of YOU in the race standings and the finish results, and the race starts with "🏁 GO, <name>!".

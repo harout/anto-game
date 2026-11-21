@@ -141,6 +141,9 @@
   #v3bld button#blAuto { background:#1f4a2a; border-color:#3aa860; color:#c8ffd8; }
   .ed-add button.sub { background:#4a1a12; border-color:#a2442e; color:#ffd0c4; } .ed-add button.sub:hover { border-color:#ff8a7a; }
   #shopBtn, #garageBtn { margin-left:10px; }
+  #nameRow { display:flex; justify-content:center; margin:6px 0 2px; font:11px Menlo, monospace; letter-spacing:3px; color:#c9a27a; }
+  #nameRow input { margin-left:8px; width:190px; background:#2a160a; color:#ffe7c2; border:1px solid #6a3a18; border-radius:8px; padding:6px 10px; font:bold 13px Menlo, monospace; letter-spacing:2px; text-transform:uppercase; }
+  #nameRow input:focus { outline:none; border-color:#ffb347; box-shadow:0 0 10px #ffb34766; }
   #driverRow { display:none; align-items:center; justify-content:center; gap:10px; margin:8px 0 4px; font:11px Menlo, monospace; letter-spacing:3px; color:#c9a27a; }
   #driverRow button { display:flex; align-items:center; gap:6px; background:#2a160a; color:#ffe7c2; border:1px solid #6a3a18; border-radius:10px; padding:4px 12px; font:bold 12px Menlo, monospace; letter-spacing:2px; cursor:pointer; min-height:40px; }
   #driverRow button.on { background:#ffb347; color:#1a0e06; border-color:#ffd36b; box-shadow:0 0 14px #ffb34788; } #driverRow canvas { width:40px; height:35px; }
@@ -282,6 +285,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -563,7 +567,7 @@
 
   // ---------- Keyboard fallback ----------
   const keys = {}; let kbL = 0, kbR = 0, usingKeyboard = false;
-  const inEditor = e => e.target && e.target.closest && (e.target.closest('#editor') || e.target.closest('#shop') || e.target.closest('#secret') || e.target.closest('#scr') || e.target.closest('#resetBox'));
+  const inEditor = e => e.target && e.target.closest && (e.target.closest('#editor') || e.target.closest('#shop') || e.target.closest('#secret') || e.target.closest('#scr') || e.target.closest('#resetBox') || e.target.closest('#nameRow'));
   addEventListener('keydown', e => { if (inEditor(e) || (typeof v3open !== 'undefined' && v3open)) return; if (e.key === ' ') e.preventDefault(); keys[e.key.toLowerCase()] = true; if (e.key.toLowerCase() === 'h') togglePanel(); });
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   function updateKeyboard(dt) {
@@ -649,7 +653,7 @@
   soundBtn.addEventListener('click', e => { e.stopPropagation(); if (!audio) { initAudio(); muted = false; } else { muted = !muted; initAudio(); } setSoundUi(); });
   addEventListener('pointerdown', e => { if (e.target === soundBtn) return; if (!audio) { initAudio(); setSoundUi(); } });
   addEventListener('keydown', e => {
-    if (e.target && e.target.closest && (e.target.closest('#editor') || e.target.closest('#shop') || e.target.closest('#secret') || e.target.closest('#scr') || e.target.closest('#resetBox'))) return;
+    if (e.target && e.target.closest && (e.target.closest('#editor') || e.target.closest('#shop') || e.target.closest('#secret') || e.target.closest('#scr') || e.target.closest('#resetBox') || e.target.closest('#nameRow'))) return;
     if (e.key.toLowerCase() === 'm') { muted = !muted; }
     if (!audio || audio.ctx.state !== 'running') initAudio();
     setSoundUi();
@@ -1471,6 +1475,8 @@
   // 🤫 NAME SECRETS: what you call a level can change things
   const LEVEL_NAME = CUSTOM && !TEST_MODE ? String(CUSTOM.name || '') : TEST_MODE && CUSTOM ? String(CUSTOM.name || '') : '';
   const hasName = w => new RegExp('(^|[^a-z])' + w + '([^a-z]|$)', 'i').test(LEVEL_NAME);
+  const loadDriverName = () => { try { return (localStorage.getItem('podracer.driverName') || '').slice(0, 14); } catch (e) { return ''; } };
+  const driverName = () => loadDriverName().trim() || (POD && POD.nick) || (DOG_DRIVER ? 'Bedo' : '');   // ✏ what the standings and results call you
   const BEDO_LEVEL = hasName('bedo');                           // 🐶 a level named Bedo: Bedo drives (and gets unlocked)
   const pickedDriver = () => { try { return localStorage.getItem('podracer.driver') || 'pilot'; } catch (e) { return 'pilot'; } };
   let DOG_DRIVER = BEDO_LEVEL || (!!loadUnlocks().bedo && pickedDriver() === 'bedo');   // …or you picked him on the main menu
@@ -3465,7 +3471,7 @@
     if (raceState === 'menu') { standEl.style.display = 'none'; return; } standEl.style.display = '';
     const me = playerProgress(), rows = ais.map(a => ({ name: a.name, col: `rgb(${a.col.join(',')})`, d: a.finished ? 1e12 - a.finishTime : a.dist, trail: !!a.trail, fin: a.finished }));
     if (GHOST_MODE && GHOST) { const g = ghostAt(raceTime); if (g) rows.push({ name: '👻 YOUR BEST', col: 'rgba(150,220,255,.6)', d: g.done ? 1e12 - GHOST.time : g.p, ghost: true }); }
-    rows.push({ name: POD.nick ? POD.nick.toUpperCase() : 'YOU', col: '#6fd3ff', d: raceState === 'finished' ? 1e12 - raceTime : me, you: true, trail: !T.main && !!T.path });
+    rows.push({ name: driverName() ? driverName().toUpperCase() : 'YOU', col: '#6fd3ff', d: raceState === 'finished' ? 1e12 - raceTime : me, you: true, trail: !T.main && !!T.path });
     rows.sort((a, b) => b.d - a.d);
     standEl.innerHTML = rows.map((r, i) => { const gap = r.you || r.fin ? '' : r.ghost ? (ghostDelta() || 0) : (r.d - me) / SEG / 41; return `<div class="${r.you ? 'me' : ''}"><span class="p">${i + 1}</span><i style="background:${r.col}"></i>${r.name}${r.trail ? ' <em>⑂</em>' : ''}${r.fin ? ' <em>🏁</em>' : r.you ? '' : `<span class="g">${gap >= 0 ? '+' : ''}${gap.toFixed(1)}s</span>`}</div>`; }).join('');
   }
@@ -3887,6 +3893,7 @@
         if (BEDO_LEVEL && !loadUnlocks().bedo) { const u = loadUnlocks(); u.bedo = true; saveUnlocks(u); unlocks = u; setTimeout(() => showTx('🐶 BEDO UNLOCKED!<b>WOOF!</b><small>Pick him as your driver on the main menu — he can drive every race now</small>'), 1200); }
         const sec = [DOG_DRIVER && '🐶 BEDO IS DRIVING! Woof!', MOON && '🌙 MOON GRAVITY — big floaty jumps', RAINBOW && '🌈 RAINBOW POWER'].filter(Boolean);
         if (sec.length) flash('🤫 SECRET: ' + sec.join(' · '));
+        else if (driverName()) flash(`🏁 GO, ${driverName().toUpperCase()}!`);
       }
     } else if (raceState === 'racing' && countEl.style.display === 'block') {
       countdown -= dt; if (countdown < -0.6) countEl.style.display = 'none';
@@ -3959,6 +3966,10 @@
     const hs = document.createElement('div'); hs.className = 'hidespot'; hs.title = ''; hs.onclick = openScramble; grid.appendChild(hs);   // 📜 the empty space next to Neon Storm
     const p = podLook(podIdx), p0 = PODS[podIdx];
     const nUp = UPGRADES.reduce((t, u) => t + Math.min(UP_MAX, (p.ups || {})[u.k] || 0), 0);
+    const dn = document.getElementById('drvName');
+    if (document.activeElement !== dn) { dn.value = loadDriverName(); dn.placeholder = DOG_DRIVER ? 'BEDO (type a name)' : 'type your name'; }
+    dn.oninput = () => { try { localStorage.setItem('podracer.driverName', dn.value.slice(0, 14)); } catch (e) {} };
+    dn.onkeydown = e => { if (e.key === 'Enter') dn.blur(); };
     const dr = document.getElementById('driverRow');
     if (false) {                                                 // (Bedo now has his own card in the pod grid)
       const pick = pickedDriver();
@@ -4834,7 +4845,7 @@
     document.getElementById('finPlace').style.color = myPlace === 1 ? '#ffd36b' : '#fff3dc';
     const rows = finishOrder.map((a, i) => `<div><span style="color:rgb(${a.col})">${i + 1}. ${a.name}</span><span>${fmtTime(a.finishTime)}</span></div>`);
     if (GHOST_MODE && prevGhost != null) rows.push(`<div><span style="color:#9fd8ff">👻 Your best before</span><span>${fmtTime(prevGhost)}</span></div>`);
-    rows.push(`<div><span style="color:#6fd3ff">${myPlace}. ${POD.nick ? escHtml(POD.nick) : 'You'}</span><span>${fmtTime(myTime)}</span></div>`);
+    rows.push(`<div><span style="color:#6fd3ff">${myPlace}. ${driverName() ? escHtml(driverName()) : 'You'}</span><span>${fmtTime(myTime)}</span></div>`);
     document.getElementById('finOrder').innerHTML = rows.join('');
     finishEl.style.display = 'flex';
   }
