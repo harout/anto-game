@@ -38,8 +38,9 @@ five worlds, with 1–9 laps. A live map and height profile show the track as yo
 the menu and race with the AI rivals, ghosts and standings like the built-in tracks. **⧉ SHARE CODE** gives a code
 (starting with `POD1:`) a friend can paste into **⇩ IMPORT CODE**.
 
-**Beat the Grand Tour in 1st place** to unlock two extras in the menu:
-- **AI smartness** — a slider to set the rivals' level yourself on each track (0–50; at 50 they know the shortcuts)
+**AI smartness** — a slider in the menu sets the rivals' level yourself on each track (0–50; at 50 they know the shortcuts).
+
+**Beat the Grand Tour in 1st place** to unlock:
 - **👻 Ghost race** — no rivals, just you against a see-through replay of your own best run on that track,
   with a live “ahead / behind your best” readout. Beat it and your new run becomes the ghost.
 

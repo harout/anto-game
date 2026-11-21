@@ -3343,18 +3343,18 @@
 
   function renderMaster() {
     const row = document.getElementById('masterRow');
-    if (!masterUnlocked()) { row.innerHTML = '🔒 Win the GRAND TOUR in 1st place to unlock: set how smart the AI is · race your own ghost'; return; }
+    const ghostOk = masterUnlocked();                          // the AI slider is always there; ghost racing unlocks with a Grand Tour win
     const wn = aiWinsHere();
     const what = wn >= AI_SHORTCUT_LEVEL ? 'knows the shortcuts' : `+${wn}% · ${Math.min(AI_MAX_LEVEL, wn)}/${AI_MAX_LEVEL} boost tricks`;
-    const gTxt = TOUR ? '👻 GHOST: not in the Grand Tour' : `👻 GHOST RACE: ${GHOST_MODE ? 'ON' : 'OFF'}${GHOST ? ' · best ' + fmtTime(GHOST.time) : ' · no best run yet'}`;
-    row.innerHTML = `<span>AI SMARTNESS ON ${TRACK_NAMES[AI_TRACK].toUpperCase()}</span><input type="range" id="aiSlider" min="0" max="${AI_SHORTCUT_LEVEL}" step="1" value="${Math.min(AI_SHORTCUT_LEVEL, wn)}"><b id="aiSliderTxt">LEVEL ${wn} · ${what}</b><button id="ghostBtn" class="secondary"${TOUR ? ' disabled' : ''}>${gTxt}</button>`;
+    const gTxt = !ghostOk ? '🔒 👻 GHOST RACE: win the Grand Tour' : TOUR ? '👻 GHOST: not in the Grand Tour' : `👻 GHOST RACE: ${GHOST_MODE ? 'ON' : 'OFF'}${GHOST ? ' · best ' + fmtTime(GHOST.time) : ' · no best run yet'}`;
+    row.innerHTML = `<span>AI SMARTNESS ON ${TRACK_NAMES[AI_TRACK].toUpperCase()}</span><input type="range" id="aiSlider" min="0" max="${AI_SHORTCUT_LEVEL}" step="1" value="${Math.min(AI_SHORTCUT_LEVEL, wn)}"><b id="aiSliderTxt">LEVEL ${wn} · ${what}</b><button id="ghostBtn" class="secondary"${TOUR || !ghostOk ? ' disabled' : ''}>${gTxt}</button>`;
     document.getElementById('aiSlider').oninput = e => {
       const w = loadAIWins(); w[AI_TRACK] = +e.target.value; saveAIWins(w);
       AI_LEVEL = loadAILevel(); AI_SHORTCUTS = aiWinsHere() >= AI_SHORTCUT_LEVEL; resetAIs();
       const v = aiWinsHere(); document.getElementById('aiSliderTxt').textContent = `LEVEL ${v} · ${v >= AI_SHORTCUT_LEVEL ? 'knows the shortcuts' : `+${v}% · ${Math.min(AI_MAX_LEVEL, v)}/${AI_MAX_LEVEL} boost tricks`}`;
     };
     document.getElementById('aiSlider').onchange = () => renderMenu();
-    if (!TOUR) document.getElementById('ghostBtn').onclick = () => { GHOST_MODE = !GHOST_MODE; try { localStorage.setItem('podracer.ghostMode', GHOST_MODE ? '1' : '0'); } catch (e) {} resetAIs(); renderMenu(); };
+    if (!TOUR && ghostOk) document.getElementById('ghostBtn').onclick = () => { GHOST_MODE = !GHOST_MODE; try { localStorage.setItem('podracer.ghostMode', GHOST_MODE ? '1' : '0'); } catch (e) {} resetAIs(); renderMenu(); };
   }
   function renderOpts() {
     renderMaster();
@@ -3402,7 +3402,7 @@
     if (GHOST_MODE) {
       msgs.push(prevGhost == null ? '👻 Your first run on this track is saved — now race your ghost!' : newBest ? `👻 NEW PERSONAL BEST! ${(prevGhost - raceTime).toFixed(1)} s faster than your ghost` : `👻 ${(raceTime - prevGhost).toFixed(1)} s slower than your best — try again!`);
     } else if (newBest && prevGhost != null && !TOUR) msgs.push(`👻 New best run on this track saved as your ghost (${fmtTime(raceTime)})`);
-    if (TOUR && myPlace === 1) { const u = loadUnlocks(); if (!u.master) { u.master = true; saveUnlocks(u); msgs.push('🏆 GRAND TOUR CHAMPION! Unlocked: set how smart the AI is, and race your own ghost'); } }
+    if (TOUR && myPlace === 1) { const u = loadUnlocks(); if (!u.master) { u.master = true; saveUnlocks(u); msgs.push('🏆 GRAND TOUR CHAMPION! Unlocked: race your own ghost'); } }
     if (myPlace === 1 && !GHOST_MODE) {
       unlocks = loadUnlocks();
       if (unlocks.pods < PODS.length) { unlocks.pods++; msgs.push(`NEW POD UNLOCKED: ${PODS[unlocks.pods - 1].name}!`); }
