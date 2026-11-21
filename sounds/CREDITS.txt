@@ -1,0 +1,29 @@
+20 dog barks, cut from the dog recordings in the ESC-50 dataset (the ESC-10 subset).
+
+ESC-50: Dataset for Environmental Sound Classification, by Karol J. Piczak.
+https://github.com/karolpiczak/ESC-50
+The ESC-10 subset is licensed under Creative Commons Attribution 3.0 (CC BY 3.0):
+https://creativecommons.org/licenses/by/3.0/
+The clips come from field recordings shared on Freesound.org.
+
+Each bark below was trimmed to a single bark, faded in and out, and made louder.
+bark_01.wav  <-  ESC-50 clip 3-157695-A-0.wav  (0.21 s)
+bark_02.wav  <-  ESC-50 clip 3-157695-A-0.wav  (0.18 s)
+bark_03.wav  <-  ESC-50 clip 2-114280-A-0.wav  (0.25 s)
+bark_04.wav  <-  ESC-50 clip 4-199261-A-0.wav  (0.19 s)
+bark_05.wav  <-  ESC-50 clip 2-114280-A-0.wav  (0.27 s)
+bark_06.wav  <-  ESC-50 clip 4-199261-A-0.wav  (0.2 s)
+bark_07.wav  <-  ESC-50 clip 5-9032-A-0.wav  (0.21 s)
+bark_08.wav  <-  ESC-50 clip 5-9032-A-0.wav  (0.2 s)
+bark_09.wav  <-  ESC-50 clip 4-207124-A-0.wav  (0.24 s)
+bark_10.wav  <-  ESC-50 clip 4-184575-A-0.wav  (0.19 s)
+bark_11.wav  <-  ESC-50 clip 4-191687-A-0.wav  (0.29 s)
+bark_12.wav  <-  ESC-50 clip 4-184575-A-0.wav  (0.19 s)
+bark_13.wav  <-  ESC-50 clip 4-207124-A-0.wav  (0.24 s)
+bark_14.wav  <-  ESC-50 clip 3-180256-A-0.wav  (0.59 s)
+bark_15.wav  <-  ESC-50 clip 2-114587-A-0.wav  (0.18 s)
+bark_16.wav  <-  ESC-50 clip 1-32318-A-0.wav  (0.25 s)
+bark_17.wav  <-  ESC-50 clip 1-32318-A-0.wav  (0.21 s)
+bark_18.wav  <-  ESC-50 clip 1-100032-A-0.wav  (0.25 s)
+bark_19.wav  <-  ESC-50 clip 1-59513-A-0.wav  (0.24 s)
+bark_20.wav  <-  ESC-50 clip 1-30344-A-0.wav  (0.3 s)
