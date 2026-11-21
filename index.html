@@ -5088,7 +5088,7 @@
     audio.ctx.decodeAudioData(u.buffer).then(bf => { pantBuf = bf; }).catch(() => { pantLoading = false; });
   }
   function jumpPant() {
-    if (!audio || muted) return;
+    if (!audio || muted || !DOG_DRIVER) return;               // only when Bedo is driving
     if (!pantBuf) { loadPant(); return; }
     if (pantSrc) { try { pantSrc.stop(); } catch (e) {} }      // start fresh, never two at once
     const src = audio.ctx.createBufferSource(), g = audio.ctx.createGain(); src.buffer = pantBuf; g.gain.value = 0.9;
