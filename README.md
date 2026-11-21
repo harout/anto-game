@@ -114,4 +114,4 @@ What you call a level can change things... try naming one after a certain yellow
 Type a name in **✏ DRIVER NAME** on the main menu. It shows instead of YOU in the race standings and the finish results, and the race starts with "🏁 GO, <name>!".
 
 ## 🐶 Sound credits
-Bedo's barks are real dog recordings cut from the ESC-50 dataset (ESC-10 subset) by Karol J. Piczak, licensed CC BY 3.0 (https://github.com/karolpiczak/ESC-50). The clips come from Freesound.org. The 20 separate bark files are in the sounds folder, with sounds/CREDITS.txt.
+Bedo's bark is bark_06, a real dog recording cut from the ESC-50 dataset (ESC-10 subset) by Karol J. Piczak, licensed CC BY 3.0 (https://github.com/karolpiczak/ESC-50). The clips come from Freesound.org. The 20 separate bark files are in the sounds folder, with sounds/CREDITS.txt.
