@@ -124,6 +124,9 @@
   #v3c { position:absolute; inset:0; width:100%; height:100%; cursor:grab; touch-action:none; } #v3c:active { cursor:grabbing; }
   .v3-top { position:absolute; top:14px; left:18px; right:18px; display:flex; gap:12px; align-items:center; font:12px Menlo, monospace; color:#b8916a; letter-spacing:1px; }
   .v3-top b { color:#ffb347; letter-spacing:4px; font-size:15px; margin-right:auto; }
+  #v3smooth { position:absolute; right:18px; bottom:14px; width:330px; display:none; flex-wrap:wrap; gap:6px 10px; align-items:center; background:#1a0e06e6; border:1px solid #6a3a18; border-radius:10px; padding:10px 12px; font:12px Menlo, monospace; color:#ffe7c2; }
+  #v3smooth b { color:#ffb347; letter-spacing:3px; } #v3smooth input { flex:1; accent-color:#ffb347; } #v3smv { width:34px; text-align:right; color:#ffd36b; }
+  #v3smooth small { width:100%; color:#b8916a; font-size:10px; } #v3race { width:100%; background:#ff9a2e; color:#1a0e06; border:0; border-radius:7px; padding:8px; font:bold 12px Menlo, monospace; letter-spacing:2px; cursor:pointer; }
   .v3-legend { position:absolute; bottom:14px; left:18px; font:11px Menlo, monospace; color:#b8916a; display:flex; gap:4px 12px; flex-wrap:wrap; align-items:center; }
   .v3-legend i { display:inline-block; width:11px; height:11px; border-radius:2px; margin-right:-6px; border:1px solid #0006; }
   .ed-add button.sub { background:#4a1a12; border-color:#a2442e; color:#ffd0c4; } .ed-add button.sub:hover { border-color:#ff8a7a; }
@@ -254,6 +257,8 @@
 </div>
 <div id="view3d"><canvas id="v3c"></canvas>
   <div class="v3-top"><b id="v3title">3D VIEW</b><span>drag to spin · scroll to zoom · double-click to reset</span><button class="secondary" id="v3spin">⟳ AUTO-SPIN: ON</button><button class="secondary" id="v3close">✕ CLOSE</button></div>
+  <div id="v3smooth"><b>SMOOTHING</b><input type="range" id="v3sm" min="0" max="100" step="1"><span id="v3smv"></span>
+    <small id="v3smh">rounds off sharp turns and the edges of steep climbs and drops</small><button id="v3race">▶ SAVE &amp; RACE IT</button></div>
   <div class="v3-legend"><i style="background:#e8c79a"></i>road <i style="background:#b8703e"></i>canyon walls <i style="background:#5b5048"></i>tunnel <i style="background:#4aa3ff"></i>river <i style="background:#6f9a52"></i>swamp water <i style="background:#ffd23f"></i>ramp <i style="background:#ff5a4a"></i>rocks <i style="background:#fff"></i>start</div>
 </div>
 <div id="finish"><div class="card">
@@ -625,6 +630,13 @@
     if (!TOUR || !(TOUR.stage >= 0 && TOUR.stage < TOUR_ORDER.length)) TOUR = { stage: 0 };
     TRACK_ID = TOUR_ORDER[TOUR.stage];
   }
+  // rolling average around a closed loop: rounds off sharp turns and hill edges (level SMOOTHING)
+  function smoothLoop(a, R) {
+    const N = a.length; R = Math.min(R | 0, Math.floor(N / 2) - 1); if (R < 1) return a.slice();
+    const P = new Float64Array(3 * N + 1); for (let i = 0; i < 3 * N; i++) P[i + 1] = P[i] + a[i % N];
+    return a.map((_, i) => (P[N + i + R + 1] - P[N + i - R]) / (2 * R + 1));
+  }
+  const smoothRadius = lv => Math.round(Math.max(0, Math.min(100, +(lv && lv.smooth) || 0)) * 0.6);   // 0–100 → up to 60 segments either side
   // ✎ CUSTOM LEVELS from the level editor (track 7 + the chosen level's id)
   const loadLevels = () => { try { const a = JSON.parse(localStorage.getItem('podracer.levels') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
   const saveLevels = a => { try { localStorage.setItem('podracer.levels', JSON.stringify(a)); } catch (e) {} };
@@ -774,6 +786,11 @@
     }
     if (hillSum) addRoad(30, 60, 30, 0, { hill: -hillSum });   // ease back down (or up) to the start height
     addRoad(0, 60, 0, 0, CLEAR);                               // finish straight
+    const SR = smoothRadius(CUSTOM);
+    if (SR) {                                                  // SMOOTHING from the 3D view
+      const cs = smoothLoop(segments.map(g => g.curve), SR), ys = smoothLoop(segments.map(g => g.y), SR);
+      segments.forEach((g, i) => { g.curve = cs[i]; g.y = ys[i]; g.bank = Math.abs(cs[i]) >= 3 && !g.canyon && !THEME.swamp ? cs[i] : 0; });   // same banking rule as the builder
+    }
   } else if (TRACK_ID === 5) {
     // 🏜 BRYCE CANYON: a rim road above a hoodoo amphitheater, switchbacks down through the hoodoos, back up to the rim
     addRoad(0, 50, 0, 0, CLEAR);                  // start straight on the rim
@@ -3061,11 +3078,11 @@
   const edMsg = t => { document.getElementById('edMsg').textContent = t; };
   function edSaveLevel() {
     if (!ED.sections.length) { edMsg('Add at least one section first.'); return false; }
-    const all = loadLevels(), i = all.findIndex(l => l.id === ED.id), before = i >= 0 ? JSON.stringify(all[i].sections) : null;
+    const all = loadLevels(), i = all.findIndex(l => l.id === ED.id), before = i >= 0 ? JSON.stringify([all[i].sections, all[i].smooth || 0]) : null;
     ED.name = (ED.name || '').trim() || 'My Level'; ED.updated = Date.now();
     if (i >= 0) all[i] = ED; else all.push(ED);
     saveLevels(all);
-    if (before !== null && before !== JSON.stringify(ED.sections)) try { localStorage.removeItem('podracer.ghost.c' + ED.id); } catch (e) {}   // track changed: old ghost no longer fits
+    if (before !== null && before !== JSON.stringify([ED.sections, ED.smooth || 0])) try { localStorage.removeItem('podracer.ghost.c' + ED.id); } catch (e) {}   // track changed: old ghost no longer fits
     edDirty = false; edRenderPick(); edMsg('💾 Saved “' + ED.name + '”'); return true;
   }
   function edRenderPick() {
@@ -3121,25 +3138,33 @@
     });
     const on = edList.querySelector('.ed-row.on'); if (on) on.scrollIntoView({ block: 'nearest' });
   }
-  function edPreview() {                                       // top-down map (closed into a loop like the in-race minimap) + height profile
+  function levelLayout(lv, selIdx = -1) {                      // a level's shape: per-segment curve/height, smoothed, laid out as a loop
     const segs = [];
     const push = (n, curve, dy, kind, sel) => { for (let k = 0; k < n; k++) segs.push({ curve, dy: dy / n, kind, sel }); };
     push(50, 0, 0, 'road', false);
     let hs = 0;
-    ED.sections.forEach((sc, i) => {
+    lv.sections.forEach((sc, i) => {
       const kind = sc.tunnel ? 'tunnel' : sc.water === 'fast' ? 'swamp' : sc.water ? 'river' : sc.canyon ? 'canyon' : 'road', n = Math.max(20, Math.min(400, sc.len));
       const ease = Math.min(30, Math.floor(n * 0.25));
-      for (let k = 0; k < n; k++) { const c = +sc.curve * (k < ease ? k / ease : k >= n - ease ? (n - k) / ease : 1); segs.push({ curve: c, dy: (+sc.hill || 0) / n, kind, sel: i === edSel, ramp: sc.ramp && k === (n >> 1), rocks: sc.obs === 'lots' && k % 18 === 9 }); }
+      for (let k = 0; k < n; k++) { const c = +sc.curve * (k < ease ? k / ease : k >= n - ease ? (n - k) / ease : 1); segs.push({ curve: c, dy: (+sc.hill || 0) / n, kind, sel: i === selIdx, ramp: sc.ramp && k === (n >> 1), rocks: sc.obs === 'lots' && k % 18 === 9 }); }
       hs += +sc.hill || 0;
     });
     if (hs) push(120, 0, -hs, 'road', false);
     push(60, 0, 0, 'road', false);
-    const N = segs.length, kk = 0.006, net = segs.reduce((t, g) => t + g.curve, 0) * kk, dir = net < 0 ? -1 : 1, fix = (dir * 2 * Math.PI - net) / N;
-    let a = 0, x = 0, y = 0, h = 0; const pts = [];
-    for (const g of segs) { a += g.curve * kk + fix; x += Math.sin(a); y -= Math.cos(a); h += g.dy; pts.push([x, y, h]); }
+    const N = segs.length, R = smoothRadius(lv);
+    let hgt = 0; const H0 = segs.map(g => (hgt += g.dy));
+    const C = smoothLoop(segs.map(g => g.curve), R), HH = smoothLoop(H0, R);
+    const kk = 0.006, net = C.reduce((t, c) => t + c, 0) * kk, dir = net < 0 ? -1 : 1, fix = (dir * 2 * Math.PI - net) / N;
+    let a = 0, x = 0, y = 0; const pts = [];
+    C.forEach((c, i) => { a += c * kk + fix; x += Math.sin(a); y -= Math.cos(a); pts.push([x, y, HH[i]]); });
     const ex = pts[N - 1][0], ey = pts[N - 1][1]; pts.forEach((p, i) => { p[0] -= ex * (i + 1) / N; p[1] -= ey * (i + 1) / N; });
-    edGeom = pts.map((p, i) => ({ x: p[0], z: p[1], y: p[2] / SEG, kind: segs[i].kind, ramp: segs[i].ramp, rocks: segs[i].rocks, sel: segs[i].sel }));
-    if (v3open && v3src === 'editor') v3set(edGeom, ED.name);
+    const geom = pts.map((p, i) => ({ x: p[0], z: p[1], y: p[2] / SEG, kind: segs[i].kind, ramp: segs[i].ramp, rocks: segs[i].rocks, sel: segs[i].sel }));
+    return { segs, pts, hs, N, geom };
+  }
+  function edPreview() {                                       // top-down map (closed into a loop like the in-race minimap) + height profile
+    const { segs, pts, hs, N, geom } = levelLayout(ED, edSel);
+    edGeom = geom;
+    if (v3open && v3src === 'editor') { v3set(edGeom, ED.name); v3smoothUi(); }
     const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), mnx = Math.min(...xs), mxx = Math.max(...xs), mny = Math.min(...ys), mxy = Math.max(...ys);
     const cv = document.getElementById('edMap'), c = cv.getContext('2d'), sc = 260 / Math.max(mxx - mnx, mxy - mny, 1);
     const P = p => [20 + (p[0] - mnx) * sc + (320 - (mxx - mnx) * sc) / 2, 20 + (p[1] - mny) * sc + (260 - (mxy - mny) * sc) / 2];
@@ -3154,15 +3179,15 @@
     pc.beginPath(); pts.forEach((p, i) => { const px = 6 + i / (N - 1) * 348, py = 84 - (p[2] - mnh) / (mxh - mnh) * 62; i ? pc.lineTo(px, py) : pc.moveTo(px, py); });
     pc.strokeStyle = '#ffb347'; pc.lineWidth = 2; pc.stroke();
     const km = N * 200 / 1000 * ED.laps / 10;
-    document.getElementById('edStats').innerHTML = `${ED.sections.length} sections · ${N} segments a lap · ${ED.laps} lap${ED.laps > 1 ? 's' : ''}<br>about ${Math.round(N / 45 * ED.laps)} s of racing · highest +${Math.round(Math.max(0, ...hsArr))} · lowest ${Math.round(Math.min(0, ...hsArr))}${hs ? ' · eases back to the start height' : ''}`;
+    document.getElementById('edStats').innerHTML = `${ED.sections.length} sections · ${N} segments a lap${ED.smooth ? ` · smoothing ${ED.smooth}` : ''} · ${ED.laps} lap${ED.laps > 1 ? 's' : ''}<br>about ${Math.round(N / 45 * ED.laps)} s of racing · highest +${Math.round(Math.max(0, ...hsArr))} · lowest ${Math.round(Math.min(0, ...hsArr))}${hs ? ' · eases back to the start height' : ''}`;
   }
-  const edCodeOf = lv => 'POD1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ n: lv.name, w: lv.world, l: lv.laps, s: lv.sections.map(sc => [sc.len, sc.curve, sc.hill, (sc.canyon ? 1 : 0) | (sc.arch ? 2 : 0) | (sc.tunnel ? 4 : 0) | (sc.ramp ? 8 : 0), sc.water || '', sc.obs || 'some']) }))));
+  const edCodeOf = lv => 'POD1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ n: lv.name, w: lv.world, l: lv.laps, m: lv.smooth || 0, s: lv.sections.map(sc => [sc.len, sc.curve, sc.hill, (sc.canyon ? 1 : 0) | (sc.arch ? 2 : 0) | (sc.tunnel ? 4 : 0) | (sc.ramp ? 8 : 0), sc.water || '', sc.obs || 'some']) }))));
   function edFromCode(code) {
     const m = String(code).trim().match(/^POD1:([A-Za-z0-9+/=]+)$/); if (!m) throw new Error('That is not a level code (it should start with POD1:)');
     const o = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
     if (!o || !Array.isArray(o.s) || !o.s.length || o.s.length > 300) throw new Error('That level code is broken');
     const num = (v, a, b, d) => Number.isFinite(+v) ? Math.max(a, Math.min(b, +v)) : d;
-    return { id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: String(o.n || 'Shared level').slice(0, 28), world: num(o.w, 1, 5, 1) | 0, laps: num(o.l, 1, 9, 3) | 0,
+    return { id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: String(o.n || 'Shared level').slice(0, 28), world: num(o.w, 1, 5, 1) | 0, laps: num(o.l, 1, 9, 3) | 0, smooth: num(o.m, 0, 100, 0) | 0,
       sections: o.s.map(a => ({ len: num(a[0], 20, 400, 90) | 0, curve: num(a[1], -7, 7, 0), hill: num(a[2], -4000, 4000, 0) | 0, canyon: !!(a[3] & 1), arch: !!(a[3] & 2), tunnel: !!(a[3] & 4), ramp: !!(a[3] & 8),
         water: a[4] === 'fast' || a[4] === 'slow' ? a[4] : '', obs: ['none', 'some', 'lots'].includes(a[5]) ? a[5] : 'some' })) };
   }
@@ -3174,7 +3199,7 @@
     if (ED.sections.length <= 1) { edMsg('A level needs at least one section.'); return; }
     ED.sections.splice(edSel, 1); edSel = Math.max(0, Math.min(edSel, ED.sections.length - 1)); edDirty = true; edRenderList(); edPreview(); edMsg('− Removed section ' + (edSel + 1 > ED.sections.length ? ED.sections.length : edSel + 1));
   };
-  document.getElementById('ed3d').onclick = () => { edPreview(); v3show(edGeom, ED.name, 'editor'); };
+  document.getElementById('ed3d').onclick = () => { v3lvl = null; edPreview(); v3show(edGeom, ED.name, 'editor'); };
   document.getElementById('edName').oninput = e => { ED.name = e.target.value; edDirty = true; };
   document.getElementById('edWorld').onchange = e => { ED.world = +e.target.value; edDirty = true; };
   document.getElementById('edLaps').oninput = e => { ED.laps = Math.max(1, Math.min(9, +e.target.value || 1)); edDirty = true; edPreview(); };
@@ -3219,10 +3244,32 @@
     document.getElementById('v3title').textContent = '🧊 ' + String(title || 'TRACK').toUpperCase();
   }
   function v3show(geo, title, src) {
-    v3set(geo, title); v3src = src; v3open = true; v3El.style.display = 'block'; v3yaw = 0.6; v3pitch = 0.75; v3zoom = 1; v3last = performance.now();
+    v3set(geo, title); v3src = src; v3smoothUi(); v3open = true; v3El.style.display = 'block'; v3yaw = 0.6; v3pitch = 0.75; v3zoom = 1; v3last = performance.now();
     requestAnimationFrame(v3frame);
   }
   function v3hide() { v3open = false; v3El.style.display = 'none'; }
+  let v3lvl = null;                                            // the level whose smoothing the panel edits (editor copy, or a saved level from the menu)
+  function v3smoothUi() {
+    const box = document.getElementById('v3smooth'), lv = v3src === 'editor' ? ED : v3lvl;
+    box.style.display = lv ? 'flex' : 'none'; if (!lv) return;
+    document.getElementById('v3sm').value = lv.smooth || 0; document.getElementById('v3smv').textContent = lv.smooth || 0;
+    document.getElementById('v3smh').textContent = v3src === 'editor' ? 'rounds off sharp turns and the edges of steep climbs and drops' : 'rounds off sharp turns and hill edges · saved right away, used next time you race it';
+  }
+  document.getElementById('v3sm').oninput = e => {
+    const v = +e.target.value; document.getElementById('v3smv').textContent = v;
+    if (v3src === 'editor') { ED.smooth = v; edDirty = true; edPreview(); return; }
+    if (!v3lvl) return;
+    v3lvl.smooth = v; v3set(levelLayout(v3lvl).geom, v3lvl.name);
+  };
+  document.getElementById('v3sm').onchange = () => {           // from the menu: save the level right away (a changed track drops its old ghost)
+    if (v3src === 'editor' || !v3lvl) return;
+    const all = loadLevels(), i = all.findIndex(l => l.id === v3lvl.id); if (i < 0) return;
+    if ((all[i].smooth || 0) !== v3lvl.smooth) { all[i].smooth = v3lvl.smooth; saveLevels(all); try { localStorage.removeItem('podracer.ghost.c' + v3lvl.id); } catch (e) {} }
+  };
+  document.getElementById('v3race').onclick = () => {
+    if (v3src === 'editor') { if (edSaveLevel()) playLevel(ED.id); return; }
+    if (v3lvl) { document.getElementById('v3sm').onchange(); playLevel(v3lvl.id); }
+  };
   const V3COL = { road: [232, 199, 154], canyon: [232, 199, 154], tunnel: [150, 136, 120], river: [74, 163, 255], swamp: [111, 154, 82] };
   function v3frame(now) {
     if (!v3open) return;
@@ -3288,7 +3335,11 @@
     return segments.map((sg, i) => ({ x: raw[i][0] - ex * (i + 1) / N, z: raw[i][1] - ez * (i + 1) / N, y: sg.y / SEG,
       kind: sg.cave ? 'tunnel' : sg.river ? (sg.swamp ? 'swamp' : 'river') : sg.canyon ? 'canyon' : 'road', ramp: !!(sg.ramp && sg.ramp.j === 0 && Math.abs(sg.ramp.off) < 1), rocks: sg.obs.some(o => Math.abs(o.off) < 1 && o.kind !== 'tree') }));
   }
-  document.getElementById('view3dBtn').onclick = () => v3show(trackGeom(), CUSTOM ? CUSTOM.name : TOUR ? 'Grand Tour · ' + TRACK_NAMES[TRACK_ID] : TRACK_NAMES[TRACK_ID], 'menu');
+  document.getElementById('view3dBtn').onclick = () => {
+    const lv = CUSTOM && loadLevels().find(l => l.id === CUSTOM.id);
+    v3lvl = lv ? JSON.parse(JSON.stringify(lv)) : null;           // your own level: show its layout so SMOOTHING can be tried live
+    v3show(v3lvl ? levelLayout(v3lvl).geom : trackGeom(), CUSTOM ? CUSTOM.name : TOUR ? 'Grand Tour · ' + TRACK_NAMES[TRACK_ID] : TRACK_NAMES[TRACK_ID], 'menu');
+  };
 
   function renderMaster() {
     const row = document.getElementById('masterRow');
@@ -3596,7 +3647,7 @@
         if (now >= c.c0 + CHASM_LEN && podY >= 0 && podY <= 1) return { result: 'CLEARED', peak: Math.round(peak), speedAtLanding: Math.round(speed) };
       }
       return { result: 'timeout', peak };
-    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, get v3() { return { open: v3open, src: v3src, pts: v3geo && v3geo.P.length }; }, get custom() { return CUSTOM && { id: CUSTOM.id, name: CUSTOM.name, laps: TOTAL_LAPS, segs: segments.length, theme: THEME.name }; }, edCode(lv) { return edCodeOf(lv); }, edFrom(c) { return edFromCode(c); }, autoRace(maxSec, lazy = 0) { menuEl.style.display = "none"; restartRace(); raceState = "racing"; countdown = 0; let t = 0; while (t < maxSec && raceState === "racing") { L = R = 1 - lazy; const sg = segAt(position + PLAYER_Z); playerX += (sg.curve * 0.09 - playerX) * 0.2; physicsStep(1 / 60, false); t += 1 / 60; } return { state: raceState, time: raceTime, lap }; }, get ghostPos() { return ghostAt(raceTime); }, get ghost() { return { mode: GHOST_MODE, have: !!GHOST, time: GHOST && GHOST.time, n: GHOST && GHOST.s.length, rec: ghostRec.length, delta: ghostDelta() }; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
+    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, segCurves() { return segments.map(g => g.curve); }, segYs() { return segments.map(g => g.y); }, get v3() { return { open: v3open, src: v3src, pts: v3geo && v3geo.P.length }; }, get custom() { return CUSTOM && { id: CUSTOM.id, name: CUSTOM.name, laps: TOTAL_LAPS, segs: segments.length, theme: THEME.name }; }, edCode(lv) { return edCodeOf(lv); }, edFrom(c) { return edFromCode(c); }, autoRace(maxSec, lazy = 0) { menuEl.style.display = "none"; restartRace(); raceState = "racing"; countdown = 0; let t = 0; while (t < maxSec && raceState === "racing") { L = R = 1 - lazy; const sg = segAt(position + PLAYER_Z); playerX += (sg.curve * 0.09 - playerX) * 0.2; physicsStep(1 / 60, false); t += 1 / 60; } return { state: raceState, time: raceTime, lap }; }, get ghostPos() { return ghostAt(raceTime); }, get ghost() { return { mode: GHOST_MODE, have: !!GHOST, time: GHOST && GHOST.time, n: GHOST && GHOST.s.length, rec: ghostRec.length, delta: ghostDelta() }; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
   refreshPadList(); buildAxisRows();
   if (TOUR) { const lb = document.getElementById('lapBox'); if (lb && lb.firstChild) lb.firstChild.textContent = 'WORLD '; }
   if (TOUR && TOUR.stage > 0 && TOUR.arriving) { TOUR.arriving = false; saveTour(); beginTourStage(); }
