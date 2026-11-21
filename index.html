@@ -5026,12 +5026,19 @@
     }
   }
   // 🐶 BEDO'S SOUNDS (made on the fly, no sound files)
+  let dogBus = null;
+  function dogOut() {                                          // 🔊 Bedo gets his own loud channel (3× louder, with a limiter so it never crackles)
+    if (dogBus && dogBus.ctx === audio.ctx) return dogBus.in;
+    const ac = audio.ctx, g = ac.createGain(), comp = ac.createDynamicsCompressor();
+    g.gain.value = 3.2; comp.threshold.value = -10; comp.knee.value = 6; comp.ratio.value = 8; comp.attack.value = 0.003; comp.release.value = 0.15;
+    g.connect(comp); comp.connect(audio.master); dogBus = { ctx: ac, in: g }; return g;
+  }
   function dogNoise(t, dur, freq, q, vol) {
     const ac = audio.ctx, n = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate), d = n.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); src.buffer = n; f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q;
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(f); f.connect(g); g.connect(audio.master); src.start(t); src.stop(t + dur);
+    src.connect(f); f.connect(g); g.connect(dogOut()); src.start(t); src.stop(t + dur);
   }
   function bark(pitch = 1, when = 0) {                         // "woof!"
     if (!audio || muted) return;
@@ -5039,7 +5046,7 @@
     o.type = 'sawtooth'; o.frequency.setValueAtTime(520 * pitch, t); o.frequency.exponentialRampToValueAtTime(300 * pitch, t + 0.13);
     f.type = 'bandpass'; f.frequency.value = 1100 * pitch; f.Q.value = 2.5;
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.42, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.17);
-    o.connect(f); f.connect(g); g.connect(audio.master); o.start(t); o.stop(t + 0.2);
+    o.connect(f); f.connect(g); g.connect(dogOut()); o.start(t); o.stop(t + 0.2);
     dogNoise(t, 0.09, 1600 * pitch, 1.5, 0.25);
   }
   function pant() {                                            // huff-huff
@@ -5052,7 +5059,7 @@
     o.type = 'sine'; o.frequency.setValueAtTime(1100, t); o.frequency.exponentialRampToValueAtTime(700, t + 0.5);
     v.frequency.value = 9; vg.gain.value = 30; v.connect(vg); vg.connect(o.frequency);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.14, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
-    o.connect(g); g.connect(audio.master); o.start(t); v.start(t); o.stop(t + 0.6); v.stop(t + 0.6);
+    o.connect(g); g.connect(dogOut()); o.start(t); v.start(t); o.stop(t + 0.6); v.stop(t + 0.6);
   }
   function howl() {                                            // a proud victory "awoooo!"
     if (!audio || muted) return;
@@ -5061,7 +5068,7 @@
     v.frequency.value = 6; vg.gain.value = 14; v.connect(vg); vg.connect(o.frequency);
     f.type = 'lowpass'; f.frequency.value = 1800;
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.2, t + 0.2); g.gain.setValueAtTime(0.2, t + 1.1); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
-    o.connect(f); f.connect(g); g.connect(audio.master); o.start(t); v.start(t); o.stop(t + 1.7); v.stop(t + 1.7);
+    o.connect(f); f.connect(g); g.connect(dogOut()); o.start(t); v.start(t); o.stop(t + 1.7); v.stop(t + 1.7);
   }
   function chime() {
     if (!audio || muted) return;
