@@ -135,6 +135,8 @@
   #v3smooth small { width:100%; color:#b8916a; font-size:10px; } #v3race { width:100%; background:#ff9a2e; color:#1a0e06; border:0; border-radius:7px; padding:8px; font:bold 12px Menlo, monospace; letter-spacing:2px; cursor:pointer; }
   .v3-legend { position:absolute; bottom:14px; left:18px; font:11px Menlo, monospace; color:#b8916a; display:flex; gap:4px 12px; flex-wrap:wrap; align-items:center; }
   .v3-legend i { display:inline-block; width:11px; height:11px; border-radius:2px; margin-right:-6px; border:1px solid #0006; }
+  .ed-add button.auto { background:#1f4a2a; border-color:#3aa860; color:#c8ffd8; } .ed-add button.auto:hover { border-color:#8dffb0; }
+  #v3bld button#blAuto { background:#1f4a2a; border-color:#3aa860; color:#c8ffd8; }
   .ed-add button.sub { background:#4a1a12; border-color:#a2442e; color:#ffd0c4; } .ed-add button.sub:hover { border-color:#ff8a7a; }
   #trackGrid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; max-height:300px; overflow:auto; }
   .tcard { background:#2a160a; border:2px solid #4a2a12; border-radius:10px; padding:12px; cursor:pointer; font-size:14px; letter-spacing:2px; }
@@ -244,7 +246,7 @@
         <button data-add="straight">▮ Straight</button><button data-add="left">↰ Left turn</button><button data-add="right">↱ Right turn</button>
         <button data-add="up">▲ Climb</button><button data-add="down">▼ Drop</button><button data-add="canyon">⛰ Canyon</button>
         <button data-add="tunnel">◖ Tunnel</button><button data-add="river">≈ River</button><button data-add="swamp">≋ Swamp water</button>
-        <button data-add="ramp">⤴ Ramp jump</button><button data-add="rocks">● Rock field</button><button data-add="split">⑂ Split</button><button data-add="random">🎲 Random</button>
+        <button data-add="ramp">⤴ Ramp jump</button><button data-add="rocks">● Rock field</button><button data-add="split">⑂ Split</button><button id="edAuto" class="auto" title="Add the pieces that join the end of the track back to the start">🔄 Auto-complete</button><button data-add="random">🎲 Random</button>
       </div>
       <div id="edList"></div>
     </div>
@@ -270,7 +272,7 @@
     <div class="bl-row"><b>SLOPE</b><button data-slope="-2000">⬇⬇ steep</button><button data-slope="-800">⬇ down</button><button data-slope="0">flat</button><button data-slope="800">⬆ up</button><button data-slope="2000">⬆⬆ steep</button></div>
     <div class="bl-row"><b>TYPE</b><button data-type="road">road</button><button data-type="canyon">canyon</button><button data-type="tunnel">tunnel</button><button data-type="river">river</button><button data-type="swamp">swamp</button><button data-type="ramp">ramp jump</button><button data-type="rocks">rocks</button></div>
     <div class="bl-row"><b>SPLIT</b><button data-split="">none</button><button data-split="left">⑂ left</button><button data-split="right">⑂ right</button><span id="blSplitNote" style="color:#b8916a"></span></div>
-    <div class="bl-row"><button id="blPlace" class="go">✔ PLACE PIECE <small>Enter</small></button><button id="blUndo">⌫ UNDO <small>Backspace</small></button><button id="blClear">🗑 CLEAR ALL</button><button id="blDone" class="go2">✔ DONE</button></div>
+    <div class="bl-row"><button id="blPlace" class="go">✔ PLACE PIECE <small>Enter</small></button><button id="blUndo">⌫ UNDO <small>Backspace</small></button><button id="blClear">🗑 CLEAR ALL</button><button id="blAuto">🔄 AUTO-COMPLETE</button><button id="blDone" class="go2">✔ DONE</button></div>
     <div id="blInfo"></div>
   </div>
   <div id="v3smooth"><b>SMOOTHING</b><input type="range" id="v3sm" min="0" max="100" step="1"><span id="v3smv"></span>
@@ -3151,7 +3153,7 @@
       r.querySelectorAll('[data-k]').forEach(inp => {
         const k = inp.dataset.k;
         inp.oninput = inp.onchange = () => {
-          sc[k] = inp.type === 'checkbox' ? inp.checked : inp.type === 'range' ? +inp.value : inp.value;
+          sc[k] = inp.type === 'checkbox' ? inp.checked : inp.type === 'range' ? +inp.value : inp.value; delete sc.auto;
           if (k === 'canyon' && !sc.canyon) sc.arch = false;
           if (k === 'tunnel' && sc.tunnel) sc.canyon = false;
           if (k === 'canyon' && sc.canyon) sc.tunnel = false;
@@ -3196,6 +3198,51 @@
     const geom = pts.map((p, i) => ({ x: p[0], z: p[1], y: p[2] / SEG, kind: segs[i].kind, ramp: segs[i].ramp, rocks: segs[i].rocks, sel: segs[i].sel, split: segs[i].split, st: segs[i].st }));
     return { segs, pts, hs, N, geom };
   }
+  // 🔄 AUTO-COMPLETE: add turn → straight → turn so the track ends exactly where (and how) it started, at the start height
+  const secLen = sc => Math.max(sc.split && !sc.canyon && !sc.tunnel && !sc.water ? 150 : 20, Math.min(400, sc.len));
+  function simSecs(pose, secs) {                               // same turning model as the layout: eased curve, 0.006 rad per curve unit per segment
+    let { x, y, a } = pose;
+    for (const sc of secs) { const n = secLen(sc), e = Math.min(30, Math.floor(n * 0.25)); for (let k = 0; k < n; k++) { const c = +sc.curve * (k < e ? k / e : k >= n - e ? (n - k) / e : 1); a += c * 0.006; x += Math.sin(a); y -= Math.cos(a); } }
+    return { x, y, a };
+  }
+  const acBase = () => ({ hill: 0, canyon: false, arch: false, tunnel: false, water: '', ramp: false, obs: 'some', split: '', trail: 'plain', auto: true });
+  function turnSec(deg) {
+    const rad = Math.abs(deg) * Math.PI / 180, cf = n => rad / (0.006 * (n - Math.min(30, Math.floor(n * 0.25))));
+    let n = 70; while (rad && cf(n) > 4.5 && n < 400) n += 5;
+    return Object.assign(acBase(), { len: n, curve: rad ? +(Math.sign(deg) * cf(n)).toFixed(3) : 0 });
+  }
+  const straightSecs = L => { const out = []; while (L >= 20) { const n = Math.min(400, L); out.push(Object.assign(acBase(), { len: n, curve: 0 })); L -= n; } return out; };
+  function autoComplete() {
+    const start = { x: 0, y: 0, a: 0 }, pose = simSecs(start, [Object.assign(acBase(), { len: 50, curve: 0 }), ...ED.sections]);
+    const T = { x: 0, y: 60 };                                 // the 60-segment finish straight then runs straight into the start line
+    const plan = (a1, L, a2) => [...(Math.abs(a1) >= 1 ? [turnSec(a1)] : []), ...straightSecs(L), ...(Math.abs(a2) >= 1 ? [turnSec(a2)] : [])];
+    const head0 = pose.a * 180 / Math.PI;
+    let best = null;
+    const tryIt = (a1, L) => {
+      for (const m of [-2, -1, 0, 1, 2]) {
+        const a2 = -head0 - a1 + 360 * m; if (Math.abs(a2) > 300) continue;
+        const secs = plan(a1, L, a2), e = simSecs(pose, secs), err = Math.hypot(e.x - T.x, e.y - T.y);
+        const cost = err + 0.01 * secs.reduce((t, sc) => t + sc.len, 0);
+        if (!best || cost < best.cost) best = { cost, err, a1, L, a2, secs };
+      }
+    };
+    for (let a1 = -300; a1 <= 300; a1 += 10) for (let L = 0; L <= 1600; L += 40) tryIt(a1, L);
+    for (let pass = 0; pass < 2; pass++) { const b = best, da = pass ? 0.5 : 2, dl = pass ? 1 : 5;
+      for (let a1 = b.a1 - 12 * da; a1 <= b.a1 + 12 * da; a1 += da) for (let L = Math.max(0, b.L - 12 * dl); L <= b.L + 12 * dl; L += dl) tryIt(a1, L); }
+    // heights: bring the track back to the start height across the new pieces (each piece at most ±4000)
+    let need = -ED.sections.reduce((t, sc) => t + (+sc.hill || 0), 0);
+    for (const sc of best.secs) { const h = Math.max(-4000, Math.min(4000, need)); sc.hill = Math.round(h / 100) * 100; need -= sc.hill; }
+    const room = 120 - ED.sections.length;
+    if (best.secs.length > room) return { ok: false, msg: 'Not enough room for auto-complete (a level can have 120 pieces).' };
+    ED.sections.push(...best.secs); edSel = ED.sections.length - 1; edDirty = true;
+    return { ok: true, n: best.secs.length, gap: best.err, left: need };
+  }
+  function runAutoComplete() {
+    if (ED.sections.at(-1) && ED.sections.at(-1).auto) { while (ED.sections.length && ED.sections.at(-1).auto) ED.sections.pop(); }   // redo cleanly if pressed twice
+    const r = autoComplete();
+    const msg = r.ok ? `🔄 Auto-complete added ${r.n} piece${r.n > 1 ? 's' : ''} — the track now loops back to the start${r.gap > 4 ? ` (within ${Math.round(r.gap)} segments)` : ''}${r.left ? ' · still not level: add a climb or drop' : ''}` : r.msg;
+    edMsg(msg); return msg;
+  }
   function edPreview() {                                       // top-down map (closed into a loop like the in-race minimap) + height profile
     if (!ED.sections.length) { edGeom = null; document.getElementById('edStats').textContent = 'No sections yet — add some, or use 🎢 BUILD IN 3D'; document.getElementById('edMap').getContext('2d').clearRect(0, 0, 360, 300); document.getElementById('edProf').getContext('2d').clearRect(0, 0, 360, 90); return; }
     const { segs, pts, hs, N, geom } = levelLayout(ED, edSel);
@@ -3232,6 +3279,7 @@
     if (ED.sections.length >= 120) { edMsg('That is the most sections a level can have (120).'); return; }
     ED.sections.splice(edSel + 1, 0, newSection(b.dataset.add)); edSel = Math.min(ED.sections.length - 1, edSel + 1); edDirty = true; edRenderList(); edPreview();
   });
+  document.getElementById('edAuto').onclick = () => { runAutoComplete(); edRenderList(); edPreview(); };
   document.getElementById('edSub').onclick = () => {          // − remove the selected section
     if (ED.sections.length <= 1) { edMsg('A level needs at least one section.'); return; }
     ED.sections.splice(edSel, 1); edSel = Math.max(0, Math.min(edSel, ED.sections.length - 1)); edDirty = true; edRenderList(); edPreview(); edMsg('− Removed section ' + (edSel + 1 > ED.sections.length ? ED.sections.length : edSel + 1));
@@ -3329,7 +3377,7 @@
     const E = v3geo.P[v3geo.P.length - 1]; v3tg = { X: E.X, Y: E.Y, Z: E.Z };
     blRefresh();
   }
-  const blPlace = () => { if (ED.sections.length >= 120) { edMsg('That is the most pieces a level can have (120).'); return; } ED.sections.push(pieceSection()); edSel = ED.sections.length - 1; edDirty = true; blRefresh(); chime(); };
+  const blPlace = () => { ED.sections.forEach(sc => { delete sc.auto; }); if (ED.sections.length >= 120) { edMsg('That is the most pieces a level can have (120).'); return; } ED.sections.push(pieceSection()); edSel = ED.sections.length - 1; edDirty = true; blRefresh(); chime(); };
   const blUndo = () => { if (!ED.sections.length) return; ED.sections.pop(); edSel = Math.max(0, ED.sections.length - 1); edDirty = true; blRefresh(); };
   document.querySelectorAll('#v3bld [data-len]').forEach(b => b.onclick = () => { BP.len = +b.dataset.len; blRefresh(); });
   document.querySelectorAll('#v3bld [data-turn]').forEach(b => b.onclick = () => { BP.turn = +b.dataset.turn; blRefresh(); });
@@ -3337,6 +3385,7 @@
   document.querySelectorAll('#v3bld [data-type]').forEach(b => b.onclick = () => { BP.type = b.dataset.type; blRefresh(); });
   document.querySelectorAll('#v3bld [data-split]').forEach(b => b.onclick = () => { BP.split = b.dataset.split; blRefresh(); });
   document.getElementById('blPlace').onclick = blPlace;
+  document.getElementById('blAuto').onclick = () => { const m = runAutoComplete(); blRefresh(); document.getElementById('blInfo').innerHTML = m + '<br>' + document.getElementById('blInfo').innerHTML; chime(); };
   document.getElementById('blUndo').onclick = blUndo;
   let blClearArm = -1e9;
   document.getElementById('blClear').onclick = e => {
@@ -3770,7 +3819,7 @@
         if (now >= c.c0 + CHASM_LEN && podY >= 0 && podY <= 1) return { result: 'CLEARED', peak: Math.round(peak), speedAtLanding: Math.round(speed) };
       }
       return { result: 'timeout', peak };
-    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, get build() { return { on: v3build, pieces: ED && ED.sections.length, last: ED && ED.sections[ED.sections.length - 1], bp: { ...BP } }; }, segCurves() { return segments.map(g => g.curve); }, segYs() { return segments.map(g => g.y); }, get v3() { return { open: v3open, src: v3src, pts: v3geo && v3geo.P.length }; }, get custom() { return CUSTOM && { id: CUSTOM.id, name: CUSTOM.name, laps: TOTAL_LAPS, segs: segments.length, theme: THEME.name }; }, edCode(lv) { return edCodeOf(lv); }, edFrom(c) { return edFromCode(c); }, autoRace(maxSec, lazy = 0) { menuEl.style.display = "none"; restartRace(); raceState = "racing"; countdown = 0; let t = 0; while (t < maxSec && raceState === "racing") { L = R = 1 - lazy; const sg = segAt(position + PLAYER_Z); playerX += (sg.curve * 0.09 - playerX) * 0.2; physicsStep(1 / 60, false); t += 1 / 60; } return { state: raceState, time: raceTime, lap }; }, get ghostPos() { return ghostAt(raceTime); }, get ghost() { return { mode: GHOST_MODE, have: !!GHOST, time: GHOST && GHOST.time, n: GHOST && GHOST.s.length, rec: ghostRec.length, delta: ghostDelta() }; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
+    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, edSet(S) { ED.sections = S.map(x => Object.assign(newSection("straight"), x)); edSel = 0; edRenderList(); edPreview(); }, randSec() { return randomSection(); }, acTest() { const before = ED.sections.length; const m = runAutoComplete(); const segs = levelLayout(ED, -1, { open: true }); const p = segs.pts, L = p[p.length - 1], P2 = p[p.length - 2]; return { msg: m, added: ED.sections.length - before, endX: +L[0].toFixed(1), endY: +L[1].toFixed(1), heading: +(Math.atan2(L[0] - P2[0], -(L[1] - P2[1])) * 180 / Math.PI).toFixed(1), hillSum: ED.sections.reduce((t, s) => t + (+s.hill || 0), 0) }; }, get build() { return { on: v3build, pieces: ED && ED.sections.length, last: ED && ED.sections[ED.sections.length - 1], bp: { ...BP } }; }, segCurves() { return segments.map(g => g.curve); }, segYs() { return segments.map(g => g.y); }, get v3() { return { open: v3open, src: v3src, pts: v3geo && v3geo.P.length }; }, get custom() { return CUSTOM && { id: CUSTOM.id, name: CUSTOM.name, laps: TOTAL_LAPS, segs: segments.length, theme: THEME.name }; }, edCode(lv) { return edCodeOf(lv); }, edFrom(c) { return edFromCode(c); }, autoRace(maxSec, lazy = 0) { menuEl.style.display = "none"; restartRace(); raceState = "racing"; countdown = 0; let t = 0; while (t < maxSec && raceState === "racing") { L = R = 1 - lazy; const sg = segAt(position + PLAYER_Z); playerX += (sg.curve * 0.09 - playerX) * 0.2; physicsStep(1 / 60, false); t += 1 / 60; } return { state: raceState, time: raceTime, lap }; }, get ghostPos() { return ghostAt(raceTime); }, get ghost() { return { mode: GHOST_MODE, have: !!GHOST, time: GHOST && GHOST.time, n: GHOST && GHOST.s.length, rec: ghostRec.length, delta: ghostDelta() }; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
   refreshPadList(); buildAxisRows();
   if (TOUR) { const lb = document.getElementById('lapBox'); if (lb && lb.firstChild) lb.firstChild.textContent = 'WORLD '; }
   if (TOUR && TOUR.stage > 0 && TOUR.arriving) { TOUR.arriving = false; saveTour(); beginTourStage(); }
