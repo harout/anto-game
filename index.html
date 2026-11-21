@@ -165,6 +165,7 @@
   #tx { position:fixed; left:50%; top:90px; transform:translateX(-50%); z-index:30; display:none; text-align:center; background:#0c0a1af0; border:2px solid #8a5cff; border-radius:14px; padding:14px 26px; font:bold 14px Menlo, monospace; letter-spacing:3px; color:#b89cff; box-shadow:0 0 40px #8a5cffaa; pointer-events:none; }
   #tx b { display:block; font-size:34px; color:#7dffb0; margin:8px 0; letter-spacing:6px; text-shadow:0 0 18px #7dffb0; } #tx small { display:block; color:#ffd36b; letter-spacing:1px; font-size:12px; }
   .pcard.fighter { background:linear-gradient(160deg,#2a0c0c,#120a0a); } .pcard.fighter.sel { border-color:#ff4a3a; box-shadow:0 0 16px #ff4a3a88; }
+  .pcard.cutes { background:linear-gradient(160deg,#3a2210,#2a160a); } .pcard.cutes.sel { border-color:#ffa24a; box-shadow:0 0 16px #ffa24a88; }
   .pcard.bedo { background:linear-gradient(160deg,#3a2810,#2a160a); cursor:grab; overflow:hidden; }
   .pethrt { position:absolute; top:40%; font-size:18px; pointer-events:none; animation:pethrt 1.3s ease-out forwards; }
   @keyframes pethrt { from { transform:translateY(0) scale(.6); opacity:1; } to { transform:translateY(-60px) scale(1.3); opacity:0; } } .pcard.bedo.sel { border-color:#ffd36b; box-shadow:0 0 16px #ffd36b88; }
@@ -290,7 +291,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v97</span></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v98</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -1496,10 +1497,12 @@
   const LEVEL_NAME = CUSTOM && !TEST_MODE ? String(CUSTOM.name || '') : TEST_MODE && CUSTOM ? String(CUSTOM.name || '') : '';
   const hasName = w => new RegExp('(^|[^a-z])' + w + '([^a-z]|$)', 'i').test(LEVEL_NAME);
   const loadDriverName = () => { try { return (localStorage.getItem('podracer.driverName') || '').slice(0, 14); } catch (e) { return ''; } };
-  const driverName = () => loadDriverName().trim() || (POD && POD.nick) || (DOG_DRIVER ? 'Bedo' : '');   // ✏ what the standings and results call you
+  const driverName = () => loadDriverName().trim() || (POD && POD.nick) || (DOG_DRIVER ? 'Bedo' : CAT_DRIVER ? 'Mister Cutes' : '');   // ✏ what the standings and results call you
   const BEDO_LEVEL = hasName('bedo');                           // 🐶 a level named Bedo: Bedo drives (and gets unlocked)
   const pickedDriver = () => { try { return localStorage.getItem('podracer.driver') || 'pilot'; } catch (e) { return 'pilot'; } };
-  let DOG_DRIVER = BEDO_LEVEL || (!!loadUnlocks().bedo && pickedDriver() === 'bedo');   // …or you picked him on the main menu
+  const CUTES_LEVEL = !BEDO_LEVEL && (hasName('cut') || hasName('cute') || hasName('cutes'));   // 🐱 a level named Cut: Mister Cutes drives (and gets unlocked)
+  let DOG_DRIVER = BEDO_LEVEL || (!CUTES_LEVEL && !!loadUnlocks().bedo && pickedDriver() === 'bedo');   // …or you picked him on the main menu
+  let CAT_DRIVER = CUTES_LEVEL || (!BEDO_LEVEL && !!loadUnlocks().cutes && pickedDriver() === 'cutes');   // 🐱 Mister Cutes at the controls
   const isAnakin = (n, maxD = 2) => {                                       // 🚀 Anakin, spelled any close way (anikin, anaskin, annakin…), unlocks the starfighter
     const w = String(n || '').trim().toLowerCase().replace(/[^a-z]/g, ''), t = 'anakin';
     if (w.length < 5 || w.length > 8 || w[0] !== 'a') return false;
@@ -2313,7 +2316,7 @@
         const sx = segFor(idx);
         for (const o of obsOf(sx)) {
           if ((sx !== lastObsHit || performance.now() / 1000 - lastObsT > 1.5) && hitsVert(o, sx, podY, POD_H) && Math.abs(playerX - o.off) < o.w + podHalf()) {
-            lastObsHit = sx; lastObsT = performance.now() / 1000; if (shieldOn) shieldHit(); else { speed *= 0.3 + 0.08 * (POD.armor || 0); hitFlash = 1.2; thud(); if (DOG_DRIVER) whimper(); }   // 🛡 armor keeps more speed
+            lastObsHit = sx; lastObsT = performance.now() / 1000; if (shieldOn) shieldHit(); else { speed *= 0.3 + 0.08 * (POD.armor || 0); hitFlash = 1.2; thud(); if (DOG_DRIVER) whimper(); else if (CAT_DRIVER) hiss(); }   // 🛡 armor keeps more speed
             playerX += (playerX >= o.off ? 1 : -1) * 0.12;   // knocked sideways
           }
         }
@@ -2768,6 +2771,64 @@
       ctx.beginPath(); ctx.moveTo(sx - r * 1.08, cy + r * 0.15); ctx.lineTo(sx, cy + r * 1.2); ctx.lineTo(sx + r * 1.08, cy + r * 0.15); ctx.fill();
     }
   }
+  const loadCatPets = () => { try { return +(localStorage.getItem('podracer.cutesPets') || 0) | 0; } catch (e) { return 0; } };
+  const saveCatPets = n => { try { localStorage.setItem('podracer.cutesPets', String(n)); } catch (e) {} };
+  // 🐱 MISTER CUTES: an orange tabby cat with a white chest, green eyes and a curly tail
+  function catHead(c, x, y, w, h, o) {                        // shared by the menu portrait and the in-race driver (o.face: looking at you)
+    const fur = '#f39a3c', furD = '#c96a1e', furL = '#ffd9a8', cream = '#fff4e6';
+    for (const sd of [-1, 1]) {                                 // pointy ears with pink insides
+      c.fillStyle = fur; c.beginPath(); c.moveTo(x + sd * w * .12, y - h * .62); c.lineTo(x + sd * w * .42, y - h * 1.08 - (o.twitch && sd > 0 ? h * .08 : 0)); c.lineTo(x + sd * w * .5, y - h * .38); c.closePath(); c.fill();
+      if (o.face) { c.fillStyle = '#f7a8b4'; c.beginPath(); c.moveTo(x + sd * w * .2, y - h * .6); c.lineTo(x + sd * w * .4, y - h * .92); c.lineTo(x + sd * w * .44, y - h * .45); c.closePath(); c.fill(); }
+    }
+    c.fillStyle = fur; c.beginPath(); c.ellipse(x, y - h * .2, w * .5, h * .62, 0, 0, 7); c.fill();   // round head
+    c.fillStyle = furD; for (const dx of [-.14, 0, .14]) { c.beginPath(); c.ellipse(x + w * dx, y - h * .7, w * .035, h * .14, dx * 2, 0, 7); c.fill(); }   // tabby stripes on top
+    if (!o.face) { for (const dy of [-.35, -.05]) { c.fillRect(x - w * .4, y + h * dy, w * .8, h * .05); } return; }   // back of the head: just stripes
+    c.fillStyle = cream; c.beginPath(); c.ellipse(x, y + h * .12, w * .3, h * .26, 0, 0, 7); c.fill();   // white muzzle
+    for (const sd of [-1, 1]) {
+      if (o.happy) { c.strokeStyle = '#2a1a10'; c.lineWidth = Math.max(1.5, w * .025); c.beginPath(); c.arc(x + sd * w * .2, y - h * .2, w * .07, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); }   // ^ ^ happy eyes
+      else {
+        c.fillStyle = '#7ad66a'; c.beginPath(); c.ellipse(x + sd * w * .2, y - h * .2, w * .085, h * .13, 0, 0, 7); c.fill();   // big green eyes
+        c.fillStyle = '#1a1410'; c.beginPath(); c.ellipse(x + sd * w * .2, y - h * .2, w * .03, h * .11, 0, 0, 7); c.fill();
+        c.fillStyle = '#fff'; c.beginPath(); c.arc(x + sd * w * .2 - w * .03, y - h * .27, w * .025, 0, 7); c.fill();
+      }
+      c.fillStyle = 'rgba(255,120,140,.5)'; c.beginPath(); c.ellipse(x + sd * w * .33, y + h * .02, w * .07, h * .05, 0, 0, 7); c.fill();   // rosy cheeks
+      c.strokeStyle = 'rgba(60,40,30,.8)'; c.lineWidth = Math.max(1, w * .012);
+      for (const dy of [-.02, .06]) { c.beginPath(); c.moveTo(x + sd * w * .2, y + h * .08 + h * dy); c.lineTo(x + sd * w * .62, y + h * dy * 2.2); c.stroke(); }   // whiskers
+    }
+    c.fillStyle = '#ff8fa6'; c.beginPath(); c.moveTo(x - w * .06, y + h * .02); c.lineTo(x + w * .06, y + h * .02); c.lineTo(x, y + h * .1); c.closePath(); c.fill();   // little pink nose
+    c.strokeStyle = '#2a1a10'; c.lineWidth = Math.max(1, w * .02); c.beginPath();   // a "w" cat mouth
+    c.moveTo(x - w * .1, y + h * .15); c.quadraticCurveTo(x - w * .05, y + h * .22, x, y + h * .12); c.quadraticCurveTo(x + w * .05, y + h * .22, x + w * .1, y + h * .15); c.stroke();
+  }
+  function drawCutesPortrait(cv, happy) {                     // 🐱 his face for the menu card
+    const c = cv.getContext('2d'), w = Math.min(cv.width, cv.height * 1.15) * 0.62, h = cv.height * 0.42, x = cv.width / 2, y = cv.height * 0.66;
+    c.clearRect(0, 0, cv.width, cv.height);
+    catHead(c, x, y, w, h, { face: true, happy });
+    if (happy) { c.font = `${cv.height * .22}px serif`; c.textAlign = 'center'; c.fillText('💕', x + w * .55, y - h * .9); }
+  }
+  let catAir = false;
+  function drawCatDriver(cx, cy, cw, t) {                     // 🐱 Mister Cutes in the cockpit
+    const sp = Math.min(1, speed / MAX_KMH), petted = performance.now() / 1000 - petT < 1.6;
+    if (raceState === 'racing') { const inAir = podY > 120; if (inAir && !catAir) meow(1.25); catAir = inAir; }   // 🐱 "mew!" off every jump
+    const look = petted || podY > 60 || (t % 7) < 1.6;
+    const hy = cy - H * .03 + Math.sin(t * 2.6) * H * .002;
+    ctx.fillStyle = '#f39a3c'; ctx.beginPath(); ctx.ellipse(cx, cy + H * .014, cw * .46, H * .03, 0, Math.PI, 0); ctx.fill();   // shoulders
+    ctx.fillStyle = '#fff4e6'; ctx.beginPath(); ctx.ellipse(cx, cy + H * .012, cw * .18, H * .02, 0, Math.PI, 0); ctx.fill();   // white chest
+    const sw = Math.sin(t * (look ? 5 : 2.5));                  // a curly tail swishing over the side
+    ctx.strokeStyle = '#c96a1e'; ctx.lineCap = 'round'; ctx.lineWidth = cw * .08; ctx.beginPath(); ctx.moveTo(cx + cw * .4, cy + H * .02);
+    ctx.bezierCurveTo(cx + cw * (.7 + sw * .05), cy, cx + cw * (.75 + sw * .1), cy - H * .05, cx + cw * (.6 + sw * .12), cy - H * .06); ctx.stroke(); ctx.lineCap = 'butt';
+    catHead(ctx, cx, hy, cw * .62, H * .045, { face: look, happy: petted, twitch: sp > 0.6 && Math.sin(t * 9) > 0.6 });
+    for (const sd of [-1, 1]) {                                 // paws with pink toe beans
+      const px = cx + sd * cw * .22, py = cy + H * .03;
+      ctx.fillStyle = '#f39a3c'; ctx.beginPath(); ctx.ellipse(px, py, cw * .075, H * .01, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#f7a8b4'; for (const dx of [-.035, 0, .035]) { ctx.beginPath(); ctx.arc(px + cw * dx, py - H * .004, cw * .012, 0, 7); ctx.fill(); }
+    }
+    if (petted) {
+      const pt = performance.now() / 1000 - petT;
+      ctx.font = `${cw * .3}px serif`; ctx.textAlign = 'center'; ctx.fillText('🤚', cx + Math.sin(pt * 12) * cw * .08, hy - H * .07);
+      for (let q = 0; q < 6; q++) { const a = q / 6 * Math.PI * 2 + pt, r = cw * (.25 + pt * .5); ctx.globalAlpha = Math.max(0, 1 - pt / 1.6); ctx.fillText(q % 2 ? '💕' : '🐾', cx + Math.cos(a) * r, hy - H * .02 + Math.sin(a) * r * 0.5 - pt * H * .04); }
+      ctx.globalAlpha = 1;
+    }
+  }
   function drawBedoPortrait(cv, happy) {                      // 🐶 Bedo's face for the menu (happy = being petted)
     const c = cv.getContext('2d'), w = Math.min(cv.width, cv.height * 1.15), h = cv.height, x = cv.width / 2, y = h * 0.55;
     c.clearRect(0, 0, cv.width, cv.height);
@@ -2789,7 +2850,9 @@
   }
   let petT = -9, dogAir = false, dogPantT = 0;
   addEventListener('keydown', e => {                           // 🐶 press P to pet Bedo while you race
-    if (inEditor(e) || e.repeat || e.key.toLowerCase() !== 'p' || !DOG_DRIVER || raceState !== 'racing') return;
+    if (inEditor(e) || e.repeat || e.key.toLowerCase() !== 'p' || raceState !== 'racing') return;
+    if (CAT_DRIVER && !DOG_DRIVER) { petT = performance.now() / 1000; saveCatPets(loadCatPets() + 1); purr(); meow(1.1, 0.5); flash(['🐱 Purrrr… Mister Cutes loves that!', '🐾 Good kitty!', '💕 Mister Cutes, best pilot ever!', '🐱 Prrrrt?'][loadCatPets() % 4]); try { chime(); } catch (e2) {} return; }
+    if (!DOG_DRIVER) return;
     petT = performance.now() / 1000; savePets(loadPets() + 1); bark(1.15); flash(['🐶 Good boy, Bedo!', '🐾 Bedo loves that!', '💕 Best pilot ever!', '🐶 Who\'s a good boy?'][loadPets() % 4]); try { chime(); } catch (e2) {}
   });
   function drawDogDriver(cx, cy, cw, t) {                     // 🐶 Bedo: a medium-sized yellow dog, extra cute
@@ -3594,7 +3657,8 @@
     if (o.dog) {                                                // 🐶 the back of Bedo's head and his floppy ears
       c.fillStyle = '#e8b93c'; c.beginPath(); c.arc(0, -s * .29, s * .13, 0, 7); c.fill();
       c.fillStyle = '#b9862a'; for (const sx of [-1, 1]) { c.beginPath(); c.ellipse(sx * s * .13, -s * .27, s * .05, s * .1, sx * .3, 0, 7); c.fill(); }
-    } else { c.fillStyle = o.helmet || '#e9eef5'; c.beginPath(); c.arc(0, -s * .3, s * .12, 0, 7); c.fill(); c.fillStyle = `rgba(${BL.join(',')},.9)`; c.fillRect(-s * .12, -s * .33, s * .24, s * .03); }
+    } else if (o.cat) { catHead(c, 0, -s * .27, s * .3, s * .14, { face: false }); }   // 🐱 Mister Cutes' ears poking up
+    else { c.fillStyle = o.helmet || '#e9eef5'; c.beginPath(); c.arc(0, -s * .3, s * .12, 0, 7); c.fill(); c.fillStyle = `rgba(${BL.join(',')},.9)`; c.fillRect(-s * .12, -s * .33, s * .24, s * .03); }
     const cg = c.createLinearGradient(0, -s * .62, 0, -s * .2); cg.addColorStop(0, 'rgba(255,150,140,.4)'); cg.addColorStop(1, 'rgba(120,20,20,.3)');
     c.fillStyle = cg; c.fillRect(-s * .3, -s * .64, s * .6, s * .5);
     c.restore();
@@ -3613,7 +3677,7 @@
     if (FIGHTER) {                                               // 🚀 flying the starfighter instead of the pod
       const t = performance.now() / 1000, shake = (speed / MAX_KMH) * 1.5 * DPR;
       drawFighterShape(ctx, W / 2 + (Math.random() - .5) * shake, H * .8 + Math.sin(t * 2.2) * 3 * DPR + (Math.random() - .5) * shake, W * .085,
-        { t, L, R, boost: boostVis, roll: Math.max(-0.35, Math.min(0.35, -yawRate * 0.25)), dog: DOG_DRIVER, helmet: POD.helmet, guns: (fighterGuns = []) });
+        { t, L, R, boost: boostVis, roll: Math.max(-0.35, Math.min(0.35, -yawRate * 0.25)), dog: DOG_DRIVER, cat: CAT_DRIVER, helmet: POD.helmet, guns: (fighterGuns = []) });
       return;
     }
     const t = performance.now() / 1000;
@@ -3661,6 +3725,7 @@
     ctx.fillStyle = hg; ctx.beginPath(); ctx.ellipse(cockX, cockY + H * .035, cw, H * .06, 0, Math.PI, 0); ctx.fill();
     ctx.fillRect(cockX - cw, cockY + H * .034, cw * 2, H * .1);
     if (DOG_DRIVER) drawDogDriver(cockX, cockY, cw, t);         // 🐶 Bedo at the controls
+    else if (CAT_DRIVER) drawCatDriver(cockX, cockY, cw, t);    // 🐱 Mister Cutes at the controls
     else {
     // pilot helmet + shoulders
     ctx.fillStyle = '#6b4a30'; ctx.beginPath(); ctx.ellipse(cockX, cockY + H * .01, cw * .42, H * .025, 0, Math.PI, 0); ctx.fill();
@@ -4030,7 +4095,9 @@
       if (countdown <= 0.5 && countEl.dataset.go !== '1') { countEl.dataset.go = '1'; raceState = 'racing';
         if (BEDO_LEVEL && !loadUnlocks().bedo) { const u = loadUnlocks(); u.bedo = true; saveUnlocks(u); unlocks = u; setTimeout(() => showTx('🐶 BEDO UNLOCKED!<b>WOOF!</b><small>Pick him as your driver on the main menu — he can drive every race now</small>'), 1200); }
         if (DOG_DRIVER) { bark(1); bark(1.08, 0.22); }         // 🐶 woof woof at the start line
-        const sec = [DOG_DRIVER && '🐶 BEDO IS DRIVING! Woof!', MOON && '🌙 MOON GRAVITY — big floaty jumps', RAINBOW && '🌈 RAINBOW POWER'].filter(Boolean);
+        if (CAT_DRIVER) meow(1);                                 // 🐱 meow at the start line
+        if (CUTES_LEVEL && !loadUnlocks().cutes) { const u = loadUnlocks(); u.cutes = true; saveUnlocks(u); unlocks = u; setTimeout(() => showTx('🐱 MISTER CUTES UNLOCKED!<b>MEOW!</b><small>Pick him as your driver on the main menu (next to Bedo) — he can drive every race now. Press P to pet him!</small>'), 1200); }
+        const sec = [DOG_DRIVER && '🐶 BEDO IS DRIVING! Woof!', CAT_DRIVER && '🐱 MISTER CUTES IS DRIVING! Meow!', MOON && '🌙 MOON GRAVITY — big floaty jumps', RAINBOW && '🌈 RAINBOW POWER'].filter(Boolean);
         if (sec.length) flash('🤫 SECRET: ' + sec.join(' · '));
         else if (driverName()) flash(`🏁 GO, ${driverName().toUpperCase()}!`);
       }
@@ -4100,7 +4167,26 @@
         }
       });
       d.addEventListener('pointerleave', () => { lastX = null; rub = 0; });
-      d.onclick = () => { const nb = !on; try { localStorage.setItem('podracer.driver', nb ? 'bedo' : 'pilot'); } catch (e) {} DOG_DRIVER = BEDO_LEVEL || nb; if (nb) try { chime(); } catch (e) {} renderMenu(); };
+      d.onclick = () => { const nb = !on; try { localStorage.setItem('podracer.driver', nb ? 'bedo' : 'pilot'); } catch (e) {} DOG_DRIVER = BEDO_LEVEL || nb; if (nb) CAT_DRIVER = false; else CAT_DRIVER = CUTES_LEVEL; if (nb) try { chime(); } catch (e) {} renderMenu(); };
+      grid.appendChild(d);
+    }
+    if (loadUnlocks().cutes) {                                  // 🐱 Mister Cutes' card, next to Bedo
+      const on = pickedDriver() === 'cutes', d = document.createElement('div');
+      d.className = 'pcard bedo cutes' + (on ? ' sel' : '');
+      const cv = document.createElement('canvas'); cv.width = 160; cv.height = 84; drawCutesPortrait(cv); d.appendChild(cv);
+      const nm = document.createElement('div'), label = () => `${on ? '🐱 Mister Cutes · driving' : '🐱 Mister Cutes'}${loadCatPets() ? ` · ❤ ${loadCatPets()}` : ''}`; nm.textContent = label(); nm.style.marginTop = '4px'; d.appendChild(nm);
+      d.title = (on ? 'Mister Cutes is your driver — click to switch back to the pilot' : 'Click to make Mister Cutes your driver') + ' · rub him with the mouse to pet him! (press P in a race to pet him too)';
+      let rub = 0, lastX = null, happyT = 0;
+      d.addEventListener('pointermove', e => {                   // 🤚 rub back and forth: he purrs
+        if (lastX != null) rub += Math.abs(e.clientX - lastX); lastX = e.clientX;
+        if (rub > 140) {
+          rub = 0; saveCatPets(loadCatPets() + 1); nm.textContent = label(); drawCutesPortrait(cv, true); clearTimeout(happyT); happyT = setTimeout(() => drawCutesPortrait(cv), 1400);
+          const hrt = document.createElement('span'); hrt.className = 'pethrt'; hrt.textContent = ['❤', '💕', '😻', '🐾'][loadCatPets() % 4]; hrt.style.left = (20 + Math.random() * 60) + '%'; d.appendChild(hrt); setTimeout(() => hrt.remove(), 1300);
+          if (loadCatPets() % 3 === 0) purr(1); if (loadCatPets() % 5 === 0) meow(1.15);
+        }
+      });
+      d.addEventListener('pointerleave', () => { lastX = null; rub = 0; });
+      d.onclick = () => { const nb = !on; try { localStorage.setItem('podracer.driver', nb ? 'cutes' : 'pilot'); } catch (e) {} CAT_DRIVER = CUTES_LEVEL || nb; if (nb) DOG_DRIVER = false; else DOG_DRIVER = BEDO_LEVEL; if (nb) try { meow(1.1); } catch (e) {} renderMenu(); };
       grid.appendChild(d);
     }
     if (loadUnlocks().fighter) {                                // 🚀 the starfighter's card (name yourself Anakin to get it)
@@ -4115,7 +4201,7 @@
     const p = podLook(podIdx), p0 = PODS[podIdx];
     const nUp = UPGRADES.reduce((t, u) => t + Math.min(UP_MAX, (p.ups || {})[u.k] || 0), 0);
     const dn = document.getElementById('drvName');
-    if (document.activeElement !== dn) { dn.value = loadDriverName(); dn.placeholder = DOG_DRIVER ? 'BEDO (type a name)' : 'type your name'; }
+    if (document.activeElement !== dn) { dn.value = loadDriverName(); dn.placeholder = DOG_DRIVER ? 'BEDO (type a name)' : CAT_DRIVER ? 'MISTER CUTES (type a name)' : 'type your name'; }
     dn.oninput = () => { try { localStorage.setItem('podracer.driverName', dn.value.slice(0, 14)); } catch (e) {} checkAnakin(dn, 1); };
     dn.onblur = () => checkAnakin(dn, 2);
     document.getElementById('nameGo').onclick = () => {          // ✔ ENTER: check the name and hand out the starfighter
@@ -4980,6 +5066,7 @@
       saveCredits(loadCredits() + earned); msgs.push(`💰 +${earned} credits (you have ${loadCredits().toLocaleString()}) — spend them in the 🔧 GARAGE`);
     }
     if (DOG_DRIVER) { if (myPlace === 1) howl(); else bark(); }   // 🐶 awoooo!
+    else if (CAT_DRIVER) { if (myPlace === 1) { meow(1.05); purr(0.6); } else meow(0.85); }   // 🐱 a proud meow (or a grumpy one)
     if (TRACK_ID === 5 && !TOUR && !GHOST_MODE && myPlace === 1 && shieldFlips >= 20) missionDone(0, msgs);   // 📡 the Bryce shield hack
     if (NIGHT && myPlace === 2 && !GHOST_MODE) missionDone(7, msgs);                                           // 🌙 the twin
     if (TOUR && myPlace === 1) { const op = loadSecrets().open; if (EXAMPLE_LEVELS.slice(0, 9).every(l => op.includes(l.id))) missionDone(9, msgs); else msgs.push('📡 A locked transmission crackles… open the other 9 secret levels, then win the Grand Tour again.'); }
@@ -5212,6 +5299,27 @@
     const now = audio.ctx.currentTime; if (now < pantNext) return; pantNext = now + 1.8 + Math.random() * 1.8;
     for (const [w, pp] of [[0, 1], [0.26 + Math.random() * 0.06, 0.92]]) dogVoice({ when: w, dur: 0.16, vol: 0.07, rasp: 0.1, wobble: 4, breath: 2.2, breathF: 1300,
       pitch: [[0, 180 * pp], [0.15, 150 * pp]], mouth: [[0, 2500], [0.15, 1600]], formants: [[850, 2.5, 0.6], [1350, 3, 0.5], [2600, 4, 0.3]] });
+  }
+  function meow(p = 1, when = 0) {                            // 🐱 "mi-AAA-ow": rises, opens up, then falls and closes
+    if (!audio || muted) return; p *= 0.95 + Math.random() * 0.1;
+    dogVoice({ when, dur: 0.62, vol: 0.42, rasp: 0.06, wobble: 9, breath: 0.12, breathF: 3000, attack: 0.03,
+      pitch: [[0, 560 * p], [0.12, 820 * p], [0.32, 760 * p], [0.6, 480 * p]], mouth: [[0, 1400], [0.15, 4200], [0.38, 3000], [0.6, 900]],
+      formants: [[900 * p, 5, 1.0], [1900 * p, 7, 0.9], [3300 * p, 9, 0.35]] });
+  }
+  function purr(len = 1.4) {                                   // 🐱 a rumbly purr: quick soft pulses of low noise
+    if (!audio || muted) return;
+    const ac = audio.ctx, t = ac.currentTime, n = dogNoiseSrc(ac), lp = ac.createBiquadFilter(), g = ac.createGain(), am = ac.createOscillator(), amg = ac.createGain();
+    lp.type = 'lowpass'; lp.frequency.value = 380; am.frequency.value = 24; amg.gain.value = 0.22; g.gain.value = 0;
+    am.connect(amg); amg.connect(g.gain); n.connect(lp); lp.connect(g); g.connect(dogOut());
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.25, t + 0.15); g.gain.setValueAtTime(0.25, t + len - 0.3); g.gain.linearRampToValueAtTime(0.0001, t + len);
+    am.start(t); am.stop(t + len + 0.05); if (n.start) { try { n.start(t); } catch (e) {} } if (n.stop) { try { n.stop(t + len + 0.05); } catch (e) {} }
+  }
+  function hiss() {                                            // 🐱 "hssss!" after a crash
+    if (!audio || muted) return;
+    const ac = audio.ctx, t = ac.currentTime, n = dogNoiseSrc(ac), hp = ac.createBiquadFilter(), g = ac.createGain();
+    hp.type = 'highpass'; hp.frequency.value = 3500; n.connect(hp); hp.connect(g); g.connect(dogOut());
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+    if (n.start) { try { n.start(t); } catch (e) {} } if (n.stop) { try { n.stop(t + 0.6); } catch (e) {} }
   }
   function whimper() {                                         // a sad nasal whine after a crash
     if (!audio || muted) return;
