@@ -143,6 +143,8 @@
   #shopBtn, #garageBtn { margin-left:10px; }
   #nameRow { display:flex; justify-content:center; margin:6px 0 2px; font:11px Menlo, monospace; letter-spacing:3px; color:#c9a27a; }
   #nameRow input { margin-left:8px; width:190px; background:#2a160a; color:#ffe7c2; border:1px solid #6a3a18; border-radius:8px; padding:6px 10px; font:bold 13px Menlo, monospace; letter-spacing:2px; text-transform:uppercase; }
+  #nameRow button { margin-left:8px; background:#5a2a10; color:#ffe7c2; border:1px solid #ffb347; border-radius:8px; padding:6px 12px; font:bold 12px Menlo, monospace; letter-spacing:2px; cursor:pointer; }
+  #nameRow button:hover { background:#7a3a14; box-shadow:0 0 10px #ffb34766; }
   #nameRow input:focus { outline:none; border-color:#ffb347; box-shadow:0 0 10px #ffb34766; }
   #driverRow { display:none; align-items:center; justify-content:center; gap:10px; margin:8px 0 4px; font:11px Menlo, monospace; letter-spacing:3px; color:#c9a27a; }
   #driverRow button { display:flex; align-items:center; gap:6px; background:#2a160a; color:#ffe7c2; border:1px solid #6a3a18; border-radius:10px; padding:4px 12px; font:bold 12px Menlo, monospace; letter-spacing:2px; cursor:pointer; min-height:40px; }
@@ -288,7 +290,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to unlock anything secret">✔ ENTER</button></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -4109,6 +4111,15 @@
     if (document.activeElement !== dn) { dn.value = loadDriverName(); dn.placeholder = DOG_DRIVER ? 'BEDO (type a name)' : 'type your name'; }
     dn.oninput = () => { try { localStorage.setItem('podracer.driverName', dn.value.slice(0, 14)); } catch (e) {} checkAnakin(dn, 1); };
     dn.onblur = () => checkAnakin(dn, 2);
+    document.getElementById('nameGo').onclick = () => {          // ✔ ENTER: check the name and hand out the starfighter
+      try { localStorage.setItem('podracer.driverName', dn.value.slice(0, 14)); } catch (e) {}
+      const had = !!loadUnlocks().fighter;
+      if (isAnakin(dn.value, 2)) {
+        checkAnakin(dn, 2);
+        if (had) { FIGHTER = true; try { localStorage.setItem('podracer.craft', 'fighter'); } catch (e) {} POD = podLook(podIdx); try { chime(); } catch (e) {}
+          showTx('🚀 <b>STARFIGHTER READY!</b><br>Welcome back, Anakin. You are flying the starfighter. Click its card to switch back to your pod.'); renderMenu(); }
+      } else showTx(`✏ <b>Name saved: ${(dn.value.trim() || 'pilot').replace(/[<>&]/g, '').toUpperCase()}</b><br>No secret ship for that name. Try a secret name!`);
+    };
     if (document.activeElement !== dn && isAnakin(dn.value) && dn.value !== 'Anakin') checkAnakin(dn);
     dn.onkeydown = e => { if (e.key === 'Enter') dn.blur(); };
     const dr = document.getElementById('driverRow');
