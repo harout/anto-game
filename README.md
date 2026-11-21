@@ -64,7 +64,7 @@ Everything is in a single self-contained `index.html` — no build step, no depe
 Every race pays credits (300 for 1st down to 90 for 8th, plus about 1 per 2 seconds raced; the Grand Tour pays double, ghost races 60). Spend them in the **🔧 GARAGE** on the menu. Each pod has its own upgrades, 5 levels each: Engine (top speed), Thrusters (acceleration), Steering, Boost power, Boost tank (boost lasts longer) and Armor (keep more speed when you crash). Level costs 100, 200, 300, 400, 500. You can sell all of a pod's upgrades for a full refund. The green part of the stat bars shows your upgrades.
 
 ## 🔐 Secret levels
-Ten secret levels (Canyon Leap, Rim Runner, Barrel Roll Bayou, Frozen Corkscrew, Forest Flipper, Gorge Hopper, Upside-Down Canyon, Twin Rims, Loop the Loop, The Gauntlet) are hidden. Open **🔐 SECRET LEVELS** on the menu: each puzzle you solve gives you a code, and typing the code opens that level. Codes work on any computer. The final puzzle appears once the other 9 secret levels are open. No spoilers here: solve the puzzles!
+Ten secret levels are hidden behind **secret missions** all over the game: hacks, hidden menus, cheat codes, hyperspace voices and more. Open **🔐 SECRET LEVELS** on the menu to read the clue for each mission (press 💡 if you're stuck). Finish a mission and a 📡 SECRET TRANSMISSION gives you a code. Type the code to open that level. Codes work on any computer. The final mission only works once the other 9 secret levels are open. No spoilers here!
 
 ## ✎ Ten new editor pieces
 - **🕳 Canyon jump**: a ramp and a gap in the canyon floor. Hold BOOST or you fall in and restart at the run-up.
