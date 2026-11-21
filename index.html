@@ -193,6 +193,9 @@
   #shop .sh-btns { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; } #shDone { background:#ff9a2e; color:#1a0e06; border:0; border-radius:7px; padding:8px 16px; font:bold 13px Menlo, monospace; letter-spacing:2px; cursor:pointer; margin-left:auto; }
   #shop small { color:#b8916a; font-size:10px; }
   #trackGrid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; max-height:300px; overflow:auto; }
+  #trackTabs { display:flex; gap:6px; margin-bottom:10px; } #trackTabs button { flex:1; background:#2a160a; color:#c9a27a; border:1px solid #6a3a18; border-radius:8px 8px 3px 3px; padding:8px 6px; font:bold 12px Menlo, monospace; letter-spacing:2px; cursor:pointer; }
+  #trackTabs button.on { background:#ff9a2e; color:#1a0e06; border-color:#ffb347; } #trackTabs button.sec.on { background:#8a5cff; color:#fff; border-color:#b89cff; } #trackTabs button b { font-weight:normal; opacity:.8; }
+  .tcard.empty { grid-column:1 / -1; border-style:dashed !important; cursor:default; opacity:.8; }
   .tcard { background:#2a160a; border:2px solid #4a2a12; border-radius:10px; padding:12px; cursor:pointer; font-size:14px; letter-spacing:2px; }
   .tcard small { display:block; margin-top:4px; font-size:11px; color:#b8916a; letter-spacing:1px; }
   .tcard.sel { border-color:#ffb347; box-shadow:0 0 14px rgba(255,160,60,.5); } .tcard.locked { opacity:.5; cursor:not-allowed; }
@@ -273,6 +276,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div class="msub">Choose your track</div>
+  <div id="trackTabs"></div>
   <div id="trackGrid"></div>
   <div id="aiLvl"></div>
   <div id="masterRow"></div>
@@ -3497,6 +3501,7 @@
   }
   const statRange = { top: [0.95, 1.16], accel: [0.9, 1.45], turn: [0.85, 1.55], boost: [1.4 * 0.85, 1.6 * 1.3 * 1.6] };
   function statPct(k, pod) { const v = k === 'boost' ? pod.boost * pod.dur : pod[k], [a, b] = statRange[k]; return Math.round(20 + 80 * Math.max(0, Math.min(1, (v - a) / (b - a)))); }
+  let menuPage = 0;                                              // 1 tracks · 2 secret levels · 3 my levels
   function renderMenu() {
     const grid = document.getElementById('podGrid'); grid.innerHTML = '';
     PODS.forEach((pod, i) => {
@@ -3521,6 +3526,12 @@
     const scTxt = AI_TRACK === 4 ? '' : wn >= AI_SHORTCUT_LEVEL ? ' · 🗺 THEY KNOW THE SHORTCUTS' : ` · shortcuts at level ${AI_SHORTCUT_LEVEL}`;
     document.getElementById('aiLvl').innerHTML = `RIVAL AI ON ${TRACK_NAMES[AI_TRACK].toUpperCase()} · LEVEL ${wn}${scTxt}<small>${'★'.repeat(lv)}${'☆'.repeat(AI_MAX_LEVEL - lv)} · rivals know how to ${lvTips[lv]} · ${cp}/${AI_DEFS.length} are an exact copy of you · ${cp < AI_DEFS.length ? 'each 1st place on this track makes them 1% smarter here only — the limit is an exact copy of you and your pod' : 'the limit: all are an exact copy of you'}</small>`;
     const tg = document.getElementById('trackGrid'); tg.innerHTML = '';
+    const isSecretId = id => /^EX\d+$/.test(id), allLv = loadLevels(), secretLv = allLv.filter(l => isSecretId(l.id)), myLv = allLv.filter(l => !isSecretId(l.id));
+    if (!menuPage) menuPage = CUSTOM && !TEST_MODE ? (isSecretId(CUSTOM.id) ? 2 : 3) : 1;   // open on the page of the track you're on
+    document.getElementById('trackTabs').innerHTML = [[1, '🏁 TRACKS', ''], [2, '🔐 SECRET LEVELS', `${secretLv.length}/${SECRETS.length}`], [3, '✎ MY LEVELS', String(myLv.length)]]
+      .map(([n, t, c]) => `<button data-pg="${n}" class="${n === 2 ? 'sec ' : ''}${menuPage === n ? 'on' : ''}">${t}${c ? ` <b>(${c})</b>` : ''}</button>`).join('');
+    document.querySelectorAll('#trackTabs button').forEach(b => b.onclick = () => { menuPage = +b.dataset.pg; renderMenu(); });
+    if (menuPage === 1)
     [[1, 'DUNE CUP', 'Desert canyons · cave · 4 shortcuts'], [2, 'FROST CANYON', 'Ice world · snow · 4 shortcuts'], [3, 'FOREST RUN', '1 lap · climb 15 caves to an Everest-high summit'], [4, 'SWAMP RUN', 'Dead flat · skim the swamp water at full speed · 3 laps'], [5, 'BRYCE CANYON', 'Hoodoos · rim road · Wall Street slot shortcut · 3 laps'], [6, '🌌 GRAND TOUR', 'All 5 worlds in one race · light-speed flights between them']].forEach(([id, nm, sub]) => {
       const locked = id === 2 && !unlocks.track2, d = document.createElement('div');
       const cur = TOUR ? 6 : TRACK_ID;
@@ -3534,7 +3545,7 @@
       };
       tg.appendChild(d);
     });
-    for (const lv of loadLevels()) {                           // your own levels
+    for (const lv of menuPage === 2 ? secretLv : menuPage === 3 ? myLv : []) {   // secret levels (page 2) / your own levels (page 3)
       const d = document.createElement('div'), sel = CUSTOM && CUSTOM.id === lv.id;
       d.className = 'tcard custom' + (sel ? ' sel' : '');
       d.innerHTML = `<span class="edit del" title="Delete this level">🗑</span><span class="edit" title="Edit this level">✎ EDIT</span>${/^EX\d+$/.test(lv.id) ? '🔓' : '✎'} ${escHtml((lv.name || 'My Level').toUpperCase())}<small>${['', 'Desert', 'Ice', 'Forest', 'Swamp', 'Bryce'][lv.world] || 'Desert'} · ${lv.sections.length} sections · ${lv.laps} lap${lv.laps > 1 ? 's' : ''}</small>`;
@@ -3550,8 +3561,13 @@
       };
       tg.appendChild(d);
     }
-    const sk = document.createElement('div'), nOpen = loadSecrets().open.length; sk.className = 'tcard secretc';
-    sk.innerHTML = `🔐 SECRET LEVELS<small>${nOpen}/${SECRETS.length} opened · 10 secret missions to find</small>`; sk.onclick = openSecrets; tg.appendChild(sk);
+    if (menuPage === 2) {
+      if (!secretLv.length) { const e = document.createElement('div'); e.className = 'tcard empty'; e.innerHTML = '🔒 NO SECRET LEVELS OPEN YET<small>Do the secret missions to win codes, then type a code to open a level</small>'; tg.appendChild(e); }
+      const sk = document.createElement('div'), nOpen = loadSecrets().open.length; sk.className = 'tcard secretc';
+      sk.innerHTML = `🕵 SECRET MISSIONS<small>${nOpen}/${SECRETS.length} opened · read the clues · type a code</small>`; sk.onclick = openSecrets; tg.appendChild(sk);
+    }
+    if (menuPage !== 3) return;
+    if (!myLv.length) { const e = document.createElement('div'); e.className = 'tcard empty'; e.innerHTML = '✎ YOU HAVEN\'T BUILT A LEVEL YET<small>Press ＋ NEW LEVEL to make your first track</small>'; tg.appendChild(e); }
     const ad = document.createElement('div'); ad.className = 'tcard addlvl'; ad.innerHTML = '＋ NEW LEVEL<small>build another track of your own · ✎ EDIT changes one you made</small>'; ad.onclick = () => openEditor(null); tg.appendChild(ad);   // always a brand-new level
   }
   const escHtml = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

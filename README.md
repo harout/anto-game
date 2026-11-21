@@ -88,3 +88,6 @@ The **＋ NEW LEVEL** card on the menu always starts a brand-new level. Each lev
 
 ## ♻ Reset game
 The **♻ RESET GAME** button on the menu starts everything over: pods, tracks, credits, upgrades, paint, AI levels, ghosts and secret levels. Type RESET to confirm. Your controller setup and **the levels you built** are always kept, and so are your **Grand Tour prizes**: ghost racing, your best Grand Tour time, and the two secret levels you win in the Grand Tour.
+
+## 📑 Menu pages
+The track part of the menu has three pages: **🏁 TRACKS** (the five worlds and the Grand Tour), **🔐 SECRET LEVELS** (the secret levels you've opened, plus the secret missions) and **✎ MY LEVELS** (the levels you built, plus ＋ NEW LEVEL). The menu opens on the page of the track you're playing.
