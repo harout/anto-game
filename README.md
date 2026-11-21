@@ -38,7 +38,7 @@ five worlds, with 1–9 laps. A live map and height profile show the track as yo
 the menu and race with the AI rivals, ghosts and standings like the built-in tracks. **🎢 BUILD IN 3D** lets you build Planet Coaster-style: pick the next piece's length, turn (22°/45°/90°), slope and type,
 see it glow at the end of the track in 3D, and press Enter to place it (Backspace to undo).
 **🧪 TEST DRIVE** drives the level right away without saving (one lap, no rivals; Esc returns to the editor).
-**≈✕ Remove water** clears every river and swamp stretch at once.
+**≈✕ Remove water** clears every river and swamp stretch at once; **⤴✕ Remove ramps** clears every ramp jump.
 **✕ Overpasses**: where your track crosses itself, the lower road goes through a tunnel and the upper one becomes a bridge
 (lifted if needed); from the bridge you can see the lower road crossing underneath.
 **🔄 Auto-complete** adds the turn, straight and turn that join the end of your track back to the start line, level with it.
