@@ -290,7 +290,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v95</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -4990,9 +4990,10 @@
       else if (n + 1 < AI_SHORTCUT_LEVEL) msgs.push(`${AI_SHORTCUT_LEVEL - n - 1} more wins here and they learn the shortcuts`);
       saveUnlocks(unlocks);
     }
-    const youSuck = NIGHT && DOG_DRIVER && myPlace > 1;          // 😝 lose a night race with Bedo driving…
+    const bedoOn = DOG_DRIVER || /^\s*bedo\s*$/i.test(loadDriverName());   // Bedo's card picked, or your name is Bedo
+    const youSuck = NIGHT && bedoOn && myPlace > 1;              // 😝 lose a night race with Bedo driving…
     if (youSuck) { const u = loadUnlocks(); if (!u.fighter) { u.fighter = true; saveUnlocks(u); unlocks = u; msgs.unshift('🚀 STARFIGHTER UNLOCKED! (…as a prize for losing 😝) Pick it on the menu next to your pods'); } }
-    else if (myPlace > 1 && !loadUnlocks().fighter && (NIGHT || DOG_DRIVER))                 // 🤏 so close: tell them what's missing
+    else if (myPlace > 1 && !loadUnlocks().fighter && (NIGHT || bedoOn))                 // 🤏 so close: tell them what's missing
       msgs.unshift(NIGHT ? '🤫 So close! Lose a NIGHT race with 🐶 BEDO driving to win a secret ship' + (loadUnlocks().bedo ? ' (click Bedo’s card on the menu)' : ' (get Bedo first: name a level BEDO)')
                          : '🤫 So close! Lose with Bedo at NIGHT (🌙 button on the menu) to win a secret ship');
     document.getElementById('finUnlock').textContent = msgs.join('\n');
