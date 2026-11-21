@@ -296,7 +296,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v103</span></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v104</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -5509,14 +5509,14 @@
     if (!audio || muted || !DOG_DRIVER) return;               // only when Bedo is driving
     if (!pantBuf) { loadPant(); return; }
     if (pantSrc) { try { pantSrc.stop(); } catch (e) {} }      // start fresh, never two at once
-    const src = audio.ctx.createBufferSource(), g = audio.ctx.createGain(); src.buffer = pantBuf; g.gain.value = 0.9;
+    const src = audio.ctx.createBufferSource(), g = audio.ctx.createGain(); src.buffer = pantBuf; g.gain.value = 0.06;   // 🤫 barely hearable
     src.connect(g); g.connect(dogOut()); src.start(); pantSrc = src; src.onended = () => { if (pantSrc === src) pantSrc = null; };
   }
   let pantNext = 0;
   function pant() {                                            // soft "hah… hah", never in a steady rhythm
     if (!audio || muted) return;
     const now = audio.ctx.currentTime; if (now < pantNext) return; pantNext = now + 1.8 + Math.random() * 1.8;
-    for (const [w, pp] of [[0, 1], [0.26 + Math.random() * 0.06, 0.92]]) dogVoice({ when: w, dur: 0.16, vol: 0.07, rasp: 0.1, wobble: 4, breath: 2.2, breathF: 1300,
+    for (const [w, pp] of [[0, 1], [0.26 + Math.random() * 0.06, 0.92]]) dogVoice({ when: w, dur: 0.16, vol: 0.012, rasp: 0.1, wobble: 4, breath: 2.2, breathF: 1300,
       pitch: [[0, 180 * pp], [0.15, 150 * pp]], mouth: [[0, 2500], [0.15, 1600]], formants: [[850, 2.5, 0.6], [1350, 3, 0.5], [2600, 4, 0.3]] });
   }
   function meow(p = 1, when = 0) {                            // 🐱 "mi-AAA-ow": rises, opens up, then falls and closes
