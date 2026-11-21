@@ -25,7 +25,7 @@
   .tlabel { text-align:center; font-size:12px; margin-top:6px; letter-spacing:2px; }
   .tpct { text-align:center; font-size:15px; font-weight:700; }
   #turn { font-size:13px; padding-bottom:4px; color:var(--blue); width:180px; }
-  #panel { position:fixed; top:16px; right:16px; width:330px; max-height:calc(100vh - 32px);
+  #panel { position:fixed; top:16px; right:16px; width:330px; max-height:calc(100vh - 32px); z-index:8;   /* above the menu so you can map throttles from it */
     overflow:auto; background:var(--panel); border:1px solid rgba(255,179,71,.5);
     border-radius:10px; padding:14px; font-size:12px; backdrop-filter: blur(4px); }
   #panel h2 { margin:0 0 8px; font-size:13px; letter-spacing:3px; color:var(--amber); }
@@ -226,7 +226,7 @@
   #soundBtn { position:fixed; right:16px; bottom:16px; z-index:4; background:#ff8a2a; color:#1b0f08; }
   #soundBtn.on { background:#4a2a12; color:#ffe7c2; }
   #wizard { position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-    background:rgba(0,0,0,.6); z-index:5; }
+    background:rgba(0,0,0,.6); z-index:30; }   /* the mapping wizard sits on top of everything */
   #wizard .card { width:440px; background:#1e0f06; border:1px solid var(--amber); border-radius:12px;
     padding:22px; font-size:14px; line-height:1.5; }
   #wizard h3 { margin:0 0 10px; color:var(--amber); letter-spacing:3px; font-size:15px; }
@@ -290,7 +290,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v95</span></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v96</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
