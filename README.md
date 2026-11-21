@@ -102,4 +102,4 @@ Canyon walls come in seven styles: classic, layered rock, hoodoo spires, ancient
 There's a hidden trick in ♻ RESET GAME. Try it yourself!
 
 ## 🚪 Shortcut openings
-The openings in the canyon walls show what's inside. A slot canyon is a sunlit passage with the striped jump ramp waiting inside ("JUMP!"). A cave mouth is an arch with stalactites and glowing crystals. A wall notch shows the road climbing up to the rim.
+Where a shortcut goes through a canyon wall, the wall is open and you can see the shortcut's own road in 3D. It leaves the track, follows its real curves and hills, and has glowing arrows showing which way it turns. You can see its striped jump ramp and the gap you have to boost over. The cave road disappears into the mesa with glowing crystals inside.

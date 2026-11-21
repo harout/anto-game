@@ -1694,6 +1694,18 @@
     addRoad(10, 15, 10, 0, K()); addRoad(10, 15, 10, 2, K()); addRoad(10, 10, 10, 0, K(1.6));
   }, { cave: true });
   }
+  for (const sc of shortcuts) {                                // 🛣 shortcuts through a wall: work out where their road runs so you can see it curve away
+    const g0 = segments[sc.entry]; if (!(g0.canyon || g0.mesaSide)) continue;
+    const KM = sc.gapLen + 45, side = sc.side, base = sc.segs[0] ? sc.segs[0].y : 0;
+    let xm = 0, dxm = 0, xs = 0, dxs = 0;
+    sc.br = [];
+    for (let k = 0; k <= KM; k++) {
+      const m = segments[(sc.entry + k) % segments.length], q = sc.segs[Math.min(k, sc.segs.length - 1)];
+      sc.br.push({ off: side * ROAD_W * (1.75 + 0.1 * k) + (xs - xm), dy: (q.y - base) - (m.y - g0.y), q });
+      xm += dxm; dxm += m.curve; xs += dxs; dxs += q.curve;
+    }
+    for (let k = -2; k < KM; k++) segments[(sc.entry + k + segments.length) % segments.length].br = { sc, k: Math.max(0, k) };
+  }
   for (const sc of shortcuts) {                                // 🪧 every shortcut you're allowed to know about gets a sign saying what kind it is
     if (sc.secret) continue;
     const ty = sc.rim ? 'rim' : sc.type || (sc.cave ? 'cave' : sc.path ? 'plain' : 'slot'); sc.type = ty;
@@ -2465,6 +2477,40 @@
     const fogAt = d => Math.min(0.85, Math.pow(d / (DRAW * SEG), 1.6));
     paintLoop(L, loopQuads(L, -1.2, 2 * Math.PI + 2.4, 150), proj3, fogAt, C);
   }
+  function drawBranch(br, p1, p2, sg, fog) {                  // 🛣 one slice of a shortcut road as seen from the main track: real 3D, its own curves, walls, ramp and gap
+    const sc = br.sc, k = br.k, A = sc.br[k], B = sc.br[Math.min(k + 1, sc.br.length - 1)];
+    if (!A || p1.cz <= 10) return;
+    const side = sc.side, cave = sc.cave, hw = ROAD_W * 0.85, ww = ROAD_W * 1.15;
+    const X = (p, b, o) => p.x + (b.off + o) / ROAD_W * p.w, Y = (p, b, up) => p.y - p.scale * (b.dy + up) * H / 2;
+    const q = A.q, rock = cave ? [74, 52, 70] : [178, 96, 56], rockD = cave ? [52, 36, 52] : [146, 74, 44];
+    // the road (or the gap you jump)
+    const road = q.chasm ? [24, 12, 8] : cave ? (k & 1 ? [58, 46, 60] : [52, 40, 54]) : (k & 1 ? [120, 74, 48] : [112, 68, 44]);
+    poly([X(p1, A, -hw), Y(p1, A, 0), X(p1, A, hw), Y(p1, A, 0), X(p2, B, hw), Y(p2, B, 0), X(p2, B, -hw), Y(p2, B, 0)], fogMix(road, fog));
+    if (!q.chasm && !cave && (k >> 1) % 2) poly([X(p1, A, -hw * 0.05), Y(p1, A, 0), X(p1, A, hw * 0.05), Y(p1, A, 0), X(p2, B, hw * 0.05), Y(p2, B, 0), X(p2, B, -hw * 0.05), Y(p2, B, 0)], fogMix([240, 226, 196], fog));   // centre dashes
+    if (!q.chasm && k % 3 === 0 && !(q.ramp && q.ramp.chasm)) {   // glowing arrows that show which way the shortcut turns
+      const t = 0.5 + 0.5 * Math.sin(performance.now() / 160 - k * 0.7), col = cave ? [190, 140, 255] : [255, 210, 60];
+      const nx = X(p2, B, 0), ny = Y(p2, B, 0);
+      poly([X(p1, A, -hw * 0.55), Y(p1, A, 0), nx, ny, X(p1, A, hw * 0.55), Y(p1, A, 0), X(p1, A, 0), Y(p1, A, 0) - (Y(p1, A, 0) - ny) * 0.45], fogMix(col.map(v => v * (0.65 + 0.35 * t) | 0), fog * 0.7));
+    }
+    if (!q.chasm) for (const e of [-1, 1]) poly([X(p1, A, e * hw), Y(p1, A, 0), X(p1, A, e * hw * 0.9), Y(p1, A, 0), X(p2, B, e * hw * 0.9), Y(p2, B, 0), X(p2, B, e * hw), Y(p2, B, 0)], fogMix(k & 1 ? [230, 70, 46] : [240, 236, 226], fog));   // rumble edges
+    if (q.ramp && q.ramp.chasm) {                              // the striped jump ramp, rising towards the gap
+      const r = q.ramp, u1 = r.h1, u2 = r.h2;
+      poly([X(p1, A, -hw), Y(p1, A, u1), X(p1, A, hw), Y(p1, A, u1), X(p2, B, hw), Y(p2, B, u2), X(p2, B, -hw), Y(p2, B, u2)], fogMix(r.j & 1 ? [250, 245, 235] : [214, 54, 36], fog));
+      poly([X(p1, A, side * hw), Y(p1, A, 0), X(p1, A, side * hw), Y(p1, A, u1), X(p2, B, side * hw), Y(p2, B, u2), X(p2, B, side * hw), Y(p2, B, 0)], fogMix([150, 40, 28], fog));
+    }
+    // the shortcut's far wall (and, in a cave, its ceiling)
+    const hW1 = (sg.wallH || 2600) * 0.95, hW2 = hW1, o = side * ww;
+    poly([X(p1, A, o), Y(p1, A, 0), X(p1, A, o), Y(p1, A, hW1), X(p2, B, o), Y(p2, B, hW2), X(p2, B, o), Y(p2, B, 0)], fogMix(k & 1 ? rock : rock.map(v => v * 0.95 | 0), fog * 0.85));
+    if (!cave) for (const [a, b, c] of [[0.22, 0.3, [226, 150, 100]], [0.48, 0.54, [240, 200, 160]], [0.7, 0.76, [200, 110, 66]]]) poly([X(p1, A, o), Y(p1, A, hW1 * a), X(p1, A, o), Y(p1, A, hW1 * b), X(p2, B, o), Y(p2, B, hW2 * b), X(p2, B, o), Y(p2, B, hW2 * a)], fogMix(c, fog * 0.85));
+    poly([X(p1, A, o), Y(p1, A, hW1), X(p1, A, o + side * ROAD_W * 4), Y(p1, A, hW1), X(p2, B, o + side * ROAD_W * 4), Y(p2, B, hW2), X(p2, B, o), Y(p2, B, hW2)], fogMix(rockD, fog * 0.85));   // the rock beyond
+    if (cave) {                                                // the dark inside of the cave, with crystals glowing on its far wall
+      const ch = hW1 * 0.72;
+      poly([X(p1, A, o), Y(p1, A, 0), X(p1, A, o), Y(p1, A, ch), X(p2, B, o), Y(p2, B, ch), X(p2, B, o), Y(p2, B, 0)], fogMix([26, 16, 30], fog * 0.7));
+      if (k % 4 === 1) { const cx = X(p1, A, o), cy = Y(p1, A, hW1 * (0.2 + 0.08 * (k % 3))), cr = Math.max(2, p1.scale * 260 * W / 2), hue = (k % 2) ? '150,90,255' : '80,220,255';
+        const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr * 3); rg.addColorStop(0, `rgba(${hue},${0.9 * (1 - fog)})`); rg.addColorStop(1, `rgba(${hue},0)`); ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(cx, cy, cr * 3, 0, 7); ctx.fill();
+        poly([cx - cr * 0.5, cy + cr, cx, cy - cr * 1.5, cx + cr * 0.5, cy + cr], `rgba(${hue},${0.95 * (1 - fog)})`); }
+    }
+  }
   function drawOpening(sg, side, p1, p2, x1, x2, h1, h2, fog) {   // 🚪 look through the wall: sunlit slot with the jump ramp, or a cave with crystals
     const gs = sg.gapSc, L = gs.gapLen, k = sg.i - gs.entry, f = (k + 0.5) / L, f2 = Math.min(1, (k + 1.5) / L);
     const css = (c, ff) => fogMix(c, ff);
@@ -2851,6 +2897,7 @@
           ctx.fillStyle = g; ctx.beginPath(); ctx.arc(lx, p1.y - lr, lr * 5, 0, 7); ctx.fill();
         }
       }
+      if (T.main && sg.br) drawBranch(sg.br, p1, p2, sg, fog);   // 🛣 the shortcut's own road, curving away through the gap
       // canyon walls
       if (sg.canyon || sg.mesaSide) {
         const nx = segFor(idx + 1);
@@ -2859,6 +2906,17 @@
         else for (const side of [-1, 1]) {
           if (!sg.canyon && side !== sg.mesaSide) continue;
           const x1 = p1.x + side * p1.w * sg.wall, x2 = p2.x + side * p2.w * sg.wall;
+          if (T.main && sg.gap === side && sg.br) {            // 🚪 the wall is open here — you look straight down the shortcut
+            if (sg.gapSc.cave) {                               // a cave mouth: rock only above the arch
+              const L = sg.gapSc.gapLen, k = sg.i - sg.gapSc.entry, arch = t => 0.8 * Math.sqrt(Math.max(0, Math.sin(Math.PI * Math.min(1, Math.max(0, t))))), a1 = arch((k + 0.5) / L), a2 = arch((k + 1.5) / L);
+              const sh = side < 0 ? (alt ? [150, 82, 48] : [140, 76, 44]) : (alt ? [124, 64, 38] : [116, 60, 36]);
+              poly([x1, p1.y - h1 * a1, x1, p1.y - h1, x2, p2.y - h2, x2, p2.y - h2 * a2], fogMix(sh, fog * 0.85));
+              poly([x1, p1.y - h1, x1 + side * W * 3, p1.y - h1, x2 + side * W * 3, p2.y - h2, x2, p2.y - h2], fogMix([108, 56, 34], fog * 0.85));
+              poly([x1, p1.y - h1 * a1, x1 + side * W * 3, p1.y - h1 * a1, x1 + side * W * 3, p1.y - h1, x1, p1.y - h1], fogMix(sh, fog * 0.85));   // solid rock above the mouth
+              ctx.strokeStyle = fogMix([210, 140, 96], fog); ctx.lineWidth = Math.max(1, p1.scale * 30 * W / 2 * 0.06); ctx.beginPath(); ctx.moveTo(x1, p1.y - h1 * a1); ctx.lineTo(x2, p2.y - h2 * a2); ctx.stroke();
+            }
+            continue;
+          }
           const ws = !sg.cave && !sg.slot && sg.wallStyle ? WALL_STYLES[sg.wallStyle] : null;
           const shade = ws ? wcol(ws, side < 0 ? ws.l[alt ? 0 : 1] : ws.r[alt ? 0 : 1]) : sg.cave ? (side < 0 ? (alt ? [92, 62, 48] : [84, 56, 44]) : (alt ? [72, 48, 38] : [66, 44, 35])) : sg.slot ? (side < 0 ? (alt ? [120, 58, 36] : [110, 52, 32]) : (alt ? [96, 46, 30] : [88, 42, 28]))
             : side < 0 ? (alt ? [150, 82, 48] : [140, 76, 44]) : (alt ? [124, 64, 38] : [116, 60, 36]);
@@ -2874,7 +2932,7 @@
             g.addColorStop(0, `rgba(170,240,255,${0.95 * (1 - fog)})`); g.addColorStop(.25, `rgba(80,190,255,${0.5 * (1 - fog)})`); g.addColorStop(1, 'rgba(40,120,255,0)');
             ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x1, cy, cr * 4, 0, 7); ctx.fill();
           }
-          if (T.main && sg.gap === side) drawOpening(sg, side, p1, p2, x1, x2, h1, h2, fog);   // 🚪 the doorway into the shortcut
+          if (T.main && sg.gap === side && !sg.br) drawOpening(sg, side, p1, p2, x1, x2, h1, h2, fog);   // 🚪 (only if the shortcut has no road to show)
           // body of the cliff beyond the face
           poly([x1, p1.y - h1, x1 + side * W * 3, p1.y - h1, x2 + side * W * 3, p2.y - h2, x2, p2.y - h2], fogMix(ws ? wcol(ws, ws.body) : [108, 56, 34], fog * 0.85));
           poly([x1, p1.y, x1 + side * W * 3, p1.y, x1 + side * W * 3, p1.y - h1, x1, p1.y - h1], fogMix(shade, fog * 0.85));
