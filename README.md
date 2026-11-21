@@ -37,6 +37,8 @@ canyons with arches, tunnels, rivers (slow you down) or swamp water (full speed)
 five worlds, with 1–9 laps. A live map and height profile show the track as you build it. Your levels appear as cards in
 the menu and race with the AI rivals, ghosts and standings like the built-in tracks. **🎢 BUILD IN 3D** lets you build Planet Coaster-style: pick the next piece's length, turn (22°/45°/90°), slope and type,
 see it glow at the end of the track in 3D, and press Enter to place it (Backspace to undo).
+**⑂ Split tracks**: any plain section can split off a second route (left or right — a side road, log jumps, a creek,
+a rock tunnel or a boulder garden) that rejoins at the end of the section; rivals take it now and then.
 **⧉ SHARE CODE** gives a code
 (starting with `POD1:`) a friend can paste into **⇩ IMPORT CODE**.
 

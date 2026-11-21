@@ -244,7 +244,7 @@
         <button data-add="straight">▮ Straight</button><button data-add="left">↰ Left turn</button><button data-add="right">↱ Right turn</button>
         <button data-add="up">▲ Climb</button><button data-add="down">▼ Drop</button><button data-add="canyon">⛰ Canyon</button>
         <button data-add="tunnel">◖ Tunnel</button><button data-add="river">≈ River</button><button data-add="swamp">≋ Swamp water</button>
-        <button data-add="ramp">⤴ Ramp jump</button><button data-add="rocks">● Rock field</button><button data-add="random">🎲 Random</button>
+        <button data-add="ramp">⤴ Ramp jump</button><button data-add="rocks">● Rock field</button><button data-add="split">⑂ Split</button><button data-add="random">🎲 Random</button>
       </div>
       <div id="edList"></div>
     </div>
@@ -269,12 +269,13 @@
     <div class="bl-row"><b>TURN</b><button data-turn="-90">⟲ 90°</button><button data-turn="-45">⟲ 45°</button><button data-turn="-22.5">⟲ 22°</button><button data-turn="0">straight</button><button data-turn="22.5">22° ⟳</button><button data-turn="45">45° ⟳</button><button data-turn="90">90° ⟳</button></div>
     <div class="bl-row"><b>SLOPE</b><button data-slope="-2000">⬇⬇ steep</button><button data-slope="-800">⬇ down</button><button data-slope="0">flat</button><button data-slope="800">⬆ up</button><button data-slope="2000">⬆⬆ steep</button></div>
     <div class="bl-row"><b>TYPE</b><button data-type="road">road</button><button data-type="canyon">canyon</button><button data-type="tunnel">tunnel</button><button data-type="river">river</button><button data-type="swamp">swamp</button><button data-type="ramp">ramp jump</button><button data-type="rocks">rocks</button></div>
+    <div class="bl-row"><b>SPLIT</b><button data-split="">none</button><button data-split="left">⑂ left</button><button data-split="right">⑂ right</button><span id="blSplitNote" style="color:#b8916a"></span></div>
     <div class="bl-row"><button id="blPlace" class="go">✔ PLACE PIECE <small>Enter</small></button><button id="blUndo">⌫ UNDO <small>Backspace</small></button><button id="blClear">🗑 CLEAR ALL</button><button id="blDone" class="go2">✔ DONE</button></div>
     <div id="blInfo"></div>
   </div>
   <div id="v3smooth"><b>SMOOTHING</b><input type="range" id="v3sm" min="0" max="100" step="1"><span id="v3smv"></span>
     <small id="v3smh">rounds off sharp turns and the edges of steep climbs and drops</small><button id="v3race">▶ SAVE &amp; RACE IT</button></div>
-  <div class="v3-legend"><i style="background:#e8c79a"></i>road <i style="background:#b8703e"></i>canyon walls <i style="background:#5b5048"></i>tunnel <i style="background:#4aa3ff"></i>river <i style="background:#6f9a52"></i>swamp water <i style="background:#ffd23f"></i>ramp <i style="background:#ff5a4a"></i>rocks <i style="background:#fff"></i>start</div>
+  <div class="v3-legend"><i style="background:#e8c79a"></i>road <i style="background:#b8703e"></i>canyon walls <i style="background:#5b5048"></i>tunnel <i style="background:#4aa3ff"></i>river <i style="background:#6f9a52"></i>swamp water <i style="background:#ffd23f"></i>ramp <i style="background:#ff5a4a"></i>rocks <i style="background:#b0804e"></i>split route <i style="background:#fff"></i>start</div>
 </div>
 <div id="finish"><div class="card">
   <h1>RACE COMPLETE</h1>
@@ -787,7 +788,7 @@
     addRoad(0, 50, 0, 0, CLEAR);                               // start straight
     let hillSum = 0;
     for (const sc of CUSTOM.sections) {
-      const len = Math.max(20, Math.min(400, sc.len | 0)), ease = Math.min(30, Math.floor(len * 0.25)), o = {};
+      const len = Math.max(sc.split && !sc.canyon && !sc.tunnel && !sc.water ? 150 : 20, Math.min(400, sc.len | 0)), ease = Math.min(30, Math.floor(len * 0.25)), o = {};
       if (sc.hill) { o.hill = +sc.hill; hillSum += +sc.hill; }
       if (sc.canyon) Object.assign(o, { canyon: true, wall: 1.8, arch: !!sc.arch });
       if (sc.tunnel) Object.assign(o, { canyon: true, cave: true, wall: 1.6, mtn: true });
@@ -1204,6 +1205,11 @@
         sg.mi = entry;
         for (let q = 0; q < 4; q++) {
           const sd = Math.random() < .5 ? -1 : 1, off = rw + 0.6 + Math.pow(Math.random(), 1.4) * 9;
+          if (!THEME.forest) {                                   // a split on one of your levels: that world's scenery
+            const kind = THEME.swamp ? (Math.random() < .8 ? 'cypress' : 'reeds') : THEME.bryce ? (Math.random() < .6 ? 'hoodoo' : 'pine') : 'rock';
+            sg.sprites.push({ off: sd * (off + 0.6), kind, size: kind === 'rock' ? 0.4 + Math.random() * 0.7 : 0.6 + Math.random() * 0.8, hue: Math.random(), seed: k, snowy: THEME.snow });
+            continue;
+          }
           const t = { off: sd * off, kind: Math.random() < 0.7 ? 'pine' : 'oak', size: 0.8 + Math.random() * 0.7, hue: Math.random(), snowy: sg.y > snowLine(sg) * 0.6 };
           if (off < rw + 1.6 && k > 6 && k < arr.length - 6) sg.obs.push({ off: t.off, w: 0.1, kind: 'tree', tree: t }); else sg.sprites.push(t);
         }
@@ -1254,7 +1260,7 @@
       addRoad(0, 20, 0, 0, { path: true, roadW: rw, hill: y1 - tgt.lastY });
     };
   }
-  if (THEME.forest && TRACK_ID === 3) {
+  if ((THEME.forest && TRACK_ID === 3) || CUSTOM) {
     // ⑂ every fork trail gets a name and a signature challenge, plus whoops and glowing mushrooms
     const TRAIL_TYPES = [['logs', 'Log Jump Trail'], ['creek', 'Creek Trail'], ['tunnel', 'Rock Tunnel Trail'], ['rocks', 'Boulder Garden Trail']];
     let forkNo = 0;
@@ -1269,13 +1275,20 @@
         else if (type === 'tunnel') { clean(at, at + W0); for (let k = 0; k < W0; k++) { const g = A[at + k]; g.cave = g.canyon = true; g.wall = 1.15; g.wallH = 2300 + Math.sin(k * 0.37) * 250; g.sprites = []; if (k % 2 === 0) g.deco.push({ off: (Math.random() * 2 - 1) * 1.05, w: 0.05 + Math.random() * 0.06, tip: 1100 + Math.random() * 500 }); } }
         else { clean(at, at + W0); for (let k = 6, q = 0; k < W0 - 4; k += 9, q++) A[at + k].obs.push({ off: (q & 1 ? 1 : -1) * rw * 0.45, w: 0.13, kind: 'boulder' }); }
       };
-      whoops(slots[0]); sig(slots[1]); sig(slots[2]); whoops(slots[3]); sig(slots[4]);
+      whoops(slots[0]); if (type !== 'plain') { sig(slots[1]); sig(slots[2]); } whoops(slots[3]); if (type !== 'plain') sig(slots[4]);
       if (L > 600) { whoops(slots[5]); }
       const pal = [[90, 255, 200], [120, 200, 255], [255, 120, 230], [180, 255, 110], [255, 200, 90]];
       A.forEach((g, k) => { if (g.cave || g.river || k < 4) return; if (k % 3 === 0) { const sd = Math.random() < .5 ? -1 : 1; g.sprites.push({ kind: 'shroom', off: sd * (rw + 0.25 + Math.random() * 1.6), size: 0.6 + Math.random() * 0.9, col: pal[Math.random() * pal.length | 0] }); } });
     }
-    const fork = (entry, exit, side) => { const sc = buildShortcut(entry, exit, side, pathPlan(entry, exit, side, false), { path: true }); const [type, name] = TRAIL_TYPES[forkNo++ % TRAIL_TYPES.length]; sc.type = type; sc.name = name; decorateTrail(sc, type); return sc; };
+    const TRAIL_NAMES = { logs: 'Log Jump Trail', creek: 'Creek Trail', tunnel: 'Rock Tunnel Trail', rocks: 'Boulder Garden Trail', plain: 'Side Road' };
+    const fork = (entry, exit, side, want) => { const sc = buildShortcut(entry, exit, side, pathPlan(entry, exit, side, false), { path: true }); const [type, name] = want && TRAIL_NAMES[want] ? [want, TRAIL_NAMES[want]] : TRAIL_TYPES[forkNo++ % TRAIL_TYPES.length]; sc.type = type; sc.name = name; decorateTrail(sc, type); return sc; };
     const secret = (entry, exit, side) => buildShortcut(entry, exit, side, pathPlan(entry, exit, side, true), { path: true, secret: true });
+    if (CUSTOM) for (const { a, b, sc } of mark.custom) {        // ⑂ SPLIT sections from the level editor
+      if (!sc.split || sc.canyon || sc.tunnel || sc.water) continue;
+      const e = a + 10, x = b - 10;
+      if (x - e >= 110) fork(e, x, sc.split === 'left' ? -1 : 1, sc.trail || 'plain');
+    }
+    if (TRACK_ID === 3) {
     fork(mark.rivers[1] + 14 + 18, mark.redwood + 5, 1);                       // ⑂ fork 1: valley trail around the steep ridge
     fork(mark.gaps[3].start + 30, mark.gaps[3].cave - 40, -1);                 // ⑂ fork 2: snowy forest trail
     fork(mark.gaps[8].start + 20, mark.gaps[8].cave - 40, 1);                  // ⑂ fork 3: high trail
@@ -1287,6 +1300,7 @@
     fork(freeEntry(mark.summit + 90), segments.length - 260, 1);               // ⑂ the long way down: a winding trail off the summit
     for (const [gi, sd] of [[2, -1], [6, 1], [11, -1]]) {                      // 🤫 secret paths up the steep hills
       const gp = mark.gaps[gi]; secret(gp.steeps[0] + 4, gp.cave - 30, sd);
+    }
     }
   }
   if (TRACK_ID === 5) {
@@ -1500,7 +1514,7 @@
       // ⑂ they know every fork; each one they take 20% of the time
       let forkSc = null;
       const isFork = sc => sc.path && !sc.secret;
-      if (!ai.finished) for (let n = 0; n < 70; n++) { const q = segments[(si + n) % N]; if (q.gap && q.gapSc && (isFork(q.gapSc) ? THEME.forest : AI_SHORTCUTS)) { forkSc = q.gapSc; break; } }   // level 50: they know every shortcut
+      if (!ai.finished) for (let n = 0; n < 70; n++) { const q = segments[(si + n) % N]; if (q.gap && q.gapSc && (isFork(q.gapSc) ? (THEME.forest || CUSTOM) : AI_SHORTCUTS)) { forkSc = q.gapSc; break; } }   // level 50: they know every shortcut
       if (forkSc) { ai.forks = ai.forks || {}; if (ai.forks[forkSc.idx] === undefined) ai.forks[forkSc.idx] = isFork(forkSc) ? Math.random() < AI_FORK_CHANCE : true; }
       const takeFork = forkSc && ai.forks[forkSc.idx] ? forkSc : null;
       let maxC = 0;
@@ -1926,6 +1940,7 @@
   }
   function fmtTime(t) { const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s < 10 ? '0' : ''}${s.toFixed(1)}`; }
   function upcomingTurn() {
+    if (CUSTOM && !THEME.forest && T.main) for (let n = 8; n < 90; n++) { const g = segAt(position + PLAYER_Z + n * SEG); if (g.gap && g.gapSc.path && !g.gapSc.secret && g.i === g.gapSc.entry) return `⑂ SPLIT AHEAD · ${(g.gapSc.name || 'SIDE ROAD').toUpperCase()} ON THE ${g.gap < 0 ? 'LEFT' : 'RIGHT'}`; }
     if (THEME.swamp && T.main) for (let n = 15; n < 70; n++) { const g = segAt(position + PLAYER_Z + n * SEG); if (g.river && !segAt(position + PLAYER_Z + (n - 1) * SEG).river) return '≈ SWAMP WATER AHEAD · NO SLOWDOWN ≈'; }
     if (THEME.forest && T.main) {
       for (let n = 8; n < 90; n++) { const g = segAt(position + PLAYER_Z + n * SEG); if (g.gap && g.gapSc.path && !g.gapSc.secret && g.i === g.gapSc.entry) return `⑂ FORK AHEAD · ${(g.gapSc.name || 'TRAIL').toUpperCase()} ON THE ${g.gap < 0 ? 'LEFT' : 'RIGHT'}`; }
@@ -3072,12 +3087,14 @@
     canyon: { len: 120, curve: 1.5, canyon: true, arch: true }, tunnel: { len: 110, curve: -1, tunnel: true },
     river: { len: 60, curve: 0, water: 'slow' }, swamp: { len: 120, curve: 1, water: 'fast' },
     ramp: { len: 90, curve: 0, ramp: true, obs: 'none' }, rocks: { len: 120, curve: 0.5, obs: 'lots' },
+    split: { len: 200, curve: 1.5, split: 'right', trail: 'logs' },
   };
-  const newSection = kind => Object.assign({ len: 90, curve: 0, hill: 0, canyon: false, arch: false, tunnel: false, water: '', ramp: false, obs: 'some' }, kind === 'random' ? randomSection() : ED_PRESETS[kind] || {});
+  const newSection = kind => Object.assign({ len: 90, curve: 0, hill: 0, canyon: false, arch: false, tunnel: false, water: '', ramp: false, obs: 'some', split: '', trail: 'plain' }, kind === 'random' ? randomSection() : ED_PRESETS[kind] || {});
   function randomSection() {
     const r = Math.random(), sc = { len: 60 + (Math.random() * 120 | 0), curve: +((Math.random() * 2 - 1) * (Math.random() < .3 ? 6 : 3)).toFixed(1), hill: Math.random() < .4 ? Math.round((Math.random() * 2 - 1) * 2500 / 100) * 100 : 0 };
     if (r < .2) sc.canyon = true, sc.arch = Math.random() < .5; else if (r < .3) sc.tunnel = true; else if (r < .4) sc.water = Math.random() < .5 ? 'slow' : 'fast';
     if (Math.random() < .2) sc.ramp = true, sc.obs = 'none'; else if (Math.random() < .2) sc.obs = 'lots';
+    if (!sc.canyon && !sc.tunnel && !sc.water && Math.random() < .2) { sc.split = Math.random() < .5 ? 'left' : 'right'; sc.trail = ['plain', 'logs', 'creek', 'tunnel', 'rocks'][Math.random() * 5 | 0]; sc.len = Math.max(sc.len, 150); }
     return sc;
   }
   const defaultLevel = () => ({ id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: 'My Level ' + (loadLevels().length + 1), world: 1, laps: 3,
@@ -3126,6 +3143,8 @@
           <label><input type="checkbox" data-k="tunnel"${sc.tunnel ? ' checked' : ''}>tunnel</label>
           <label><input type="checkbox" data-k="ramp"${sc.ramp ? ' checked' : ''}>ramp jump</label>
           <label>water <select data-k="water"><option value="">none</option><option value="slow"${sc.water === 'slow' ? ' selected' : ''}>river (slows you)</option><option value="fast"${sc.water === 'fast' ? ' selected' : ''}>swamp (full speed)</option></select></label>
+          <label title="${sc.canyon || sc.tunnel || sc.water ? 'Not on canyon, tunnel or water sections' : 'A second route that splits off and rejoins at the end of this section'}">split <select data-k="split"${sc.canyon || sc.tunnel || sc.water ? ' disabled' : ''}><option value="">none</option><option value="left"${sc.split === 'left' ? ' selected' : ''}>⑂ left</option><option value="right"${sc.split === 'right' ? ' selected' : ''}>⑂ right</option></select></label>
+          ${sc.split && !sc.canyon && !sc.tunnel && !sc.water ? `<label>route <select data-k="trail"><option value="plain"${(sc.trail || 'plain') === 'plain' ? ' selected' : ''}>side road</option><option value="logs"${sc.trail === 'logs' ? ' selected' : ''}>log jumps</option><option value="creek"${sc.trail === 'creek' ? ' selected' : ''}>creek</option><option value="tunnel"${sc.trail === 'tunnel' ? ' selected' : ''}>rock tunnel</option><option value="rocks"${sc.trail === 'rocks' ? ' selected' : ''}>boulder garden</option></select></label>` : ''}
           <label>obstacles <select data-k="obs"><option value="none"${sc.obs === 'none' ? ' selected' : ''}>none</option><option value="some"${sc.obs === 'some' ? ' selected' : ''}>some</option><option value="lots"${sc.obs === 'lots' ? ' selected' : ''}>lots</option></select></label>
         </div>`;
       r.onclick = () => { if (edSel !== i) { edSel = i; edList.querySelectorAll('.ed-row').forEach((x, j) => x.classList.toggle('on', j === i)); edPreview(); } };
@@ -3136,6 +3155,7 @@
           if (k === 'canyon' && !sc.canyon) sc.arch = false;
           if (k === 'tunnel' && sc.tunnel) sc.canyon = false;
           if (k === 'canyon' && sc.canyon) sc.tunnel = false;
+          if (k === 'split' && sc.split) { if (!sc.trail) sc.trail = 'plain'; if (sc.len < 150) sc.len = 150; }
           edDirty = true;
           if (inp.type === 'range') { inp.previousElementSibling.textContent = k === 'len' ? sc.len + ' segs' : k === 'curve' ? curveTxt(sc.curve) : hillTxt(sc.hill); edPreview(); }
           else edRenderList(), edPreview();
@@ -3159,9 +3179,10 @@
     push(50, 0, 0, 'road', false);
     let hs = 0;
     lv.sections.forEach((sc, i) => {
-      const kind = sc.tunnel ? 'tunnel' : sc.water === 'fast' ? 'swamp' : sc.water ? 'river' : sc.canyon ? 'canyon' : 'road', n = Math.max(20, Math.min(400, sc.len));
+      const splitOk = sc.split && !sc.canyon && !sc.tunnel && !sc.water;
+      const kind = sc.tunnel ? 'tunnel' : sc.water === 'fast' ? 'swamp' : sc.water ? 'river' : sc.canyon ? 'canyon' : 'road', n = Math.max(splitOk ? 150 : 20, Math.min(400, sc.len));
       const ease = Math.min(30, Math.floor(n * 0.25));
-      for (let k = 0; k < n; k++) { const c = +sc.curve * (k < ease ? k / ease : k >= n - ease ? (n - k) / ease : 1); segs.push({ curve: c, dy: (+sc.hill || 0) / n, kind: i === opt.preview ? 'preview' : kind, sel: i === selIdx, piece: i, ramp: sc.ramp && k === (n >> 1), rocks: sc.obs === 'lots' && k % 18 === 9 }); }
+      for (let k = 0; k < n; k++) { const c = +sc.curve * (k < ease ? k / ease : k >= n - ease ? (n - k) / ease : 1); segs.push({ curve: c, dy: (+sc.hill || 0) / n, kind: i === opt.preview ? 'preview' : kind, sel: i === selIdx, piece: i, split: splitOk && k >= 10 && k < n - 10 ? (sc.split === 'left' ? -1 : 1) : 0, st: (k - 10) / Math.max(1, n - 20), ramp: sc.ramp && k === (n >> 1), rocks: sc.obs === 'lots' && k % 18 === 9 }); }
       hs += +sc.hill || 0;
     });
     if (!opt.open) { if (hs) push(120, 0, -hs, 'road', false); push(60, 0, 0, 'road', false); }
@@ -3172,7 +3193,7 @@
     let a = 0, x = 0, y = 0; const pts = [];
     C.forEach((c, i) => { a += c * kk + fix; x += Math.sin(a); y -= Math.cos(a); pts.push([x, y, HH[i]]); });
     if (!opt.open) { const ex = pts[N - 1][0], ey = pts[N - 1][1]; pts.forEach((p, i) => { p[0] -= ex * (i + 1) / N; p[1] -= ey * (i + 1) / N; }); }
-    const geom = pts.map((p, i) => ({ x: p[0], z: p[1], y: p[2] / SEG, kind: segs[i].kind, ramp: segs[i].ramp, rocks: segs[i].rocks, sel: segs[i].sel }));
+    const geom = pts.map((p, i) => ({ x: p[0], z: p[1], y: p[2] / SEG, kind: segs[i].kind, ramp: segs[i].ramp, rocks: segs[i].rocks, sel: segs[i].sel, split: segs[i].split, st: segs[i].st }));
     return { segs, pts, hs, N, geom };
   }
   function edPreview() {                                       // top-down map (closed into a loop like the in-race minimap) + height profile
@@ -3196,7 +3217,7 @@
     const km = N * 200 / 1000 * ED.laps / 10;
     document.getElementById('edStats').innerHTML = `${ED.sections.length} sections · ${N} segments a lap${ED.smooth ? ` · smoothing ${ED.smooth}` : ''} · ${ED.laps} lap${ED.laps > 1 ? 's' : ''}<br>about ${Math.round(N / 45 * ED.laps)} s of racing · highest +${Math.round(Math.max(0, ...hsArr))} · lowest ${Math.round(Math.min(0, ...hsArr))}${hs ? ' · eases back to the start height' : ''}`;
   }
-  const edCodeOf = lv => 'POD1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ n: lv.name, w: lv.world, l: lv.laps, m: lv.smooth || 0, s: lv.sections.map(sc => [sc.len, sc.curve, sc.hill, (sc.canyon ? 1 : 0) | (sc.arch ? 2 : 0) | (sc.tunnel ? 4 : 0) | (sc.ramp ? 8 : 0), sc.water || '', sc.obs || 'some']) }))));
+  const edCodeOf = lv => 'POD1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ n: lv.name, w: lv.world, l: lv.laps, m: lv.smooth || 0, s: lv.sections.map(sc => [sc.len, sc.curve, sc.hill, (sc.canyon ? 1 : 0) | (sc.arch ? 2 : 0) | (sc.tunnel ? 4 : 0) | (sc.ramp ? 8 : 0), sc.water || '', sc.obs || 'some', sc.split || '', sc.trail || 'plain']) }))));
   function edFromCode(code) {
     const m = String(code).trim().match(/^POD1:([A-Za-z0-9+/=]+)$/); if (!m) throw new Error('That is not a level code (it should start with POD1:)');
     const o = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
@@ -3204,7 +3225,8 @@
     const num = (v, a, b, d) => Number.isFinite(+v) ? Math.max(a, Math.min(b, +v)) : d;
     return { id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: String(o.n || 'Shared level').slice(0, 28), world: num(o.w, 1, 5, 1) | 0, laps: num(o.l, 1, 9, 3) | 0, smooth: num(o.m, 0, 100, 0) | 0,
       sections: o.s.map(a => ({ len: num(a[0], 20, 400, 90) | 0, curve: num(a[1], -7, 7, 0), hill: num(a[2], -4000, 4000, 0) | 0, canyon: !!(a[3] & 1), arch: !!(a[3] & 2), tunnel: !!(a[3] & 4), ramp: !!(a[3] & 8),
-        water: a[4] === 'fast' || a[4] === 'slow' ? a[4] : '', obs: ['none', 'some', 'lots'].includes(a[5]) ? a[5] : 'some' })) };
+        water: a[4] === 'fast' || a[4] === 'slow' ? a[4] : '', obs: ['none', 'some', 'lots'].includes(a[5]) ? a[5] : 'some',
+        split: a[6] === 'left' || a[6] === 'right' ? a[6] : '', trail: ['plain', 'logs', 'creek', 'tunnel', 'rocks'].includes(a[7]) ? a[7] : 'plain' })) };
   }
   document.querySelectorAll('.ed-add [data-add]').forEach(b => b.onclick = () => {
     if (ED.sections.length >= 120) { edMsg('That is the most sections a level can have (120).'); return; }
@@ -3277,19 +3299,23 @@
     if (v3build) { v3build = false; document.getElementById('v3bld').style.display = 'none'; edRenderList(); edPreview(); }
   }
   // 🎢 piece-by-piece builder: each placed piece becomes a section of the level
-  const BP = { len: 90, turn: 0, slope: 0, type: 'road' };
+  const BP = { len: 90, turn: 0, slope: 0, type: 'road', split: '' };
   const BTYPE = { road: {}, canyon: { canyon: true, arch: true }, tunnel: { tunnel: true }, river: { water: 'slow' }, swamp: { water: 'fast' }, ramp: { ramp: true, obs: 'none' }, rocks: { obs: 'lots' } };
   function pieceSection() {                                    // degrees of turn → curve strength (lengthen the piece if the turn is too tight)
     let n = BP.len; const rad = Math.abs(BP.turn) * Math.PI / 180;
     const curveFor = n => rad / (0.006 * (n - Math.min(30, Math.floor(n * 0.25))));
     while (rad && curveFor(n) > 7 && n < 400) n += 5;
-    return Object.assign({ len: n, curve: rad ? +(Math.sign(BP.turn) * curveFor(n)).toFixed(2) : 0, hill: BP.slope, canyon: false, arch: false, tunnel: false, water: '', ramp: false, obs: 'some' }, BTYPE[BP.type]);
+    const splitOk = BP.split && !['canyon', 'tunnel', 'river', 'swamp'].includes(BP.type);
+    if (splitOk && n < 150) n = 150;                           // a split needs room to branch and rejoin
+    return Object.assign({ len: n, curve: rad ? +(Math.sign(BP.turn) * (rad / (0.006 * (n - Math.min(30, Math.floor(n * 0.25)))))).toFixed(2) : 0, hill: BP.slope, canyon: false, arch: false, tunnel: false, water: '', ramp: false, obs: 'some', split: splitOk ? BP.split : '', trail: splitOk ? ['logs', 'creek', 'tunnel', 'rocks', 'plain'][ED.sections.length % 5] : 'plain' }, BTYPE[BP.type]);
   }
   function blRefresh() {
     document.querySelectorAll('#v3bld [data-len]').forEach(b => b.classList.toggle('on', +b.dataset.len === BP.len));
     document.querySelectorAll('#v3bld [data-turn]').forEach(b => b.classList.toggle('on', +b.dataset.turn === BP.turn));
     document.querySelectorAll('#v3bld [data-slope]').forEach(b => b.classList.toggle('on', +b.dataset.slope === BP.slope));
     document.querySelectorAll('#v3bld [data-type]').forEach(b => b.classList.toggle('on', b.dataset.type === BP.type));
+    document.querySelectorAll('#v3bld [data-split]').forEach(b => b.classList.toggle('on', b.dataset.split === BP.split));
+    document.getElementById('blSplitNote').textContent = BP.split && ['canyon', 'tunnel', 'river', 'swamp'].includes(BP.type) ? 'can’t split a ' + BP.type : '';
     const cand = pieceSection(), lv = { ...ED, sections: [...ED.sections, cand] };
     v3set(levelLayout(lv, -1, { open: true, preview: ED.sections.length }).geom, ED.name);
     const segsN = ED.sections.reduce((t, sc) => t + Math.max(20, Math.min(400, sc.len)), 50);
@@ -3309,6 +3335,7 @@
   document.querySelectorAll('#v3bld [data-turn]').forEach(b => b.onclick = () => { BP.turn = +b.dataset.turn; blRefresh(); });
   document.querySelectorAll('#v3bld [data-slope]').forEach(b => b.onclick = () => { BP.slope = +b.dataset.slope; blRefresh(); });
   document.querySelectorAll('#v3bld [data-type]').forEach(b => b.onclick = () => { BP.type = b.dataset.type; blRefresh(); });
+  document.querySelectorAll('#v3bld [data-split]').forEach(b => b.onclick = () => { BP.split = b.dataset.split; blRefresh(); });
   document.getElementById('blPlace').onclick = blPlace;
   document.getElementById('blUndo').onclick = blUndo;
   let blClearArm = -1e9;
@@ -3384,6 +3411,11 @@
       const nx = -dz, nz = dx, w = a.kind === 'river' || a.kind === 'swamp' ? hw * 1.6 : hw, ov = m * 0.35;   // each piece overlaps the next a little: no seams
       const la = [a.X + nx * w, a.Y, a.Z + nz * w], ra = [a.X - nx * w, a.Y, a.Z - nz * w], lb = [b.X + nx * w + dx * ov, b.Y, b.Z + nz * w + dz * ov], rb = [b.X - nx * w + dx * ov, b.Y, b.Z - nz * w + dz * ov];
       const col = a.sel ? [255, 179, 71] : V3COL[a.kind] || V3COL.road;
+      if (a.split && b.split) {                                // ⑂ the split route: bulges out to one side and back
+        const off = t => a.split * (w * 2.2 + w * 14 * Math.sin(Math.PI * Math.max(0, Math.min(1, t)))), oa = off(a.st), ob = off(b.st), tw = w * 0.85;
+        const A1 = [a.X + nx * (oa + tw), a.Y, a.Z + nz * (oa + tw)], A2 = [a.X + nx * (oa - tw), a.Y, a.Z + nz * (oa - tw)], B1 = [b.X + nx * (ob + tw) + dx * ov, b.Y, b.Z + nz * (ob + tw) + dz * ov], B2 = [b.X + nx * (ob - tw) + dx * ov, b.Y, b.Z + nz * (ob - tw) + dz * ov];
+        face([A1, B1, B2, A2], a.kind === 'preview' ? [90, 230, 255] : [176, 128, 78], a.kind === 'preview' ? 0.6 : 1);
+      }
       if (a.kind === 'preview') { face([la, lb, rb, ra], col, 0.6, false); continue; }   // the glowing next piece
       face([la, lb, rb, ra], i < 4 ? ((i & 1) ? [40, 40, 40] : [255, 255, 255]) : col);
       face([[la[0], g.floor, la[2]], [lb[0], g.floor, lb[2]], lb, la], [70, 46, 30], 0.55);          // the track's side, down to the ground
