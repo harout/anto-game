@@ -141,6 +141,7 @@
   #v3bld button#blAuto { background:#1f4a2a; border-color:#3aa860; color:#c8ffd8; }
   .ed-add button.sub { background:#4a1a12; border-color:#a2442e; color:#ffd0c4; } .ed-add button.sub:hover { border-color:#ff8a7a; }
   #shopBtn, #garageBtn { margin-left:10px; }
+  button.saveexit { background:#3aa860 !important; color:#fff !important; font-weight:bold; }
   #secret { position:fixed; left:50%; transform:translateX(-50%); top:16px; bottom:16px; width:560px; max-width:calc(100vw - 32px); display:none; flex-direction:column; gap:9px; overflow:auto; z-index:9; background:#0c0a1aee; border:1px solid #6a4ad8; border-radius:12px; padding:14px 16px; font:12px Menlo, monospace; color:#e8e2ff; }
   #secret .sh-title { color:#b89cff; letter-spacing:4px; font-size:16px; }
   .se-code { display:flex; gap:6px; } #seCode { flex:1; background:#1c1636; color:#fff; border:1px solid #6a4ad8; border-radius:7px; padding:9px; font:bold 16px Menlo, monospace; letter-spacing:3px; text-transform:uppercase; }
@@ -275,6 +276,7 @@
     <span class="ed-sp"></span>
     <button class="secondary" id="edShare">⧉ SHARE CODE</button>
     <button class="secondary" id="edImport">⇩ IMPORT CODE</button>
+    <button id="edSaveExit" class="saveexit">💾 SAVE &amp; EXIT</button>
     <button class="secondary" id="edClose">✕ CLOSE</button>
   </div>
   <div class="ed-main">
@@ -302,6 +304,7 @@
       <button class="secondary" id="edBuild">🎢 BUILD IN 3D (Planet Coaster style)</button>
       <button id="edPlay">▶ SAVE &amp; RACE IT</button>
       <button class="secondary" id="edSave">💾 SAVE</button>
+      <button id="edSaveExit2" class="saveexit">💾 SAVE &amp; EXIT</button>
       <div id="edMsg"></div>
       <textarea id="edCode" placeholder="Share code appears here — or paste one and press IMPORT CODE"></textarea>
     </div>
@@ -3811,6 +3814,8 @@
     const rest = loadLevels(); ED = rest.length ? JSON.parse(JSON.stringify(rest[0])) : defaultLevel(); edSel = 0; edDirty = false; edRenderAll(); edMsg('Deleted.');
   };
   document.getElementById('edSave').onclick = () => edSaveLevel();
+  const edSaveExit = () => { if (!edSaveLevel()) return; closeEditor(); };   // 💾 save, then back to the menu
+  document.getElementById('edSaveExit').onclick = edSaveExit; document.getElementById('edSaveExit2').onclick = edSaveExit;
   document.getElementById('edPlay').onclick = () => { if (edSaveLevel()) playLevel(ED.id); };
   document.getElementById('edClose').onclick = () => { if (edDirty) edSaveLevel(); closeEditor(); };
   document.getElementById('edShare').onclick = () => {

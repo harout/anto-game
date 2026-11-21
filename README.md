@@ -79,3 +79,6 @@ Ten secret levels (Canyon Leap, Rim Runner, Barrel Roll Bayou, Frozen Corkscrew,
 - **🌪 Sandstorm**: thick haze (a blizzard on ice, mist in the swamp and forest) and gusts that push you sideways.
 
 Also fixed: AI pods on the main track never refilled their boost after using it.
+
+## 💾 Save & exit
+The level editor has a green **💾 SAVE & EXIT** button at the top and at the bottom. It saves your level and takes you back to the menu.
