@@ -59,3 +59,6 @@ a rock tunnel or a boulder garden) that rejoins at the end of the section; rival
   with a live “ahead / behind your best” readout. Beat it and your new run becomes the ghost.
 
 Everything is in a single self-contained `index.html` — no build step, no dependencies.
+
+## 🔧 Garage & pod upgrades
+Every race pays credits (300 for 1st down to 90 for 8th, plus about 1 per 2 seconds raced; the Grand Tour pays double, ghost races 60). Spend them in the **🔧 GARAGE** on the menu. Each pod has its own upgrades, 5 levels each: Engine (top speed), Thrusters (acceleration), Steering, Boost power, Boost tank (boost lasts longer) and Armor (keep more speed when you crash). Level costs 100, 200, 300, 400, 500. You can sell all of a pod's upgrades for a full refund. The green part of the stat bars shows your upgrades.
