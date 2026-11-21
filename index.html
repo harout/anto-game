@@ -744,7 +744,7 @@
     TRACK_ID = TOUR_ORDER[TOUR.stage];
   }
   // ✎ editor section rules shared by the builder, the layout and the 3D view
-  const JUMP_LEN = 92;                                          // 🕳 canyon jump: the gap you fly over (needs boost)
+  const JUMP_LEN = 92, LOOP_H = 2600;                                          // 🕳 canyon jump: the gap you fly over (needs boost)
   const splitOkOf = sc => !!sc.split && !sc.tunnel && !sc.water && !sc.jump && (!sc.canyon || sc.trail === 'rim');
   const secMinLen = sc => sc.jump ? JUMP_LEN + 75 : splitOkOf(sc) ? (sc.trail === 'rim' ? 300 : 150) : 20;
   // rolling average around a closed loop: rounds off sharp turns and hill edges (level SMOOTHING)
@@ -974,7 +974,13 @@
       }
       if (sc.flip) {                                           // 🙃 UPSIDE DOWN: a barrel roll onto the ceiling and back
         const n = segments.length - a, sm = t => t * t * (3 - 2 * t);
-        for (let k = 0; k < n; k++) { const f = k / n; segments[a + k].flipA = Math.PI * (f < 0.25 ? sm(f / 0.25) : f > 0.75 ? 1 + sm((f - 0.75) / 0.25) : 1); }
+        for (let k = 0; k < n; k++) {
+          const f = k / n, g = segments[a + k];
+          g.flipA = Math.PI * (f < 0.25 ? sm(f / 0.25) : f > 0.75 ? 1 + sm((f - 0.75) / 0.25) : 1);
+          g.y += LOOP_H * (f < 0.3 ? sm(f / 0.3) : f > 0.7 ? sm((1 - f) / 0.3) : 1);   // up the inside of the loop, over the top, back down
+          g.loopF = f;
+        }
+        segments[a + 1].loopGate = 1; segments[a + n - 3].loopGate = 2;   // the loop's two Ω arches
       }
       if (sc.water === 'fast') for (let k = a; k < segments.length; k++) segments[k].swamp = true;
       if (sc.tunnel) mark.tunnels.push([a, segments.length]);
@@ -1791,7 +1797,7 @@
       ai.boosting = wantB;
       if (ai.boosting) { target *= ai.copy ? POD.boost : BOOST_MULT; ai.boostE = Math.max(0, ai.boostE - dt / (4 * (ai.copy ? POD.dur : 1))); } else ai.boostE = Math.min(1, ai.boostE + dt / 8);   // at the limit: your boost, exactly
       if (ai.hitT > 0) { target *= 0.45; ai.hitT -= dt; }
-      if (ai.y < 5) target *= Math.max(0.6, Math.min(1.25, 1 - (segments[(si + 1) % N].y - sg.y) / SEG * 2.4)) * (sg.rough ? 0.85 : 1);
+      if (ai.y < 5 && !sg.flipA) target *= Math.max(0.6, Math.min(1.25, 1 - (segments[(si + 1) % N].y - sg.y) / SEG * 2.4)) * (sg.rough ? 0.85 : 1);
       if (sg.river && !sg.frozen && !sg.swamp && ai.y < 30) { target *= 0.45; ai.speed *= Math.max(0, 1 - 2.0 * dt); }   // splashing through a river
       if (ai.laserT > 0) {                                   // laser hit: half speed for exactly 1 second, then straight back
         ai.laserT -= dt;
@@ -2571,6 +2577,30 @@
           ctx.closePath(); ctx.fill();
           ctx.strokeStyle = fogMix([96, 48, 30], fog); ctx.lineWidth = Math.max(1, (p1.y - top) * 0.02);
           ctx.beginPath(); ctx.moveTo(xl, top + (p1.y - top) * 0.12); ctx.lineTo(xr, top + (p1.y - top) * 0.12); ctx.stroke();
+        }
+      }
+      if (sg.loopGate && n > 0) {                              // 🙃 the loop: a giant Ω-shaped arch, two rings deep
+        for (const [p, dark] of [[p2, 0.75], [p1, 1]]) {
+          const R = p.w * 1.5, th = 0.86, ex = R * Math.sin(th), legH = R * 0.32, yEnd = p.y - legH, cy = yEnd - R * Math.cos(th);
+          if (R < 2) continue;
+          const col = (c) => fogMix(c.map(v => v * dark | 0), fog);
+          ctx.lineCap = 'butt';
+          ctx.strokeStyle = col([58, 62, 74]); ctx.lineWidth = R * 0.3;               // steel underside
+          ctx.beginPath(); ctx.arc(p.x, cy, R, Math.PI / 2 + th, 2.5 * Math.PI - th); ctx.stroke();
+          ctx.lineWidth = R * 0.2;                                                    // the legs, flaring out to the ground
+          ctx.beginPath(); for (const sd of [-1, 1]) { ctx.moveTo(p.x + sd * ex, yEnd - R * 0.04); ctx.lineTo(p.x + sd * (ex + R * 0.22), p.y); } ctx.stroke();
+          ctx.strokeStyle = col([150, 150, 158]); ctx.lineWidth = R * 0.2;            // the track surface you drive on
+          ctx.beginPath(); ctx.arc(p.x, cy, R * 0.94, Math.PI / 2 + th + 0.03, 2.5 * Math.PI - th - 0.03); ctx.stroke();
+          ctx.strokeStyle = col([232, 70, 40]); ctx.lineWidth = R * 0.025;            // red-and-white rumble edge
+          ctx.setLineDash([R * 0.12, R * 0.12]); ctx.beginPath(); ctx.arc(p.x, cy, R * 0.84, Math.PI / 2 + th + 0.05, 2.5 * Math.PI - th - 0.05); ctx.stroke(); ctx.setLineDash([]);
+          if (dark === 1) {                                                           // glowing lights around the loop
+            const tt = performance.now() / 1000, lr = Math.max(1.5, R * 0.035);
+            for (let q = 0; q <= 16; q++) {
+              const ang = Math.PI / 2 + th + (2 * Math.PI - 2 * th) * q / 16, on = ((q + Math.floor(tt * 8)) % 4) === 0;
+              ctx.fillStyle = on ? `rgba(255,240,120,${1 - fog * 0.6})` : `rgba(90,200,255,${0.9 - fog * 0.6})`;
+              ctx.beginPath(); ctx.arc(p.x + Math.cos(ang) * R * 1.06, cy + Math.sin(ang) * R * 1.06, lr, 0, 7); ctx.fill();
+            }
+          }
         }
       }
       // obstacles
@@ -4334,7 +4364,7 @@
     else { boost = false; if (!wantBoost) boostEnergy = Math.min(1, boostEnergy + dt / 8); }
     boostVis += ((boost || (shopOpen && shopBoost) ? 1 : 0) - boostVis) * (1 - Math.exp(-8 * dt));
     if (raceState !== 'racing') boost = false;
-    const target = raceState !== 'racing' ? 0 : MAX_KMH * POD.top * (L + R) / 2 * (boost ? POD.boost : 1) * (offRoad ? (THEME.forest ? 0.8 : 0.55) : 1) * (inWater ? 0.42 : 1) * (podY < 5 ? Math.max(0.6, Math.min(1.25, 1 - slopeAt(position + PLAYER_Z) * 2.4)) : 1) * (podY < 5 && segAt(position + PLAYER_Z).rough ? 0.85 : 1);   // hills + bumps
+    const target = raceState !== 'racing' ? 0 : MAX_KMH * POD.top * (L + R) / 2 * (boost ? POD.boost : 1) * (offRoad ? (THEME.forest ? 0.8 : 0.55) : 1) * (inWater ? 0.42 : 1) * (podY < 5 && !segAt(position + PLAYER_Z).flipA ? Math.max(0.6, Math.min(1.25, 1 - slopeAt(position + PLAYER_Z) * 2.4)) : 1) * (podY < 5 && segAt(position + PLAYER_Z).rough ? 0.85 : 1);   // hills + bumps
     const rate = target > speed ? (boost ? 1.8 : 0.9) * POD.accel : 1.4;
     speed += (target - speed) * (1 - Math.exp(-rate * dt));
     if (speed < 0.5 && target === 0) speed = 0;
