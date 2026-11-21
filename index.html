@@ -291,7 +291,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v98</span></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v99</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -4139,6 +4139,10 @@
   function statPct(k, pod) { const v = k === 'boost' ? pod.boost * pod.dur : pod[k], [a, b] = statRange[k]; return Math.round(20 + 80 * Math.max(0, Math.min(1, (v - a) / (b - a)))); }
   let menuPage = 0;                                              // 1 tracks · 2 secret levels · 3 my levels
   function renderMenu() {
+    if (!loadUnlocks().cutes && loadLevels().some(l => /(^|[^a-z])(cut|cute|cutes)([^a-z]|$)/i.test(String(l.name || '')))) {   // 🐱 you already made a level named Cut: here he is!
+      const u = loadUnlocks(); u.cutes = true; saveUnlocks(u); unlocks = u;
+      setTimeout(() => { try { meow(1); } catch (e) {} showTx('🐱 MISTER CUTES UNLOCKED!<b>MEOW!</b><small>You made a level named Cut! Click his card under the pods to make him your driver.</small>'); }, 300);
+    }
     const grid = document.getElementById('podGrid'); grid.innerHTML = '';
     PODS.forEach((pod, i) => {
       const locked = i >= unlocks.pods, d = document.createElement('div');
