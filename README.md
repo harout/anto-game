@@ -91,3 +91,12 @@ The **♻ RESET GAME** button on the menu starts everything over: pods, tracks, 
 
 ## 📑 Menu pages
 The track part of the menu has three pages: **🏁 TRACKS** (the five worlds and the Grand Tour), **🔐 SECRET LEVELS** (the secret levels you've opened, plus the secret missions) and **✎ MY LEVELS** (the levels you built, plus ＋ NEW LEVEL). The menu opens on the page of the track you're playing.
+
+## 🪧 Shortcut signs
+Every shortcut you're allowed to know about has a sign in its own colour with an icon: 🪵 log jumps, 💧 creek, ⛏ rock tunnel, 🪨 boulders, ↗ side road, ⛰ rim road, 🏜 slot canyon, 🦇 cave. The fork road is tinted to match. Secret paths still have no sign.
+
+## 🧱 Canyon walls
+Canyon walls come in seven styles: classic, layered rock, hoodoo spires, ancient ruins, crystal cave, ice wall and lava rock. The built-in canyons mix them, and the level editor has a **walls** choice on every canyon section.
+
+## 🏞 National parks
+There's a hidden trick in ♻ RESET GAME. Try it yourself!
