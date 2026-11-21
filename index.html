@@ -296,7 +296,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v107</span></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v108</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -797,6 +797,7 @@
     goldarch: ['⛩ Arches & gates', 'Golden gem arch', 'arch', { c: [240, 190, 60], d: [200, 140, 30], h: 3300, thick: 380, gems: true }],
     hoopring: ['⛩ Arches & gates', 'Flaming hoops', 'hoop', { c: [255, 140, 30], d: [255, 230, 80], h: 2700 }],
   };
+  const DECO_MENU = ['fossil', 'mossycv'];                       // 🎨 the editor only offers these two (levels that already use others still show them)
   // 🎨 50 DECORATIONS for the level editor: [group, emoji, name, height, flying altitude]
   const DECOS = {
     cactus: ["🌿 Nature", "🌵", "Cactuses", 1400, 0],
@@ -4918,7 +4919,7 @@
           ${splitOkOf(sc) && !sc.canyon ? `<label>route <select data-k="trail"><option value="plain"${(sc.trail || 'plain') === 'plain' ? ' selected' : ''}>side road</option><option value="logs"${sc.trail === 'logs' ? ' selected' : ''}>log jumps</option><option value="creek"${sc.trail === 'creek' ? ' selected' : ''}>creek</option><option value="tunnel"${sc.trail === 'tunnel' ? ' selected' : ''}>rock tunnel</option><option value="rocks"${sc.trail === 'rocks' ? ' selected' : ''}>boulder garden</option></select></label>` : ''}
           ${sc.canyon ? `<label title="What the canyon walls look like">walls <select data-k="walls">${Object.keys(WALL_STYLES).map(k => `<option value="${k === 'classic' ? '' : k}"${(sc.walls || '') === (k === 'classic' ? '' : k) ? ' selected' : ''}>${k === 'classic' ? '🎨 match the world' : k === 'sandstone' ? '🟫 desert sandstone' : WALL_STYLES[k].name}</option>`).join('')}</select></label>` : ''}
           <label title="A special feature for this section">special <select data-k="fx"${sc.jump ? ' disabled' : ''}>${Object.entries(FX_NAMES).map(([k, n]) => `<option value="${k}"${(sc.fx || '') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
-          <label title="Decorations along the side of this section">🎨 decoration <select data-k="deco"><option value="">none</option>${[...new Set(Object.values(THRU).map(d => d[0]))].map(g => `<optgroup label="${g} (drive through)">${Object.entries(THRU).filter(([, d]) => d[0] === g).map(([k, d]) => `<option value="${k}"${sc.deco === k ? ' selected' : ''}>${d[1]}</option>`).join('')}</optgroup>`).join('')}${[...new Set(Object.values(DECOS).map(d => d[0]))].map(g => `<optgroup label="${g}">${Object.entries(DECOS).filter(([, d]) => d[0] === g).map(([k, d]) => `<option value="${k}"${sc.deco === k ? ' selected' : ''}>${d[1]} ${d[2]}</option>`).join('')}</optgroup>`).join('')}</select></label>
+          <label title="Decorations along the side of this section">🎨 decoration <select data-k="deco"><option value="">none</option>${DECO_MENU.map(k => `<option value="${k}"${sc.deco === k ? ' selected' : ''}>${k === 'fossil' ? '🦴 Fossil' : '🕳 Cave entrance'}</option>`).join('')}</select></label>
           <label>obstacles <select data-k="obs"><option value="none"${sc.obs === 'none' ? ' selected' : ''}>none</option><option value="some"${sc.obs === 'some' ? ' selected' : ''}>some</option><option value="lots"${sc.obs === 'lots' ? ' selected' : ''}>lots</option></select></label>
         </div>`;
       r.onclick = () => { if (edSel !== i) { edSel = i; edList.querySelectorAll('.ed-row').forEach((x, j) => x.classList.toggle('on', j === i)); edPreview(); } };
