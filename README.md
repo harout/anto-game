@@ -82,3 +82,6 @@ Also fixed: AI pods on the main track never refilled their boost after using it.
 
 ## 💾 Save & exit
 The level editor has a green **💾 SAVE & EXIT** button at the top and at the bottom. It saves your level and takes you back to the menu.
+
+## ✎ Lots of your own levels
+The **＋ NEW LEVEL** card on the menu always starts a brand-new level. Each level you've made has its own card with **✎ EDIT** (change it) and **🗑** (delete it, click twice).

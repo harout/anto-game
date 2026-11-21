@@ -3515,7 +3515,7 @@
     }
     const sk = document.createElement('div'), nOpen = loadSecrets().open.length; sk.className = 'tcard secretc';
     sk.innerHTML = `🔐 SECRET LEVELS<small>${nOpen}/${SECRETS.length} opened · solve puzzles to get the codes</small>`; sk.onclick = openSecrets; tg.appendChild(sk);
-    const ad = document.createElement('div'); ad.className = 'tcard addlvl'; ad.innerHTML = '＋ LEVEL EDITOR<small>build your own track</small>'; ad.onclick = () => openEditor(CUSTOM ? CUSTOM.id : null); tg.appendChild(ad);
+    const ad = document.createElement('div'); ad.className = 'tcard addlvl'; ad.innerHTML = '＋ NEW LEVEL<small>build another track of your own · ✎ EDIT changes one you made</small>'; ad.onclick = () => openEditor(null); tg.appendChild(ad);   // always a brand-new level
   }
   const escHtml = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function deleteLevel(id) {                                   // remove a level you made, its ghost and its AI level
