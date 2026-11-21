@@ -1461,6 +1461,13 @@
     }
   })();
   const GRAVITY = 5600;
+  // 🤫 NAME SECRETS: what you call a level can change things
+  const LEVEL_NAME = CUSTOM && !TEST_MODE ? String(CUSTOM.name || '') : TEST_MODE && CUSTOM ? String(CUSTOM.name || '') : '';
+  const hasName = w => new RegExp('(^|[^a-z])' + w + '([^a-z]|$)', 'i').test(LEVEL_NAME);
+  const DOG_DRIVER = hasName('bedo');                           // 🐶 Bedo drives: a medium-sized yellow dog
+  const MOON = hasName('moon');                                 // 🌙 low gravity: huge floaty jumps
+  const RAINBOW = hasName('rainbow');                           // 🌈 a rainbow energy beam between your engines
+  const GRAV = MOON ? GRAVITY * 0.38 : GRAVITY;
   let podY = 0, podVY = 0, airTime = 0, onRamp = false, landJolt = 0, inWater = false, onIce = false;
   function surfaceAt(z, x) {
     const sg = segAt(z), r = sg.ramp;
@@ -1891,7 +1898,7 @@
     if (ai.shOn) { ai.shT -= dt; ai.shE -= dt / 3; if (ai.shT <= 0 || ai.shE <= 0) { ai.shOn = false; ai.shE = Math.max(0, ai.shE); } } else if (ai.shBroken <= 0) ai.shE = Math.min(1, ai.shE + dt / 10);
     const v = ai.speed / MAX_KMH * TOP_V, r = sg.ramp, f = (ai.tp % SEG) / SEG, surf = sg.chasm ? -1e9 : r && Math.abs(ai.x - r.off) <= r.w ? r.h1 + (r.h2 - r.h1) * f : 0;
     if (r && Math.abs(ai.x - r.off) <= r.w && ai.y <= surf + 40) { ai.onRamp = true; ai.y = surf; ai.vy = (r.h2 - r.h1) / SEG * v; }
-    else { ai.onRamp = false; if (ai.y > surf || ai.vy > 0) { ai.vy -= GRAVITY * dt; ai.y += ai.vy * dt; if (ai.y <= surf) { ai.y = surf; ai.vy = 0; } } else { ai.y = surf; ai.vy = 0; } }
+    else { ai.onRamp = false; if (ai.y > surf || ai.vy > 0) { ai.vy -= GRAV * dt; ai.y += ai.vy * dt; if (ai.y <= surf) { ai.y = surf; ai.vy = 0; } } else { ai.y = surf; ai.vy = 0; } }
     if (sg.chasm && ai.y < -300) { ai.tp = (sc.respawn || 0) * SEG; ai.speed *= 0.3; ai.y = 0; ai.vy = 0; ai.onRamp = false; ai.falls = (ai.falls || 0) + 1; }   // fell in: back to the run-up
     ai.tp += v * dt;
     const nk = Math.floor(ai.tp / SEG);
@@ -1990,7 +1997,7 @@
       if (r && Math.abs(ai.x - r.off) <= r.w && (ai.onRamp || ai.y >= surf - Math.max(60, (r.h2 - r.h1) / SEG * v * dt * 3 + r.h2 - r.h1)) && ai.y <= surf + 40) { ai.onRamp = true; ai.y = surf; ai.vy = (r.h2 - r.h1) / SEG * v; }
       else {
         ai.onRamp = false;
-        if (ai.y > surf || ai.vy > 0) { ai.vy -= GRAVITY * dt; ai.y += ai.vy * dt; if (ai.y <= surf) { ai.y = surf; ai.vy = 0; } }
+        if (ai.y > surf || ai.vy > 0) { ai.vy -= GRAV * dt; ai.y += ai.vy * dt; if (ai.y <= surf) { ai.y = surf; ai.vy = 0; } }
         else { ai.y = surf; ai.vy = 0; }
       }
       if (sg.pad && ai.y < 40 && Math.abs(ai.x - sg.pad.off) < sg.pad.w + 0.05) { if (sg.pad.kind === 'boost') ai.speed = Math.max(ai.speed, MAX_KMH * ai.skill * 1.3); else ai.boostE = 1; }
@@ -2292,7 +2299,7 @@
     } else {
       if (onRamp) { onRamp = false; airTime = 0; whoosh(); }
       if (podY > surf || podVY > 0) {
-        podVY -= GRAVITY * dt; podY += podVY * dt; airTime += dt;
+        podVY -= GRAV * dt; podY += podVY * dt; airTime += dt;
         if ((!T.main || seg.chasmRun != null) && podY <= surf && surf - podY > Math.max(150, -podVY * dt * 1.5)) { fellIn(); }
         else if (podY <= surf) {
           if (podVY < -1800) { thud(); landJolt = Math.min(1, -podVY / 6000); speed *= 0.93; }
@@ -2684,6 +2691,32 @@
   function fogMix(c, f) { if (FOG !== CAVE_FOG) { if (THEME.map) c = THEME.map(c); if (NIGHT) c = nightMap(c); } return fogMixRaw(c, f); }
   function fogMixRaw(c, f) { const s = FOG; return `rgb(${(c[0] + (s[0] - c[0]) * f) | 0},${(c[1] + (s[1] - c[1]) * f) | 0},${(c[2] + (s[2] - c[2]) * f) | 0})`; }
 
+  function drawDogDriver(cx, cy, cw, t) {                     // 🐶 Bedo, a medium-sized yellow dog, seen from behind in the cockpit
+    const fur = '#e8b84a', furD = '#c8942c', furL = '#f6d27a', sp = Math.min(1, speed / MAX_KMH), flap = Math.sin(t * (6 + sp * 14)) * (0.15 + sp * 0.5);
+    // shoulders and back, all fur
+    ctx.fillStyle = fur; ctx.beginPath(); ctx.ellipse(cx, cy + H * .012, cw * .5, H * .03, 0, Math.PI, 0); ctx.fill();
+    // wagging tail, poking up over the side of the cockpit
+    const wag = Math.sin(t * 9);
+    ctx.strokeStyle = furD; ctx.lineCap = 'round'; ctx.lineWidth = cw * .09; ctx.beginPath(); ctx.moveTo(cx + cw * .42, cy + H * .02);
+    ctx.quadraticCurveTo(cx + cw * (.62 + wag * .08), cy - H * .005, cx + cw * (.6 + wag * .2), cy - H * .045); ctx.stroke(); ctx.lineCap = 'butt';
+    // the back of the head, a little lighter on top
+    ctx.fillStyle = fur; ctx.beginPath(); ctx.ellipse(cx, cy - H * .024, cw * .3, H * .034, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = furL; ctx.beginPath(); ctx.ellipse(cx - cw * .05, cy - H * .04, cw * .16, H * .012, -0.2, 0, 7); ctx.fill();
+    // floppy ears on the outside of the head, flapping in the wind
+    for (const sd of [-1, 1]) {
+      ctx.save(); ctx.translate(cx + sd * cw * .27, cy - H * .042); ctx.rotate(-sd * (0.35 + 0.35 * sp + flap * 0.5));
+      ctx.fillStyle = furD; ctx.beginPath(); ctx.ellipse(sd * cw * .05, H * .024, cw * .095, H * .03, sd * 0.2, 0, 7); ctx.fill();
+      ctx.fillStyle = '#b07c22'; ctx.beginPath(); ctx.ellipse(sd * cw * .055, H * .03, cw * .05, H * .018, sd * 0.2, 0, 7); ctx.fill();
+      ctx.restore();
+    }
+    // goggle strap round the back of the head
+    ctx.fillStyle = '#2b2b30'; ctx.fillRect(cx - cw * .3, cy - H * .028, cw * .6, H * .006);
+    // tongue flapping out the side when going fast
+    if (sp > 0.35) {
+      const tl = cw * (0.12 + sp * 0.18), ty = cy - H * .012 + Math.sin(t * 20) * H * .003;
+      ctx.fillStyle = '#ff7f9a'; ctx.beginPath(); ctx.moveTo(cx + cw * .26, ty - H * .004); ctx.quadraticCurveTo(cx + cw * .26 + tl, ty - H * .008 + flap * H * .01, cx + cw * .26 + tl * 1.1, ty + H * .004); ctx.quadraticCurveTo(cx + cw * .26 + tl * 0.5, ty + H * .008, cx + cw * .26, ty + H * .004); ctx.closePath(); ctx.fill();
+    }
+  }
   function drawHyperMsg() {                                   // 🌌 a voice in hyperspace: the code drifts past in the stars
     const a = Math.max(0, Math.min(1, flightT / 1.2)) * Math.max(0, Math.min(1, (7 - flightT) / 1.5)); if (a <= 0) return;
     ctx.save(); ctx.globalAlpha = a; ctx.textAlign = 'center'; ctx.shadowColor = '#7dffb0'; ctx.shadowBlur = 30 * DPR;
@@ -3376,7 +3409,7 @@
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     for (let k = 0; k < 3; k++) {
-      ctx.strokeStyle = `rgba(${Math.min(255, POD.binder[0] + k * 30)},${Math.min(255, POD.binder[1] + k * 20)},${POD.binder[2]},${0.35 + Math.random() * .3})`;
+      ctx.strokeStyle = RAINBOW ? `hsla(${(performance.now() / 6 + k * 60) % 360},100%,62%,${0.5 + Math.random() * .35})` : `rgba(${Math.min(255, POD.binder[0] + k * 30)},${Math.min(255, POD.binder[1] + k * 20)},${POD.binder[2]},${0.35 + Math.random() * .3})`;
       ctx.lineWidth = (2 + k) * DPR;
       ctx.beginPath(); ctx.moveTo(lx + W * .03, engY + lyOff);
       for (let s = 1; s <= 8; s++) {
@@ -3407,10 +3440,13 @@
     hg.addColorStop(0, shadeHex(POD.band, 0.42)); hg.addColorStop(.45, shadeHex(POD.band, 0.85)); hg.addColorStop(1, shadeHex(POD.band, 0.35));
     ctx.fillStyle = hg; ctx.beginPath(); ctx.ellipse(cockX, cockY + H * .035, cw, H * .06, 0, Math.PI, 0); ctx.fill();
     ctx.fillRect(cockX - cw, cockY + H * .034, cw * 2, H * .1);
+    if (DOG_DRIVER) drawDogDriver(cockX, cockY, cw, t);         // 🐶 Bedo at the controls
+    else {
     // pilot helmet + shoulders
     ctx.fillStyle = '#6b4a30'; ctx.beginPath(); ctx.ellipse(cockX, cockY + H * .01, cw * .42, H * .025, 0, Math.PI, 0); ctx.fill();
     ctx.fillStyle = POD.helmet || '#d8cbb0'; ctx.beginPath(); ctx.arc(cockX, cockY - H * .012, cw * .23, 0, 7); ctx.fill();
     ctx.fillStyle = '#2b2b30'; ctx.fillRect(cockX - cw * .23, cockY - H * .016, cw * .46, H * .007);
+    }
     // panel lines, rivets, rear lights, intake grilles
     ctx.strokeStyle = 'rgba(40,18,8,.8)'; ctx.lineWidth = 1.2 * DPR;
     ctx.beginPath(); for (const fx of [-.6, -.2, .2, .6]) { ctx.moveTo(cockX + cw * fx, cockY + H * .045); ctx.lineTo(cockX + cw * fx, cockY + H * .12); } ctx.stroke();
@@ -3771,7 +3807,10 @@
       const n = Math.ceil(countdown - 0.5);
       countEl.textContent = n > 0 ? n : 'GO!';
       countEl.style.display = 'block';
-      if (countdown <= 0.5 && countEl.dataset.go !== '1') { countEl.dataset.go = '1'; raceState = 'racing'; }
+      if (countdown <= 0.5 && countEl.dataset.go !== '1') { countEl.dataset.go = '1'; raceState = 'racing';
+        const sec = [DOG_DRIVER && '🐶 BEDO IS DRIVING! Woof!', MOON && '🌙 MOON GRAVITY — big floaty jumps', RAINBOW && '🌈 RAINBOW POWER'].filter(Boolean);
+        if (sec.length) flash('🤫 SECRET: ' + sec.join(' · '));
+      }
     } else if (raceState === 'racing' && countEl.style.display === 'block') {
       countdown -= dt; if (countdown < -0.6) countEl.style.display = 'none';
     }

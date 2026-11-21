@@ -106,3 +106,6 @@ Where a shortcut goes through a canyon wall, the wall is open and you can see th
 
 ## 🌳 Move all scenery to the ground
 In the level editor, **🌳 Move all scenery to the ground** stops trees and rocks floating. They stand on flat ground beside banked turns instead of hanging in the air, and nothing is left hovering beside raised bridge ramps, bridges, gaps or loops. New levels have it switched on already.
+
+## 🤫 Name secrets
+What you call a level can change things... try naming one after a certain yellow dog. 🐶
