@@ -140,6 +140,16 @@
   #v3bld button#blTest { background:#3aa860; color:#fff; border-color:#3aa860; font-weight:bold; }
   #v3bld button#blAuto { background:#1f4a2a; border-color:#3aa860; color:#c8ffd8; }
   .ed-add button.sub { background:#4a1a12; border-color:#a2442e; color:#ffd0c4; } .ed-add button.sub:hover { border-color:#ff8a7a; }
+  #shopBtn { margin-left:10px; }
+  #shop { position:fixed; left:16px; top:16px; bottom:16px; width:360px; display:none; flex-direction:column; gap:9px; overflow:auto; z-index:8; background:#140a04ee; border:1px solid #6a3a18; border-radius:12px; padding:14px 16px; font:12px Menlo, monospace; color:#ffe7c2; }
+  #shop .sh-title { color:#ffb347; letter-spacing:4px; font-size:16px; } #shName { color:#b8916a; letter-spacing:2px; margin-top:-4px; }
+  #shop .sh-row { display:flex; flex-wrap:wrap; gap:5px; align-items:center; } #shop .sh-row > span { width:100%; color:#ffd36b; letter-spacing:2px; font-size:11px; }
+  #shop .sw { display:flex; flex-wrap:wrap; gap:4px; } #shop .sw i { width:20px; height:20px; border-radius:5px; cursor:pointer; border:2px solid #0006; } #shop .sw i.on { border-color:#fff; box-shadow:0 0 6px #fff8; }
+  #shop input[type=color] { width:30px; height:24px; border:0; background:none; padding:0; cursor:pointer; }
+  #shop .opts { display:flex; flex-wrap:wrap; gap:4px; } #shop .opts button { background:#3a200e; color:#ffe7c2; border:1px solid #6a3a18; border-radius:6px; padding:4px 7px; font:11px Menlo, monospace; cursor:pointer; } #shop .opts button.on { background:#ffb347; color:#1a0e06; }
+  #shop input#shNick, #shop input#shNum { background:#2a160a; color:#ffe7c2; border:1px solid #6a3a18; border-radius:6px; padding:5px 7px; font:12px Menlo, monospace; } #shop input#shNum { width:46px; } #shop input#shNick { width:220px; }
+  #shop .sh-btns { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; } #shDone { background:#ff9a2e; color:#1a0e06; border:0; border-radius:7px; padding:8px 16px; font:bold 13px Menlo, monospace; letter-spacing:2px; cursor:pointer; margin-left:auto; }
+  #shop small { color:#b8916a; font-size:10px; }
   #trackGrid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; max-height:300px; overflow:auto; }
   .tcard { background:#2a160a; border:2px solid #4a2a12; border-radius:10px; padding:12px; cursor:pointer; font-size:14px; letter-spacing:2px; }
   .tcard small { display:block; margin-top:4px; font-size:11px; color:#b8916a; letter-spacing:1px; }
@@ -226,6 +236,7 @@
   <div id="masterRow"></div>
   <div id="optRow"><button id="timeBtn" class="secondary"></button> <button id="aimBtn" class="secondary"></button> <button id="resetAiBtn" class="secondary">↺ RESET AI</button> <button id="editLvlBtn" class="secondary" style="display:none">✎ EDIT THIS LEVEL</button> <button id="view3dBtn" class="secondary">🧊 3D VIEW</button></div>
   <button id="startBtn">START RACE</button>
+  <button id="shopBtn" class="secondary">🎨 CUSTOMIZE POD</button>
   <div class="hint">Win a race in 1st place to unlock the next pod · first win also unlocks Frost Canyon<br>←/→ change pod · Enter or boost button (14) to start<br>Laser: tap button 0 (F) · Homing missile: hold button 0 (5 per race) · Shield: hold button 23 (G key) · Boost: button 14 (Space)<br>Super boost: button 13 (L) — once per race, light-speed jump into 1st place<br>Rivals use shields too — shoot a shield to destroy it, then shoot again to hit them</div>
 </div></div>
 <div id="editor">
@@ -283,6 +294,18 @@
   <div id="v3smooth"><b>SMOOTHING</b><input type="range" id="v3sm" min="0" max="100" step="1"><span id="v3smv"></span>
     <small id="v3smh">rounds off sharp turns and the edges of steep climbs and drops</small><button id="v3race">▶ SAVE &amp; RACE IT</button></div>
   <div class="v3-legend"><i style="background:#e8c79a"></i>road <i style="background:#b8703e"></i>canyon walls <i style="background:#5b5048"></i>tunnel <i style="background:#4aa3ff"></i>river <i style="background:#6f9a52"></i>swamp water <i style="background:#ffd23f"></i>ramp <i style="background:#ff5a4a"></i>rocks <i style="background:#b0804e"></i>split route <i style="background:#fff"></i>start</div>
+</div>
+<div id="shop">
+  <b class="sh-title">🎨 PAINT SHOP</b><div id="shName"></div>
+  <div class="sh-row"><span>PAINT</span><div class="sw" data-k="band"></div><input type="color" data-c="band"></div>
+  <div class="sh-row"><span>ENGINE FINISH</span><div class="opts" data-k="finish"><button data-v="light">light metal</button><button data-v="dark">dark metal</button><button data-v="chrome">chrome</button><button data-v="gold">gold</button><button data-v="white">white</button></div></div>
+  <div class="sh-row"><span>PATTERN</span><div class="opts" data-k="pattern"><button data-v="plain">plain</button><button data-v="stripes">racing stripes</button><button data-v="flames">flames</button><button data-v="checker">checkers</button><button data-v="number">race number</button></div><input id="shNum" maxlength="3" placeholder="07"></div>
+  <div class="sh-row"><span>ENGINE GLOW</span><div class="sw" data-k="glow"></div><input type="color" data-c="glow"></div>
+  <div class="sh-row"><span>ENERGY BEAM</span><div class="sw" data-k="binder"></div><input type="color" data-c="binder"></div>
+  <div class="sh-row"><span>PILOT HELMET</span><div class="sw" data-k="helmet"></div><input type="color" data-c="helmet"></div>
+  <div class="sh-row"><span>NICKNAME</span><input id="shNick" maxlength="14" placeholder="shown in the standings"></div>
+  <div class="sh-btns"><button class="secondary" id="shBoost">🔥 TRY BOOST</button><button class="secondary" id="shReset">↺ FACTORY PAINT</button><button id="shDone">✔ DONE</button></div>
+  <small>Cosmetic only — your pod’s speed and handling don’t change. Saved for this pod.</small>
 </div>
 <div id="finish"><div class="card">
   <h1>RACE COMPLETE</h1>
@@ -457,7 +480,7 @@
 
   // ---------- Keyboard fallback ----------
   const keys = {}; let kbL = 0, kbR = 0, usingKeyboard = false;
-  const inEditor = e => e.target && e.target.closest && e.target.closest('#editor');
+  const inEditor = e => e.target && e.target.closest && (e.target.closest('#editor') || e.target.closest('#shop'));
   addEventListener('keydown', e => { if (inEditor(e) || (typeof v3open !== 'undefined' && v3open)) return; if (e.key === ' ') e.preventDefault(); keys[e.key.toLowerCase()] = true; if (e.key.toLowerCase() === 'h') togglePanel(); });
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   function updateKeyboard(dt) {
@@ -543,7 +566,7 @@
   soundBtn.addEventListener('click', e => { e.stopPropagation(); if (!audio) { initAudio(); muted = false; } else { muted = !muted; initAudio(); } setSoundUi(); });
   addEventListener('pointerdown', e => { if (e.target === soundBtn) return; if (!audio) { initAudio(); setSoundUi(); } });
   addEventListener('keydown', e => {
-    if (e.target && e.target.closest && e.target.closest('#editor')) return;
+    if (e.target && e.target.closest && (e.target.closest('#editor') || e.target.closest('#shop'))) return;
     if (e.key.toLowerCase() === 'm') { muted = !muted; }
     if (!audio || audio.ctx.state !== 'running') initAudio();
     setSoundUi();
@@ -627,7 +650,17 @@
   let unlocks = loadUnlocks();
   let podIdx = 0; try { podIdx = +(localStorage.getItem('podracer.pod') || 0); } catch (e) {}
   if (!(podIdx >= 0 && podIdx < unlocks.pods)) podIdx = 0;
-  let POD = PODS[podIdx];
+  // 🎨 PAINT SHOP: per-pod looks (cosmetic only — stats never change)
+  const loadPaint = () => { try { return JSON.parse(localStorage.getItem('podracer.paint') || '{}') || {}; } catch (e) { return {}; } };
+  const savePaint = p => { try { localStorage.setItem('podracer.paint', JSON.stringify(p)); } catch (e) {} };
+  function podLook(i) {
+    const base = PODS[i] || PODS[0], c = loadPaint()[i] || {};
+    return Object.assign({}, base, {
+      band: c.band || base.band, binder: c.binder || base.binder, glow: c.glow || base.glow,
+      finish: c.finish || (base.dark ? 'dark' : 'light'), pattern: c.pattern || 'plain', number: c.number || String(i + 1).padStart(2, '0'),
+      helmet: c.helmet || '#d8cbb0', nick: (c.nick || '').slice(0, 14) });
+  }
+  let POD = podLook(podIdx);
   function shadeHex(hex, f) { const n = parseInt(hex.slice(1), 16); const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => Math.max(0, Math.min(255, v * f | 0))); return `rgb(${c})`; }
   const BOOST_BUTTON = 14, BOOST_MULT = 1.45;
   let boost = false, boostEnergy = 1, boostVis = 0;
@@ -2691,7 +2724,7 @@
     if (raceState === 'menu') { standEl.style.display = 'none'; return; } standEl.style.display = '';
     const me = playerProgress(), rows = ais.map(a => ({ name: a.name, col: `rgb(${a.col.join(',')})`, d: a.finished ? 1e12 - a.finishTime : a.dist, trail: !!a.trail, fin: a.finished }));
     if (GHOST_MODE && GHOST) { const g = ghostAt(raceTime); if (g) rows.push({ name: '👻 YOUR BEST', col: 'rgba(150,220,255,.6)', d: g.done ? 1e12 - GHOST.time : g.p, ghost: true }); }
-    rows.push({ name: 'YOU', col: '#6fd3ff', d: raceState === 'finished' ? 1e12 - raceTime : me, you: true, trail: !T.main && !!T.path });
+    rows.push({ name: POD.nick ? POD.nick.toUpperCase() : 'YOU', col: '#6fd3ff', d: raceState === 'finished' ? 1e12 - raceTime : me, you: true, trail: !T.main && !!T.path });
     rows.sort((a, b) => b.d - a.d);
     standEl.innerHTML = rows.map((r, i) => { const gap = r.you || r.fin ? '' : r.ghost ? (ghostDelta() || 0) : (r.d - me) / SEG / 41; return `<div class="${r.you ? 'me' : ''}"><span class="p">${i + 1}</span><i style="background:${r.col}"></i>${r.name}${r.trail ? ' <em>⑂</em>' : ''}${r.fin ? ' <em>🏁</em>' : r.you ? '' : `<span class="g">${gap >= 0 ? '+' : ''}${gap.toFixed(1)}s</span>`}</div>`; }).join('');
   }
@@ -2744,7 +2777,7 @@
     ctx.fillRect(cockX - cw, cockY + H * .034, cw * 2, H * .1);
     // pilot helmet + shoulders
     ctx.fillStyle = '#6b4a30'; ctx.beginPath(); ctx.ellipse(cockX, cockY + H * .01, cw * .42, H * .025, 0, Math.PI, 0); ctx.fill();
-    ctx.fillStyle = '#d8cbb0'; ctx.beginPath(); ctx.arc(cockX, cockY - H * .012, cw * .23, 0, 7); ctx.fill();
+    ctx.fillStyle = POD.helmet || '#d8cbb0'; ctx.beginPath(); ctx.arc(cockX, cockY - H * .012, cw * .23, 0, 7); ctx.fill();
     ctx.fillStyle = '#2b2b30'; ctx.fillRect(cockX - cw * .23, cockY - H * .016, cw * .46, H * .007);
     // panel lines, rivets, rear lights, intake grilles
     ctx.strokeStyle = 'rgba(40,18,8,.8)'; ctx.lineWidth = 1.2 * DPR;
@@ -2980,12 +3013,27 @@
     ctx.beginPath(); ctx.moveTo(w * .6, -h * .05); ctx.lineTo(w * .95, h * .02); ctx.lineTo(w * .6, h * .12); ctx.fill();
     // engine body (seen from behind) with metallic shading
     const bg = ctx.createRadialGradient(-w * .2, -h * .2, w * .05, 0, 0, w * .7);
-    if (POD.dark) { bg.addColorStop(0, '#3a3634'); bg.addColorStop(.6, '#1c1a19'); bg.addColorStop(1, '#0e0d0c'); }
-    else { bg.addColorStop(0, '#6e6560'); bg.addColorStop(.6, '#3c3532'); bg.addColorStop(1, '#241f1d'); }
+    const FIN = { dark: ['#3a3634', '#1c1a19', '#0e0d0c'], light: ['#6e6560', '#3c3532', '#241f1d'], chrome: ['#eef3f8', '#9aa8b6', '#4c5866'], gold: ['#fff0b0', '#d6a522', '#6e4c0c'], white: ['#ffffff', '#d2d4d8', '#8e9096'] }[POD.finish || (POD.dark ? 'dark' : 'light')] || ['#6e6560', '#3c3532', '#241f1d'];
+    bg.addColorStop(0, FIN[0]); bg.addColorStop(.6, FIN[1]); bg.addColorStop(1, FIN[2]);
     ctx.fillStyle = bg;
     ctx.beginPath(); ctx.ellipse(0, 0, w * .62, h * .48, 0, 0, 7); ctx.fill();
     ctx.fillStyle = POD.band; ctx.fillRect(-w * .62, -h * .1, w * 1.24, h * .12);
     ctx.fillStyle = '#f0d0a0'; ctx.fillRect(-w * .62, -h * .1, w * 1.24, h * .015);
+    if (POD.pattern && POD.pattern !== 'plain') {             // 🎨 paint-shop pattern on the engine body
+      ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, w * .62, h * .48, 0, 0, 7); ctx.clip();
+      if (POD.pattern === 'stripes') { ctx.fillStyle = POD.band; ctx.fillRect(-w * .3, -h * .5, w * .13, h); ctx.fillRect(w * .17, -h * .5, w * .13, h); ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(-w * .17, -h * .5, w * .03, h); ctx.fillRect(w * .14, -h * .5, w * .03, h); }
+      else if (POD.pattern === 'flames') {
+        for (const [fx, fh, col] of [[-.42, .55, POD.band], [-.14, .7, '#ffb020'], [.16, .6, POD.band], [.42, .45, '#ffd84a']]) {
+          ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(w * (fx - .14), h * .48); ctx.quadraticCurveTo(w * (fx - .2), h * (.48 - fh * .6), w * fx, h * (.48 - fh)); ctx.quadraticCurveTo(w * (fx + .04), h * (.48 - fh * .45), w * (fx + .14), h * .48); ctx.fill();
+        }
+      } else if (POD.pattern === 'checker') {
+        const q = w * .14; for (let cx = -5; cx < 5; cx++) for (let cy = -4; cy < -1; cy++) { ctx.fillStyle = (cx + cy) & 1 ? '#111' : '#f4f4f4'; ctx.fillRect(cx * q, cy * q * .9, q, q * .9); }
+      } else if (POD.pattern === 'number') {
+        ctx.font = `bold ${h * .32}px Menlo, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = Math.max(1, h * .03); ctx.strokeStyle = '#111'; ctx.strokeText(POD.number, 0, -h * .28); ctx.fillStyle = '#fff'; ctx.fillText(POD.number, 0, -h * .28);
+      }
+      ctx.restore();
+    }
     // panel seams + rivets
     ctx.strokeStyle = 'rgba(20,16,14,.7)'; ctx.lineWidth = 1 * DPR;
     ctx.beginPath(); ctx.ellipse(0, 0, w * .5, h * .38, 0, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
@@ -3063,6 +3111,7 @@
     if (p && !(usingKeyboard && !map.calibrated)) { tl = readLever(p, map.L); tr = readLever(p, map.R); if (map.calibrated) usingKeyboard = false; }
     if (usingKeyboard) { tl = kbL; tr = kbR; }
     L = tl; R = tr;
+    if (shopOpen) { const tt = performance.now() / 1000; L = R = 0.55 + 0.3 * Math.sin(tt * 1.6); }   // 🎨 rev the engines in the paint shop
     if (tourCruise) { if (p || Object.values(keys).some(Boolean)) tourCruise = false; else { L = R = 0.85; } }
     updatePanel(p); wizLiveUpdate(); updateStatus(p);
 
@@ -3080,7 +3129,7 @@
   }
   function raceTick(dt, p) {
     if (raceState === 'menu') {
-      if (edEl.style.display === 'flex' || v3open) { menuHeld = true; return; }   // editing a level: no race starts behind the editor
+      if (edEl.style.display === 'flex' || v3open || shopOpen) { menuHeld = true; return; }   // editing a level: no race starts behind the editor
       const b = p && p.buttons[BOOST_BUTTON], pressed = !!(b && b.pressed) || !!keys['enter'];
       if (pressed && !menuHeld && menuOpenedAt + 0.6 < performance.now() / 1000) startFromMenu();
       menuHeld = pressed; return;
@@ -3115,8 +3164,12 @@
     for (const x of ex) {
       const gl = c.createRadialGradient(x, ey + eh * .2, 0, x, ey + eh * .2, ew * 1.8); gl.addColorStop(0, `rgba(${pod.glow},.9)`); gl.addColorStop(1, `rgba(${pod.glow},0)`);
       c.fillStyle = gl; c.beginPath(); c.arc(x, ey + eh * .2, ew * 1.8, 0, 7); c.fill();
-      c.fillStyle = pod.dark ? '#1c1a19' : '#4a423e'; c.beginPath(); c.ellipse(x, ey, ew, eh, 0, 0, 7); c.fill();
+      c.fillStyle = { dark: '#1c1a19', light: '#4a423e', chrome: '#a8b4c0', gold: '#d6a522', white: '#dcdde0' }[pod.finish || (pod.dark ? 'dark' : 'light')] || '#4a423e'; c.beginPath(); c.ellipse(x, ey, ew, eh, 0, 0, 7); c.fill();
       c.fillStyle = pod.band; c.fillRect(x - ew, ey - eh * .2, ew * 2, eh * .3);
+      if (pod.pattern === 'stripes') { c.fillRect(x - ew * .45, ey - eh, ew * .25, eh * 2); c.fillRect(x + ew * .2, ey - eh, ew * .25, eh * 2); }
+      else if (pod.pattern === 'flames') { c.fillStyle = '#ffb020'; c.beginPath(); c.moveTo(x - ew * .6, ey + eh * .9); c.lineTo(x - ew * .1, ey - eh * .6); c.lineTo(x + ew * .3, ey + eh * .9); c.fill(); }
+      else if (pod.pattern === 'checker') { for (let q = 0; q < 4; q++) { c.fillStyle = q & 1 ? '#111' : '#eee'; c.fillRect(x - ew + q * ew * .5, ey - eh * .7, ew * .5, eh * .4); } }
+      else if (pod.pattern === 'number') { c.fillStyle = '#fff'; c.font = `bold ${eh * .7}px Menlo`; c.textAlign = 'center'; c.fillText(pod.number, x, ey - eh * .35); }
       c.fillStyle = `rgb(${pod.glow})`; c.beginPath(); c.ellipse(x, ey + eh * .25, ew * .45, eh * .32, 0, 0, 7); c.fill();
     }
     c.fillStyle = shadeHex(pod.band, .7); c.beginPath(); c.ellipse(w * .5, h * .9, w * .1, h * .12, 0, Math.PI, 0); c.fill();
@@ -3128,7 +3181,7 @@
     PODS.forEach((pod, i) => {
       const locked = i >= unlocks.pods, d = document.createElement('div');
       d.className = 'pcard' + (i === podIdx ? ' sel' : '') + (locked ? ' locked' : '');
-      const cv = document.createElement('canvas'); cv.width = 160; cv.height = 84; podPreview(cv, pod);
+      const cv = document.createElement('canvas'); cv.width = 160; cv.height = 84; podPreview(cv, locked ? pod : podLook(i));
       d.appendChild(cv);
       const nm = document.createElement('div'); nm.textContent = locked ? '???' : pod.name; nm.style.marginTop = '4px'; d.appendChild(nm);
       if (locked) { const lk = document.createElement('div'); lk.className = 'lock'; lk.textContent = '🔒'; d.appendChild(lk); }
@@ -3665,6 +3718,43 @@
     v3show(v3lvl ? levelLayout(v3lvl).geom : trackGeom(), CUSTOM ? CUSTOM.name : TOUR ? 'Grand Tour · ' + TRACK_NAMES[TRACK_ID] : TRACK_NAMES[TRACK_ID], 'menu');
   };
 
+  // ===================== 🎨 PAINT SHOP =====================
+  const shopEl = document.getElementById('shop'); let shopOpen = false, shopBoost = false;
+  const hexToRgb = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16)), rgbToHex = a => '#' + a.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+  const SWATCH = {
+    band: ['#c94a1c', '#e02a2a', '#ff6fb0', '#9b4dff', '#2a7fff', '#1fb7c9', '#2fbf5a', '#9acd32', '#f2b632', '#ff8c1a', '#f4f4f4', '#1a1a1a'],
+    glow: ['#78c8ff', '#ff8c78', '#78ff9a', '#ffd278', '#d078ff', '#ffffff', '#ff4060', '#40fff0'],
+    binder: ['#78b4ff', '#ff7878', '#78ffb4', '#ffdc78', '#c878ff', '#ffffff', '#ff40c0', '#40ffff'],
+    helmet: ['#d8cbb0', '#f4f4f4', '#1a1a1a', '#e02a2a', '#2a7fff', '#f2b632', '#2fbf5a', '#ff6fb0'],
+  };
+  function shopSet(k, v) {
+    const all = loadPaint(), c = all[podIdx] = all[podIdx] || {};
+    if (v === undefined) delete c[k]; else c[k] = v;
+    savePaint(all); POD = podLook(podIdx); shopRender();
+  }
+  function shopRender() {
+    document.getElementById('shName').textContent = PODS[podIdx].name.toUpperCase() + (POD.nick ? ' · “' + POD.nick + '”' : '');
+    for (const k of ['band', 'glow', 'binder', 'helmet']) {
+      const cur = typeof POD[k] === 'string' ? POD[k].toLowerCase() : rgbToHex(POD[k]), box = shopEl.querySelector(`.sw[data-k="${k}"]`);
+      box.innerHTML = SWATCH[k].map(c => `<i style="background:${c}" data-v="${c}" class="${c.toLowerCase() === cur ? 'on' : ''}"></i>`).join('');
+      box.querySelectorAll('i').forEach(el => el.onclick = () => shopSet(k, k === 'band' || k === 'helmet' ? el.dataset.v : hexToRgb(el.dataset.v)));
+      shopEl.querySelector(`input[data-c="${k}"]`).value = cur;
+    }
+    for (const k of ['finish', 'pattern']) shopEl.querySelectorAll(`.opts[data-k="${k}"] button`).forEach(b => b.classList.toggle('on', b.dataset.v === POD[k]));
+    document.getElementById('shNum').style.display = POD.pattern === 'number' ? '' : 'none';
+    if (document.activeElement !== document.getElementById('shNum')) document.getElementById('shNum').value = POD.number;
+    if (document.activeElement !== document.getElementById('shNick')) document.getElementById('shNick').value = POD.nick;
+    document.getElementById('shBoost').classList.toggle('on', shopBoost);
+  }
+  shopEl.querySelectorAll('input[data-c]').forEach(inp => inp.oninput = () => { const k = inp.dataset.c; shopSet(k, k === 'band' || k === 'helmet' ? inp.value : hexToRgb(inp.value)); });
+  shopEl.querySelectorAll('.opts button').forEach(b => b.onclick = () => shopSet(b.parentElement.dataset.k, b.dataset.v));
+  document.getElementById('shNum').oninput = e => shopSet('number', e.target.value.replace(/[^0-9A-Za-z]/g, '').slice(0, 3) || undefined);
+  document.getElementById('shNick').oninput = e => shopSet('nick', e.target.value.slice(0, 14) || undefined);
+  document.getElementById('shBoost').onclick = () => { shopBoost = !shopBoost; shopRender(); };
+  document.getElementById('shReset').onclick = () => { const all = loadPaint(); delete all[podIdx]; savePaint(all); POD = podLook(podIdx); shopRender(); };
+  document.getElementById('shDone').onclick = () => { shopOpen = false; shopBoost = false; shopEl.style.display = 'none'; openMenu(); };
+  document.getElementById('shopBtn').onclick = () => { shopOpen = true; menuEl.style.display = 'none'; shopEl.style.display = 'flex'; shopRender(); };
+
   function renderMaster() {
     const row = document.getElementById('masterRow');
     const ghostOk = masterUnlocked();                          // the AI slider is always there; ghost racing unlocks with a Grand Tour win
@@ -3693,7 +3783,7 @@
     const b = document.getElementById('resetAiBtn'); b.textContent = '✓ AI RESET ON ALL TRACKS'; setTimeout(() => { b.textContent = '↺ RESET AI'; }, 1800);
   };
   document.getElementById('aimBtn').onclick = () => { AUTO_AIM = !AUTO_AIM; try { localStorage.setItem('podracer.autoAim', AUTO_AIM ? '1' : '0'); } catch (e) {} renderOpts(); };
-  function selectPod(i) { podIdx = i; POD = PODS[i]; try { localStorage.setItem('podracer.pod', String(i)); } catch (e) {} renderMenu(); }
+  function selectPod(i) { podIdx = i; POD = podLook(i); try { localStorage.setItem('podracer.pod', String(i)); } catch (e) {} renderMenu(); }
   function openMenu() {
     finishEl.style.display = 'none'; restartRace(); raceState = 'menu'; countEl.style.display = 'none';
     unlocks = loadUnlocks(); renderMenu(); menuEl.style.display = 'flex'; menuOpenedAt = performance.now() / 1000; menuHeld = true;
@@ -3701,7 +3791,7 @@
   function startFromMenu() { menuEl.style.display = 'none'; if (TOUR) { TOUR = { stage: 0, total: 0, aiTotals: AI_DEFS.map(() => 0), log: [] }; saveTour(); } restartRace(); }
   document.getElementById('startBtn').onclick = startFromMenu;
   addEventListener('keydown', e => {
-    if (raceState !== 'menu' || edEl.style.display === 'flex') return;
+    if (raceState !== 'menu' || edEl.style.display === 'flex' || shopOpen) return;
     const k = e.key.toLowerCase();
     if (k === 'arrowright' || k === 'arrowleft') { const n = unlocks.pods; selectPod((podIdx + (k === 'arrowright' ? 1 : n - 1)) % n); }
   });
@@ -3757,7 +3847,7 @@
     document.getElementById('finPlace').style.color = myPlace === 1 ? '#ffd36b' : '#fff3dc';
     const rows = finishOrder.map((a, i) => `<div><span style="color:rgb(${a.col})">${i + 1}. ${a.name}</span><span>${fmtTime(a.finishTime)}</span></div>`);
     if (GHOST_MODE && prevGhost != null) rows.push(`<div><span style="color:#9fd8ff">👻 Your best before</span><span>${fmtTime(prevGhost)}</span></div>`);
-    rows.push(`<div><span style="color:#6fd3ff">${myPlace}. You</span><span>${fmtTime(myTime)}</span></div>`);
+    rows.push(`<div><span style="color:#6fd3ff">${myPlace}. ${POD.nick ? escHtml(POD.nick) : 'You'}</span><span>${fmtTime(myTime)}</span></div>`);
     document.getElementById('finOrder').innerHTML = rows.join('');
     finishEl.style.display = 'flex';
   }
@@ -3949,7 +4039,7 @@
     }
     if (wantBoost && boostEnergy > 0 && (L + R) > 0.05) { boost = true; boostEnergy = Math.max(0, boostEnergy - dt / (4 * POD.dur)); }
     else { boost = false; if (!wantBoost) boostEnergy = Math.min(1, boostEnergy + dt / 8); }
-    boostVis += ((boost ? 1 : 0) - boostVis) * (1 - Math.exp(-8 * dt));
+    boostVis += ((boost || (shopOpen && shopBoost) ? 1 : 0) - boostVis) * (1 - Math.exp(-8 * dt));
     if (raceState !== 'racing') boost = false;
     const target = raceState !== 'racing' ? 0 : MAX_KMH * POD.top * (L + R) / 2 * (boost ? POD.boost : 1) * (offRoad ? (THEME.forest ? 0.8 : 0.55) : 1) * (inWater ? 0.42 : 1) * (podY < 5 ? Math.max(0.6, Math.min(1.25, 1 - slopeAt(position + PLAYER_Z) * 2.4)) : 1) * (podY < 5 && segAt(position + PLAYER_Z).rough ? 0.85 : 1);   // hills + bumps
     const rate = target > speed ? (boost ? 1.8 : 0.9) * POD.accel : 1.4;
@@ -3960,7 +4050,7 @@
     stepAIs(dt);
     recordGhost();
   }
-  window.__pod = { setPod(i) { POD = PODS[i]; }, setAILevel(l) { const w = loadAIWins(); w[AI_TRACK] = l; saveAIWins(w); AI_LEVEL = loadAILevel(); AI_SHORTCUTS = aiWinsHere() >= AI_SHORTCUT_LEVEL; resetAIs(); raceTime = 0; }, get aiWins() { return loadAIWins(); }, get aiSkills() { return ais.map(a => +a.skill.toFixed(4) + (a.copy ? "*" : "")); }, aiShield(name, on) { const a = ais.find(x => x.name === name); a.shOn = on; a.shT = 5; a.shE = 1; }, get aiSh() { return ais.map(a => ({ name: a.name, shOn: a.shOn, shE: +a.shE.toFixed(2), shBroken: +a.shBroken.toFixed(1) })); }, setNight(v) { NIGHT = v; }, get aim() { return aimTarget && aimTarget.name; }, pathInfo() { return shortcuts.filter(x => x.path).map(x => ({ idx: x.idx, entry: x.entry, exit: x.exit, side: x.side, secret: x.secret, len: x.segs.length, skip: x.exit - x.entry, y0: x.segs[0].y, yEnd: x.segs[x.segs.length - 1].y, mainExitY: segments[x.exit].y })); }, forestInfo() { return { inclines: mark.inclines, rough: mark.rough, banked: segments.filter(x => x.bank).length, summit: mark.summit, winterSegs: segments.filter(x => x.winter).length, climbCaves: Math.max(...segments.map(x => x.caveNo)), turns: (() => { let n = 0, prev = 0; for (const x of segments) { const c = Math.abs(x.curve) >= 3 ? Math.sign(x.curve) : 0; if (c && c !== prev) n++; prev = c; } return n; })(), tunnels: mark.tunnels, tunnel: mark.tunnel, maxY: Math.max(...segments.map(x => x.y)), endY: segments[segments.length - 1].y, rivers: mark.rivers, walk: mark.walk, len: segments.length, trees: segments.reduce((t, x) => t + x.obs.filter(o => o.kind === 'tree').length + x.sprites.filter(o => o.kind === 'pine' || o.kind === 'oak').length, 0), sideRamps: ramps.length }; }, get water() { return inWater; }, get missiles() { return { left: missilesLeft, flying: missiles.map(m => ({ target: m.target && m.target.name, x: +m.x.toFixed(2) })) }; }, get weapons() { return { laserHeat, laserOver, shieldE, shieldOn, removed: removedObs.length }; }, fire() { fireLaser(); }, setShield(on) { shieldOn = on; }, obsAhead() { const b = Math.floor((position + PLAYER_Z) / SEG); for (let n = 1; n < 45; n++) { const sg = segFor(b + n); if (sg.obs.length) return { n, off: sg.obs[0].off, w: sg.obs[0].w }; } return null; }, get state() { return raceState; }, superState() { return { superAvail, superT: +superT.toFixed(2), pos: racePosition(), lap, lapTimes: lapTimes.slice(), prog: Math.round(playerProgress()) }; }, forceWin() { finishOrder = []; raceTime = 150; lapTimes = [50, 50, 50]; finishRace(); }, get unlocks() { return loadUnlocks(); }, sim(k, startSpeed, boostAt) {
+  window.__pod = { setPod(i) { POD = podLook(i); }, setAILevel(l) { const w = loadAIWins(); w[AI_TRACK] = l; saveAIWins(w); AI_LEVEL = loadAILevel(); AI_SHORTCUTS = aiWinsHere() >= AI_SHORTCUT_LEVEL; resetAIs(); raceTime = 0; }, get aiWins() { return loadAIWins(); }, get aiSkills() { return ais.map(a => +a.skill.toFixed(4) + (a.copy ? "*" : "")); }, aiShield(name, on) { const a = ais.find(x => x.name === name); a.shOn = on; a.shT = 5; a.shE = 1; }, get aiSh() { return ais.map(a => ({ name: a.name, shOn: a.shOn, shE: +a.shE.toFixed(2), shBroken: +a.shBroken.toFixed(1) })); }, setNight(v) { NIGHT = v; }, get aim() { return aimTarget && aimTarget.name; }, pathInfo() { return shortcuts.filter(x => x.path).map(x => ({ idx: x.idx, entry: x.entry, exit: x.exit, side: x.side, secret: x.secret, len: x.segs.length, skip: x.exit - x.entry, y0: x.segs[0].y, yEnd: x.segs[x.segs.length - 1].y, mainExitY: segments[x.exit].y })); }, forestInfo() { return { inclines: mark.inclines, rough: mark.rough, banked: segments.filter(x => x.bank).length, summit: mark.summit, winterSegs: segments.filter(x => x.winter).length, climbCaves: Math.max(...segments.map(x => x.caveNo)), turns: (() => { let n = 0, prev = 0; for (const x of segments) { const c = Math.abs(x.curve) >= 3 ? Math.sign(x.curve) : 0; if (c && c !== prev) n++; prev = c; } return n; })(), tunnels: mark.tunnels, tunnel: mark.tunnel, maxY: Math.max(...segments.map(x => x.y)), endY: segments[segments.length - 1].y, rivers: mark.rivers, walk: mark.walk, len: segments.length, trees: segments.reduce((t, x) => t + x.obs.filter(o => o.kind === 'tree').length + x.sprites.filter(o => o.kind === 'pine' || o.kind === 'oak').length, 0), sideRamps: ramps.length }; }, get water() { return inWater; }, get missiles() { return { left: missilesLeft, flying: missiles.map(m => ({ target: m.target && m.target.name, x: +m.x.toFixed(2) })) }; }, get weapons() { return { laserHeat, laserOver, shieldE, shieldOn, removed: removedObs.length }; }, fire() { fireLaser(); }, setShield(on) { shieldOn = on; }, obsAhead() { const b = Math.floor((position + PLAYER_Z) / SEG); for (let n = 1; n < 45; n++) { const sg = segFor(b + n); if (sg.obs.length) return { n, off: sg.obs[0].off, w: sg.obs[0].w }; } return null; }, get state() { return raceState; }, superState() { return { superAvail, superT: +superT.toFixed(2), pos: racePosition(), lap, lapTimes: lapTimes.slice(), prog: Math.round(playerProgress()) }; }, forceWin() { finishOrder = []; raceTime = 150; lapTimes = [50, 50, 50]; finishRace(); }, get unlocks() { return loadUnlocks(); }, sim(k, startSpeed, boostAt) {
       const c = shortcuts[k].chasm; T = shortcuts[k]; position = c.runup * SEG; speed = startSpeed; playerX = 0; podY = 0; podVY = 0; onRamp = false; boostEnergy = 1; fade = 0;
       L = 1; R = 1; raceState = 'racing'; let peak = 0, t = 0;
       for (let i = 0; i < 60 * 10; i++) {
@@ -3972,7 +4062,7 @@
         if (now >= c.c0 + CHASM_LEN && podY >= 0 && podY <= 1) return { result: 'CLEARED', peak: Math.round(peak), speedAtLanding: Math.round(speed) };
       }
       return { result: 'timeout', peak };
-    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, segRamps() { return segments.filter(g => g.ramp && g.ramp.j === 0).length; }, segInfoFull(i) { const g = segments[((i % segments.length) + segments.length) % segments.length]; return { bridge: g.bridge, y: g.y, cave: g.cave, canyon: g.canyon, bank: g.bank }; }, bankedRun() { let best = null; for (let i = 60; i < segments.length - 40; i++) { if (Math.abs(segments[i].bank) >= 4 && segments.slice(i - 8, i + 8).every(g => g.bank && Math.sign(g.bank) === Math.sign(segments[i].bank))) { best = { i, bank: segments[i].bank }; break; } } return best; }, get overlaps() { return mark.overlaps || []; }, get testMode() { return TEST_MODE; }, edSet(S) { ED.sections = S.map(x => Object.assign(newSection("straight"), x)); edSel = 0; edRenderList(); edPreview(); }, randSec() { return randomSection(); }, acTest() { const before = ED.sections.length; const m = runAutoComplete(); const segs = levelLayout(ED, -1, { open: true }); const p = segs.pts, L = p[p.length - 1], P2 = p[p.length - 2]; return { msg: m, added: ED.sections.length - before, endX: +L[0].toFixed(1), endY: +L[1].toFixed(1), heading: +(Math.atan2(L[0] - P2[0], -(L[1] - P2[1])) * 180 / Math.PI).toFixed(1), hillSum: ED.sections.reduce((t, s) => t + (+s.hill || 0), 0) }; }, get build() { return { on: v3build, pieces: ED && ED.sections.length, last: ED && ED.sections[ED.sections.length - 1], bp: { ...BP } }; }, segCurves() { return segments.map(g => g.curve); }, segYs() { return segments.map(g => g.y); }, get v3() { return { open: v3open, src: v3src, pts: v3geo && v3geo.P.length }; }, get custom() { return CUSTOM && { id: CUSTOM.id, name: CUSTOM.name, laps: TOTAL_LAPS, segs: segments.length, theme: THEME.name }; }, edCode(lv) { return edCodeOf(lv); }, edFrom(c) { return edFromCode(c); }, autoRace(maxSec, lazy = 0) { menuEl.style.display = "none"; restartRace(); raceState = "racing"; countdown = 0; let t = 0; while (t < maxSec && raceState === "racing") { L = R = 1 - lazy; const sg = segAt(position + PLAYER_Z); playerX += (sg.curve * 0.09 - playerX) * 0.2; physicsStep(1 / 60, false); t += 1 / 60; } return { state: raceState, time: raceTime, lap }; }, get ghostPos() { return ghostAt(raceTime); }, get ghost() { return { mode: GHOST_MODE, have: !!GHOST, time: GHOST && GHOST.time, n: GHOST && GHOST.s.length, rec: ghostRec.length, delta: ghostDelta() }; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
+    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, get look() { return { finish: POD.finish, pattern: POD.pattern, band: POD.band, glow: POD.glow, binder: POD.binder, helmet: POD.helmet, nick: POD.nick, number: POD.number, top: POD.top }; }, segRamps() { return segments.filter(g => g.ramp && g.ramp.j === 0).length; }, segInfoFull(i) { const g = segments[((i % segments.length) + segments.length) % segments.length]; return { bridge: g.bridge, y: g.y, cave: g.cave, canyon: g.canyon, bank: g.bank }; }, bankedRun() { let best = null; for (let i = 60; i < segments.length - 40; i++) { if (Math.abs(segments[i].bank) >= 4 && segments.slice(i - 8, i + 8).every(g => g.bank && Math.sign(g.bank) === Math.sign(segments[i].bank))) { best = { i, bank: segments[i].bank }; break; } } return best; }, get overlaps() { return mark.overlaps || []; }, get testMode() { return TEST_MODE; }, edSet(S) { ED.sections = S.map(x => Object.assign(newSection("straight"), x)); edSel = 0; edRenderList(); edPreview(); }, randSec() { return randomSection(); }, acTest() { const before = ED.sections.length; const m = runAutoComplete(); const segs = levelLayout(ED, -1, { open: true }); const p = segs.pts, L = p[p.length - 1], P2 = p[p.length - 2]; return { msg: m, added: ED.sections.length - before, endX: +L[0].toFixed(1), endY: +L[1].toFixed(1), heading: +(Math.atan2(L[0] - P2[0], -(L[1] - P2[1])) * 180 / Math.PI).toFixed(1), hillSum: ED.sections.reduce((t, s) => t + (+s.hill || 0), 0) }; }, get build() { return { on: v3build, pieces: ED && ED.sections.length, last: ED && ED.sections[ED.sections.length - 1], bp: { ...BP } }; }, segCurves() { return segments.map(g => g.curve); }, segYs() { return segments.map(g => g.y); }, get v3() { return { open: v3open, src: v3src, pts: v3geo && v3geo.P.length }; }, get custom() { return CUSTOM && { id: CUSTOM.id, name: CUSTOM.name, laps: TOTAL_LAPS, segs: segments.length, theme: THEME.name }; }, edCode(lv) { return edCodeOf(lv); }, edFrom(c) { return edFromCode(c); }, autoRace(maxSec, lazy = 0) { menuEl.style.display = "none"; restartRace(); raceState = "racing"; countdown = 0; let t = 0; while (t < maxSec && raceState === "racing") { L = R = 1 - lazy; const sg = segAt(position + PLAYER_Z); playerX += (sg.curve * 0.09 - playerX) * 0.2; physicsStep(1 / 60, false); t += 1 / 60; } return { state: raceState, time: raceTime, lap }; }, get ghostPos() { return ghostAt(raceTime); }, get ghost() { return { mode: GHOST_MODE, have: !!GHOST, time: GHOST && GHOST.time, n: GHOST && GHOST.s.length, rec: ghostRec.length, delta: ghostDelta() }; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
   refreshPadList(); buildAxisRows();
   if (TOUR) { const lb = document.getElementById('lapBox'); if (lb && lb.firstChild) lb.firstChild.textContent = 'WORLD '; }
   if (TOUR && TOUR.stage > 0 && TOUR.arriving) { TOUR.arriving = false; saveTour(); beginTourStage(); }

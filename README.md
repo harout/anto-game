@@ -31,6 +31,11 @@ A pseudo-3D pod racing game that runs in the browser and is built to be flown wi
 Seven AI rivals race you. Each 1st place on a track makes that track's rivals 1% smarter —
 up to an exact copy of you and your pod — and at level 50 they learn that track's shortcuts.
 
+## 🎨 Paint shop
+**🎨 CUSTOMIZE POD** in the menu: paint color, engine finish (light, dark, chrome, gold, white), pattern (stripes, flames,
+checkers, race number), engine glow, energy beam and helmet colors, and a nickname for the standings — saved per pod,
+cosmetic only. The pod revs behind the panel as a live preview (🔥 TRY BOOST shows the boost flames).
+
 ## ✎ Level editor
 Open **＋ LEVEL EDITOR** in the track menu to build your own track from sections — straights, turns, climbs and drops,
 canyons with arches, tunnels, rivers (slow you down) or swamp water (full speed), ramp jumps and rock fields — in any of the
