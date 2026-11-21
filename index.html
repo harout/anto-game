@@ -159,7 +159,9 @@
   .se-p.locked { opacity:.55; cursor:not-allowed; }
   #tx { position:fixed; left:50%; top:90px; transform:translateX(-50%); z-index:30; display:none; text-align:center; background:#0c0a1af0; border:2px solid #8a5cff; border-radius:14px; padding:14px 26px; font:bold 14px Menlo, monospace; letter-spacing:3px; color:#b89cff; box-shadow:0 0 40px #8a5cffaa; pointer-events:none; }
   #tx b { display:block; font-size:34px; color:#7dffb0; margin:8px 0; letter-spacing:6px; text-shadow:0 0 18px #7dffb0; } #tx small { display:block; color:#ffd36b; letter-spacing:1px; font-size:12px; }
-  .pcard.bedo { background:linear-gradient(160deg,#3a2810,#2a160a); } .pcard.bedo.sel { border-color:#ffd36b; box-shadow:0 0 16px #ffd36b88; }
+  .pcard.bedo { background:linear-gradient(160deg,#3a2810,#2a160a); cursor:grab; overflow:hidden; }
+  .pethrt { position:absolute; top:40%; font-size:18px; pointer-events:none; animation:pethrt 1.3s ease-out forwards; }
+  @keyframes pethrt { from { transform:translateY(0) scale(.6); opacity:1; } to { transform:translateY(-60px) scale(1.3); opacity:0; } } .pcard.bedo.sel { border-color:#ffd36b; box-shadow:0 0 16px #ffd36b88; }
   .hidespot { min-height:90px; border-radius:10px; cursor:default; } .hidespot:active { background:rgba(184,156,255,.06); }
   #scr { position:fixed; left:50%; transform:translateX(-50%); top:60px; width:560px; max-width:calc(100vw - 32px); max-height:calc(100vh - 120px); z-index:12; box-shadow:0 0 60px #000c; display:none; flex-direction:column; gap:10px; background:#0c0a1aee; border:1px solid #6a4ad8; border-radius:12px; padding:16px; font:13px Menlo, monospace; color:#e8e2ff; overflow:auto; }
   body.slid #scr { display:flex; } #scr .sh-title { color:#b89cff; letter-spacing:4px; font-size:16px; }
@@ -2698,7 +2700,9 @@
   function fogMix(c, f) { if (FOG !== CAVE_FOG) { if (THEME.map) c = THEME.map(c); if (NIGHT) c = nightMap(c); } return fogMixRaw(c, f); }
   function fogMixRaw(c, f) { const s = FOG; return `rgb(${(c[0] + (s[0] - c[0]) * f) | 0},${(c[1] + (s[1] - c[1]) * f) | 0},${(c[2] + (s[2] - c[2]) * f) | 0})`; }
 
-  function drawBedoPortrait(cv) {                             // 🐶 Bedo's happy face for the menu
+  const loadPets = () => { try { return +(localStorage.getItem('podracer.bedoPets') || 0) | 0; } catch (e) { return 0; } };
+  const savePets = n => { try { localStorage.setItem('podracer.bedoPets', String(n)); } catch (e) {} };
+  function drawBedoPortrait(cv, happy) {                      // 🐶 Bedo's face for the menu (happy = being petted)
     const c = cv.getContext('2d'), w = Math.min(cv.width, cv.height * 1.15), h = cv.height, x = cv.width / 2, y = h * 0.55;
     c.clearRect(0, 0, cv.width, cv.height);
     for (const sd of [-1, 1]) { c.fillStyle = '#d29a2e'; c.beginPath(); c.ellipse(x + sd * w * .33, y + h * .02, w * .12, h * .24, sd * 0.35, 0, 7); c.fill(); c.fillStyle = '#f7a8b4'; c.beginPath(); c.ellipse(x + sd * w * .33, y + h * .06, w * .06, h * .14, sd * 0.35, 0, 7); c.fill(); }
@@ -2706,17 +2710,26 @@
     for (const [dx, r] of [[-.08, .07], [0, .09], [.08, .07]]) { c.beginPath(); c.arc(x + w * dx, y - h * .32, w * r, 0, 7); c.fill(); }
     c.fillStyle = '#fbe08e'; c.beginPath(); c.ellipse(x, y + h * .14, w * .16, h * .14, 0, 0, 7); c.fill();
     for (const sd of [-1, 1]) {
+      if (happy) { c.strokeStyle = '#1c1410'; c.lineWidth = 2; c.beginPath(); c.arc(x + sd * w * .12, y - h * .02, w * .05, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); }   // ^ ^
+      else {
       c.fillStyle = '#1c1410'; c.beginPath(); c.ellipse(x + sd * w * .12, y - h * .04, w * .055, h * .075, 0, 0, 7); c.fill();
       c.fillStyle = '#fff'; c.beginPath(); c.arc(x + sd * w * .12 - w * .018, y - h * .07, w * .02, 0, 7); c.fill();
-      c.fillStyle = 'rgba(255,120,140,.6)'; c.beginPath(); c.ellipse(x + sd * w * .2, y + h * .1, w * .05, h * .04, 0, 0, 7); c.fill();
+      }
+      c.fillStyle = happy ? 'rgba(255,90,120,.85)' : 'rgba(255,120,140,.6)'; c.beginPath(); c.ellipse(x + sd * w * .2, y + h * .1, w * .05, h * .04, 0, 0, 7); c.fill();
     }
     c.fillStyle = '#1c1410'; c.beginPath(); c.ellipse(x, y + h * .07, w * .045, h * .035, 0, 0, 7); c.fill();
     c.fillStyle = '#ff7f9a'; c.beginPath(); c.ellipse(x + w * .01, y + h * .22, w * .035, h * .06, 0, 0, 7); c.fill();
     c.strokeStyle = '#1c1410'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x - w * .06, y + h * .14); c.quadraticCurveTo(x - w * .03, y + h * .19, x, y + h * .13); c.quadraticCurveTo(x + w * .03, y + h * .19, x + w * .06, y + h * .14); c.stroke();
   }
+  let petT = -9;
+  addEventListener('keydown', e => {                           // 🐶 press P to pet Bedo while you race
+    if (inEditor(e) || e.repeat || e.key.toLowerCase() !== 'p' || !DOG_DRIVER || raceState !== 'racing') return;
+    petT = performance.now() / 1000; savePets(loadPets() + 1); flash(['🐶 Good boy, Bedo!', '🐾 Bedo loves that!', '💕 Best pilot ever!', '🐶 Who\'s a good boy?'][loadPets() % 4]); try { chime(); } catch (e2) {}
+  });
   function drawDogDriver(cx, cy, cw, t) {                     // 🐶 Bedo: a medium-sized yellow dog, extra cute
     const fur = '#f0c24e', furD = '#d29a2e', furL = '#fbe08e', sp = Math.min(1, speed / MAX_KMH), flap = Math.sin(t * (6 + sp * 14)) * (0.15 + sp * 0.5);
-    const look = podY > 60 || (t % 7) < 1.6;                    // every few seconds (and in the air) Bedo turns round to look at you
+    const petted = performance.now() / 1000 - petT < 1.6;
+    const look = petted || podY > 60 || (t % 7) < 1.6;          // every few seconds (and in the air, or when you pet him) Bedo turns round to look at you
     const hy = cy - H * .028 + Math.sin(t * 3) * H * .002;      // a happy little bob
     // fluffy shoulders
     ctx.fillStyle = fur; ctx.beginPath(); ctx.ellipse(cx, cy + H * .014, cw * .5, H * .032, 0, Math.PI, 0); ctx.fill();
@@ -2739,9 +2752,12 @@
     if (look) {                                                 // 🥰 the face: shiny eyes, rosy cheeks, a black nose and a happy mouth
       ctx.fillStyle = furL; ctx.beginPath(); ctx.ellipse(cx, hy + H * .012, cw * .17, H * .018, 0, 0, 7); ctx.fill();   // light muzzle
       for (const sd of [-1, 1]) {
+        if (petted) { ctx.strokeStyle = '#1c1410'; ctx.lineWidth = Math.max(1.5, cw * .02); ctx.beginPath(); ctx.arc(cx + sd * cw * .13, hy - H * .003, cw * .05, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); }   // happy closed eyes ^ ^
+        else {
         ctx.fillStyle = '#1c1410'; ctx.beginPath(); ctx.ellipse(cx + sd * cw * .13, hy - H * .006, cw * .055, H * .009, 0, 0, 7); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(cx + sd * cw * .13 - cw * .018, hy - H * .009, cw * .02, 0, 7); ctx.fill();
         ctx.beginPath(); ctx.arc(cx + sd * cw * .13 + cw * .015, hy - H * .003, cw * .009, 0, 7); ctx.fill();
+        }
         ctx.fillStyle = 'rgba(255,120,140,.55)'; ctx.beginPath(); ctx.ellipse(cx + sd * cw * .22, hy + H * .008, cw * .05, H * .005, 0, 0, 7); ctx.fill();   // rosy cheeks
       }
       ctx.fillStyle = '#1c1410'; ctx.beginPath(); ctx.ellipse(cx, hy + H * .006, cw * .045, H * .006, 0, 0, 7); ctx.fill();   // nose
@@ -2764,6 +2780,12 @@
       const px = cx + sd * cw * .24, py = cy + H * .03;
       ctx.fillStyle = fur; ctx.beginPath(); ctx.ellipse(px, py, cw * .085, H * .011, 0, 0, 7); ctx.fill();
       ctx.fillStyle = '#f7a8b4'; for (const dx of [-.04, 0, .04]) { ctx.beginPath(); ctx.arc(px + cw * dx, py - H * .004, cw * .014, 0, 7); ctx.fill(); }
+    }
+    if (petted) {                                               // 🤚 a hand giving him a scratch, and a burst of hearts
+      const pt = performance.now() / 1000 - petT, hx = cx + Math.sin(pt * 14) * cw * .08, hy2 = hy - H * .06;
+      ctx.font = `${cw * .32}px serif`; ctx.textAlign = 'center'; ctx.fillText('🤚', hx, hy2);
+      for (let q = 0; q < 6; q++) { const a = q / 6 * Math.PI * 2 + pt, r = cw * (.25 + pt * .5); ctx.globalAlpha = Math.max(0, 1 - pt / 1.6); ctx.fillText('💕', cx + Math.cos(a) * r, hy - H * .02 + Math.sin(a) * r * 0.5 - pt * H * .04); }
+      ctx.globalAlpha = 1;
     }
     if (boost) for (let q = 0; q < 3; q++) {                    // 💕 hearts float up when you boost
       const ph = ((t * 0.9 + q / 3) % 1), hx = cx + cw * (-.3 + q * .3) + Math.sin(t * 4 + q) * cw * .05, hyy = cy - H * (.07 + ph * .09), r = cw * .04 * (1 - ph * .4);
@@ -3919,8 +3941,18 @@
       const on = pickedDriver() === 'bedo', d = document.createElement('div');
       d.className = 'pcard bedo' + (on ? ' sel' : '');
       const cv = document.createElement('canvas'); cv.width = 160; cv.height = 84; drawBedoPortrait(cv); d.appendChild(cv);
-      const nm = document.createElement('div'); nm.textContent = on ? '🐶 Bedo · driving' : '🐶 Bedo'; nm.style.marginTop = '4px'; d.appendChild(nm);
-      d.title = on ? 'Bedo is your driver — click to switch back to the pilot' : 'Click to make Bedo your driver';
+      const nm = document.createElement('div'), label = () => `${on ? '🐶 Bedo · driving' : '🐶 Bedo'}${loadPets() ? ` · ❤ ${loadPets()}` : ''}`; nm.textContent = label(); nm.style.marginTop = '4px'; d.appendChild(nm);
+      d.title = (on ? 'Bedo is your driver — click to switch back to the pilot' : 'Click to make Bedo your driver') + ' · rub him with the mouse to pet him! (press P in a race to pet him too)';
+      let rub = 0, lastX = null, happyT = 0;
+      d.addEventListener('pointermove', e => {                   // 🤚 rub back and forth to pet him
+        if (lastX != null) rub += Math.abs(e.clientX - lastX); lastX = e.clientX;
+        if (rub > 140) {
+          rub = 0; savePets(loadPets() + 1); nm.textContent = label(); drawBedoPortrait(cv, true); clearTimeout(happyT); happyT = setTimeout(() => drawBedoPortrait(cv), 1400);
+          const hrt = document.createElement('span'); hrt.className = 'pethrt'; hrt.textContent = ['❤', '💕', '💖', '🐾'][loadPets() % 4]; hrt.style.left = (20 + Math.random() * 60) + '%'; d.appendChild(hrt); setTimeout(() => hrt.remove(), 1300);
+          if (loadPets() % 10 === 0) try { chime(); } catch (e) {}
+        }
+      });
+      d.addEventListener('pointerleave', () => { lastX = null; rub = 0; });
       d.onclick = () => { const nb = !on; try { localStorage.setItem('podracer.driver', nb ? 'bedo' : 'pilot'); } catch (e) {} DOG_DRIVER = BEDO_LEVEL || nb; if (nb) try { chime(); } catch (e) {} renderMenu(); };
       grid.appendChild(d);
     }
