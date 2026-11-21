@@ -87,4 +87,4 @@ The level editor has a green **💾 SAVE & EXIT** button at the top and at the b
 The **＋ NEW LEVEL** card on the menu always starts a brand-new level. Each level you've made has its own card with **✎ EDIT** (change it) and **🗑** (delete it, click twice).
 
 ## ♻ Reset game
-The **♻ RESET GAME** button on the menu starts everything over: pods, tracks, credits, upgrades, paint, AI levels, ghosts and secret levels. Type RESET to confirm. Tick or untick the box to keep or delete the levels you built. Your controller setup is always kept, and so are your **Grand Tour prizes**: ghost racing, your best Grand Tour time, and the two secret levels you win in the Grand Tour.
+The **♻ RESET GAME** button on the menu starts everything over: pods, tracks, credits, upgrades, paint, AI levels, ghosts and secret levels. Type RESET to confirm. Your controller setup and **the levels you built** are always kept, and so are your **Grand Tour prizes**: ghost racing, your best Grand Tour time, and the two secret levels you win in the Grand Tour.
