@@ -165,6 +165,7 @@
   #tx { position:fixed; left:50%; top:90px; transform:translateX(-50%); z-index:30; display:none; text-align:center; background:#0c0a1af0; border:2px solid #8a5cff; border-radius:14px; padding:14px 26px; font:bold 14px Menlo, monospace; letter-spacing:3px; color:#b89cff; box-shadow:0 0 40px #8a5cffaa; pointer-events:none; }
   #tx b { display:block; font-size:34px; color:#7dffb0; margin:8px 0; letter-spacing:6px; text-shadow:0 0 18px #7dffb0; } #tx small { display:block; color:#ffd36b; letter-spacing:1px; font-size:12px; }
   .pcard.fighter { background:linear-gradient(160deg,#2a0c0c,#120a0a); } .pcard.fighter.sel { border-color:#ff4a3a; box-shadow:0 0 16px #ff4a3a88; }
+  .pcard.mobile { background:linear-gradient(160deg,#3a2c10,#1a0e06); } .pcard.mobile.sel { border-color:#ffd36b; box-shadow:0 0 16px #ffd36b88; }
   .pcard.cutes { background:linear-gradient(160deg,#3a2210,#2a160a); } .pcard.cutes.sel { border-color:#ffa24a; box-shadow:0 0 16px #ffa24a88; }
   .pcard.bedo { background:linear-gradient(160deg,#3a2810,#2a160a); cursor:grab; overflow:hidden; }
   .pethrt { position:absolute; top:40%; font-size:18px; pointer-events:none; animation:pethrt 1.3s ease-out forwards; }
@@ -294,7 +295,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v100</span></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v101</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -772,10 +773,13 @@
   // 🚀 the starfighter beats every pod, even a fully upgraded Neon Storm (top 1.16 · accel 1.44 · turn 1.44 · boost 1.76 · tank 1.95)
   const FIGHTER_STATS = { top: 1.22, accel: 1.6, turn: 1.55, boost: 1.9, dur: 2.2, armor: UP_MAX };
   const fighterOn = () => { try { return !!loadUnlocks().fighter && localStorage.getItem('podracer.craft') === 'fighter'; } catch (e) { return false; } };
+  // 🐶🐱 the animal mobiles: quick and nimble, but the starfighter is still the fastest
+  const MOBILE_STATS = { bedomobile: { top: 1.12, accel: 1.5, turn: 1.35, boost: 1.7, dur: 1.8, armor: 4 }, cutesmobile: { top: 1.12, accel: 1.35, turn: 1.5, boost: 1.7, dur: 1.8, armor: 4 } };
+  const mobileOn = () => { try { const c = localStorage.getItem('podracer.craft'), u = loadUnlocks(); return (c === 'bedomobile' && u.bedo) || (c === 'cutesmobile' && u.cutes) ? c : null; } catch (e) { return null; } };
   function podLook(i) {
     const base = PODS[i] || PODS[0], c = loadPaint()[i] || {}, up = loadUps()[i] || {};
     const tuned = {}; for (const u of UPGRADES) if (u.stat) tuned[u.stat] = base[u.stat] * (1 + u.per * Math.min(UP_MAX, up[u.k] || 0));
-    return Object.assign({}, base, tuned, { armor: Math.min(UP_MAX, up.armor || 0), ups: up }, fighterOn() ? FIGHTER_STATS : {}, {
+    return Object.assign({}, base, tuned, { armor: Math.min(UP_MAX, up.armor || 0), ups: up }, fighterOn() ? FIGHTER_STATS : mobileOn() ? MOBILE_STATS[mobileOn()] : {}, {
       band: c.band || base.band, binder: c.binder || base.binder, glow: c.glow || base.glow,
       finish: c.finish || (base.dark ? 'dark' : 'light'), pattern: c.pattern || 'plain', number: c.number || String(i + 1).padStart(2, '0'),
       helmet: c.helmet || '#d8cbb0', nick: (c.nick || '').slice(0, 14) });
@@ -1519,6 +1523,7 @@
   };
   const pickedCraft = () => { try { return localStorage.getItem('podracer.craft') || 'pod'; } catch (e) { return 'pod'; } };
   let FIGHTER = !!loadUnlocks().fighter && pickedCraft() === 'fighter';
+  let MOBILE = mobileOn();                                      // 'bedomobile' / 'cutesmobile' / null
   const MOON = hasName('moon');                                 // 🌙 low gravity: huge floaty jumps
   const RAINBOW = hasName('rainbow') || !!(CUSTOM && CUSTOM.dream);
   if (CUSTOM && CUSTOM.dream) document.body.classList.add('dream');   // 🐶💭 HUD text stays readable on the pastel world                           // 🌈 a rainbow energy beam between your engines
@@ -2269,7 +2274,7 @@
       ctx.fillStyle = ctx.strokeStyle; ctx.font = `bold ${12 * DPR}px Menlo, monospace`; ctx.textAlign = 'center';
       ctx.fillText(missilesLeft > 0 ? (k >= 1 ? 'LOCK' : 'LOCKING') : 'EMPTY', x, y - r - 6 * DPR);
     }
-    const inv = ctx.getTransform().inverse(), fg = FIGHTER && fighterGuns && fighterGuns.length === 2 ? fighterGuns.map(([x, y]) => { const q = inv.transformPoint(new DOMPoint(x, y)); return [q.x, q.y]; }) : null;   // 🚀 starfighter: from the wing cannons
+    const inv = ctx.getTransform().inverse(), fg = (FIGHTER || MOBILE) && fighterGuns && fighterGuns.length === 2 ? fighterGuns.map(([x, y]) => { const q = inv.transformPoint(new DOMPoint(x, y)); return [q.x, q.y]; }) : null;   // 🚀 starfighter: from the wing cannons
     const engY = H * 0.57, lx = fg ? fg[0][0] : W / 2 - W * 0.13, rx = fg ? fg[1][0] : W / 2 + W * 0.13, ly = fg ? fg[0][1] : engY, ry = fg ? fg[1][1] : engY;
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     for (const b of beams) {
@@ -3680,7 +3685,85 @@
     c.fillStyle = 'rgba(255,255,255,.8)'; for (let k = 0; k < 18; k++) c.fillRect((k * 53) % w, (k * 29) % (h * .7), 1, 1);
     drawFighterShape(c, w / 2, h * .58, w * .17, { t: performance.now() / 1000, L: .6, R: .6, helmet: '#e9eef5' });
   }
+  // 🐶 THE BEDO MOBILE / 🐱 THE MISTER CUTES MOBILE: a hover-car shaped like the animal, seen from behind
+  function drawMobileShape(c, cx, cy, s, kind, o) {
+    const t = o.t, dog = kind === 'bedomobile', sp = o.sp || 0;
+    const body = dog ? '#f0c24e' : '#f39a3c', dark = dog ? '#d29a2e' : '#c96a1e', light = dog ? '#fbe08e' : '#ffd9a8';
+    c.save(); c.translate(cx, cy); c.rotate(o.roll || 0);
+    // hover glow underneath
+    c.globalCompositeOperation = 'lighter';
+    const hg = c.createRadialGradient(0, s * .7, 0, 0, s * .7, s * 1.8); hg.addColorStop(0, dog ? 'rgba(255,220,120,.55)' : 'rgba(255,170,90,.55)'); hg.addColorStop(1, 'rgba(255,200,120,0)');
+    c.fillStyle = hg; c.beginPath(); c.ellipse(0, s * .7, s * 1.8, s * .35, 0, 0, 7); c.fill();
+    c.globalCompositeOperation = 'source-over';
+    // ears: floppy dog ears hanging off the sides, or pointy cat ears standing up
+    if (dog) for (const sd of [-1, 1]) {
+      c.save(); c.translate(sd * s * 1.45, -s * .2); c.rotate(sd * (0.25 + sp * 0.6 + Math.sin(t * (6 + sp * 12)) * (0.1 + sp * 0.25)));
+      c.fillStyle = dark; c.beginPath(); c.ellipse(sd * s * .25, s * .35, s * .32, s * .6, sd * .2, 0, 7); c.fill();
+      c.fillStyle = '#f7a8b4'; c.beginPath(); c.ellipse(sd * s * .27, s * .4, s * .15, s * .35, sd * .2, 0, 7); c.fill(); c.restore();
+    } else for (const sd of [-1, 1]) {
+      c.fillStyle = body; c.beginPath(); c.moveTo(sd * s * .75, -s * .3); c.lineTo(sd * s * 1.25, -s * 1.15); c.lineTo(sd * s * 1.5, -s * .3); c.closePath(); c.fill();
+      c.fillStyle = '#f7a8b4'; c.beginPath(); c.moveTo(sd * s * .9, -s * .33); c.lineTo(sd * s * 1.24, -s * .92); c.lineTo(sd * s * 1.38, -s * .33); c.closePath(); c.fill();
+    }
+    // the body: a big rounded shell
+    const g = c.createLinearGradient(0, -s * .4, 0, s * .6); g.addColorStop(0, light); g.addColorStop(.45, body); g.addColorStop(1, dark);
+    c.fillStyle = g; c.beginPath(); c.moveTo(-s * 1.6, s * .1); c.quadraticCurveTo(-s * 1.65, -s * .4, -s * 1.1, -s * .42); c.lineTo(s * 1.1, -s * .42); c.quadraticCurveTo(s * 1.65, -s * .4, s * 1.6, s * .1);
+    c.lineTo(s * 1.45, s * .55); c.quadraticCurveTo(0, s * .7, -s * 1.45, s * .55); c.closePath(); c.fill();
+    if (!dog) { c.fillStyle = dark; for (const x of [-1.15, -.75, .75, 1.15]) { c.beginPath(); c.moveTo(s * x - s * .06, -s * .4); c.quadraticCurveTo(s * x + s * .08, s * .05, s * x - s * .04, s * .5); c.lineTo(s * x + s * .06, s * .5); c.quadraticCurveTo(s * x + s * .18, s * .05, s * x + s * .06, -s * .4); c.fill(); } }   // tabby stripes
+    else { c.fillStyle = light; for (const [x, y, r] of [[-1.1, .1, .16], [1.05, .2, .12], [-.6, .38, .1]]) { c.beginPath(); c.arc(s * x, s * y, s * r, 0, 7); c.fill(); } }   // fluffy light patches
+    // rear lights: pink paw prints (dog) or glowing green cat eyes (cat)
+    for (const sd of [-1, 1]) {
+      const x = sd * s * 1.0, y = s * .22, glow = 0.7 + 0.3 * Math.sin(t * 6 + sd);
+      if (dog) { c.fillStyle = `rgba(255,110,150,${glow})`; c.beginPath(); c.ellipse(x, y + s * .05, s * .13, s * .1, 0, 0, 7); c.fill(); for (const [dx, dy] of [[-.13, -.12], [0, -.17], [.13, -.12]]) { c.beginPath(); c.arc(x + s * dx, y + s * dy, s * .05, 0, 7); c.fill(); } }
+      else { c.fillStyle = `rgba(140,255,110,${glow})`; c.beginPath(); c.ellipse(x, y, s * .17, s * .11, 0, 0, 7); c.fill(); c.fillStyle = '#1a1410'; c.beginPath(); c.ellipse(x, y, s * .03, s * .1, 0, 0, 7); c.fill(); }
+      if (!dog) { c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = Math.max(1, s * .025); for (const dy of [-.08, 0, .08]) { c.beginPath(); c.moveTo(sd * s * 1.5, s * (.15 + dy)); c.lineTo(sd * s * 1.95, s * (.1 + dy * 2)); c.stroke(); } }   // whisker light-bars
+    }
+    // twin exhausts: bones for Bedo, fish for Mister Cutes, glowing with the throttle
+    for (const [sd, th] of [[-1, o.L], [1, o.R]]) {
+      const x = sd * s * .38, y = s * .48;
+      c.globalCompositeOperation = 'lighter';
+      const eg = c.createRadialGradient(x, y + s * .1, 0, x, y + s * .1, s * (.3 + th * .35 + (o.boost || 0) * .4)); eg.addColorStop(0, 'rgba(255,255,230,.9)'); eg.addColorStop(.35, dog ? 'rgba(120,200,255,.7)' : 'rgba(255,150,220,.7)'); eg.addColorStop(1, 'rgba(120,200,255,0)');
+      c.fillStyle = eg; c.beginPath(); c.arc(x, y + s * .1, s * (.3 + th * .35 + (o.boost || 0) * .4), 0, 7); c.fill(); c.globalCompositeOperation = 'source-over';
+      c.fillStyle = '#f4efe6';
+      if (dog) { c.fillRect(x - s * .14, y - s * .04, s * .28, s * .08); for (const ex of [-.14, .14]) for (const ey of [-.05, .05]) { c.beginPath(); c.arc(x + s * ex, y + s * ey, s * .055, 0, 7); c.fill(); } }
+      else { c.beginPath(); c.ellipse(x, y, s * .15, s * .07, 0, 0, 7); c.fill(); c.beginPath(); c.moveTo(x + sd * s * .12, y); c.lineTo(x + sd * s * .24, y - s * .07); c.lineTo(x + sd * s * .24, y + s * .07); c.closePath(); c.fill(); c.fillStyle = '#1a1410'; c.beginPath(); c.arc(x - sd * s * .08, y - s * .01, s * .02, 0, 7); c.fill(); }
+    }
+    // name plate
+    c.fillStyle = 'rgba(30,20,10,.8)'; c.fillRect(-s * .32, s * .15, s * .64, s * .17);
+    c.fillStyle = '#fff'; c.font = `bold ${Math.max(6, s * .13)}px Menlo, monospace`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(dog ? 'BEDO' : 'CUTES', 0, s * .24); c.textBaseline = 'alphabetic';
+    // the open cockpit on top
+    c.fillStyle = '#3a2416'; c.beginPath(); c.ellipse(0, -s * .38, s * .62, s * .14, 0, 0, 7); c.fill();
+    // wagging tail / curly cat tail sticking up at the back
+    const wag = Math.sin(t * (dog ? 14 : 4));
+    c.strokeStyle = dark; c.lineCap = 'round'; c.lineWidth = s * .12; c.beginPath(); c.moveTo(s * .95, -s * .35);
+    if (dog) c.quadraticCurveTo(s * (1.2 + wag * .1), -s * .8, s * (1.05 + wag * .25), -s * 1.05);
+    else c.bezierCurveTo(s * 1.3, -s * .7, s * (1.6 + wag * .1), -s * 1.1, s * (1.3 + wag * .12), -s * 1.25);
+    c.stroke(); c.lineCap = 'butt';
+    if (o.guns) for (const sd of [-1, 1]) {                    // little laser cannons on the sides
+      c.fillStyle = '#2b2c33'; c.beginPath(); c.arc(sd * s * 1.45, -s * .12, s * .09, 0, 7); c.fill();
+      c.fillStyle = 'rgba(255,80,60,.95)'; c.beginPath(); c.arc(sd * s * 1.45, -s * .12, s * .045, 0, 7); c.fill();
+      const q = c.getTransform().transformPoint(new DOMPoint(sd * s * 1.45, -s * .12)); o.guns.push([q.x, q.y]);
+    }
+    c.restore();
+  }
+  function drawMobilePortrait(cv, kind) {
+    const c = cv.getContext('2d'), w = cv.width, h = cv.height;
+    const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, kind === 'bedomobile' ? '#3a2c10' : '#3a2010'); g.addColorStop(1, '#1a0e06'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    drawMobileShape(c, w / 2, h * .6, w * .17, kind, { t: performance.now() / 1000, L: .6, R: .6 });
+    if (kind === 'bedomobile') { c.fillStyle = '#f0c24e'; c.beginPath(); c.arc(w / 2, h * .6 - w * .17 * .55, w * .07, 0, 7); c.fill(); c.fillStyle = '#d29a2e'; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(w / 2 + sd * w * .065, h * .6 - w * .17 * .45, w * .025, w * .05, sd * .3, 0, 7); c.fill(); } }
+    else catHead(c, w / 2, h * .6 - w * .17 * .5, w * .1, w * .05, { face: false });
+  }
   function drawPod(hor) {
+    if (MOBILE) {                                                // 🐶🐱 driving the animal mobile
+      const t = performance.now() / 1000, shake = (speed / MAX_KMH) * 1.5 * DPR, s = W * .08;
+      const mx = W / 2 + (Math.random() - .5) * shake, my = H * .8 + Math.sin(t * 2.4) * 3 * DPR + (Math.random() - .5) * shake, roll = Math.max(-0.25, Math.min(0.25, -yawRate * 0.18));
+      drawMobileShape(ctx, mx, my, s, MOBILE, { t, L, R, boost: boostVis, roll, sp: Math.min(1, speed / MAX_KMH), guns: (fighterGuns = []) });
+      ctx.save(); ctx.translate(mx, my); ctx.rotate(roll); ctx.translate(-mx, -my);   // the driver sits in the open cockpit
+      const ckY = my - s * .4, ckW = s * .95;
+      if (DOG_DRIVER) drawDogDriver(mx, ckY, ckW, t); else if (CAT_DRIVER) drawCatDriver(mx, ckY, ckW, t);
+      else { ctx.fillStyle = POD.helmet || '#d8cbb0'; ctx.beginPath(); ctx.arc(mx, ckY - H * .012, ckW * .23, 0, 7); ctx.fill(); }
+      ctx.restore();
+      return;
+    }
     if (FIGHTER) {                                               // 🚀 flying the starfighter instead of the pod
       const t = performance.now() / 1000, shake = (speed / MAX_KMH) * 1.5 * DPR;
       drawFighterShape(ctx, W / 2 + (Math.random() - .5) * shake, H * .8 + Math.sin(t * 2.2) * 3 * DPR + (Math.random() - .5) * shake, W * .085,
@@ -4153,12 +4236,12 @@
     const grid = document.getElementById('podGrid'); grid.innerHTML = '';
     PODS.forEach((pod, i) => {
       const locked = i >= unlocks.pods, d = document.createElement('div');
-      d.className = 'pcard' + (i === podIdx && !FIGHTER ? ' sel' : '') + (locked ? ' locked' : '');
+      d.className = 'pcard' + (i === podIdx && !FIGHTER && !MOBILE ? ' sel' : '') + (locked ? ' locked' : '');
       const cv = document.createElement('canvas'); cv.width = 160; cv.height = 84; podPreview(cv, locked ? pod : podLook(i));
       d.appendChild(cv);
       const nm = document.createElement('div'); nm.textContent = locked ? '???' : pod.name; nm.style.marginTop = '4px'; d.appendChild(nm);
       if (locked) { const lk = document.createElement('div'); lk.className = 'lock'; lk.textContent = '🔒'; d.appendChild(lk); }
-      d.onclick = () => { if (!locked) { if (FIGHTER) { FIGHTER = false; try { localStorage.setItem('podracer.craft', 'pod'); } catch (e) {} } selectPod(i); } };
+      d.onclick = () => { if (!locked) { if (FIGHTER || MOBILE) { FIGHTER = false; MOBILE = null; try { localStorage.setItem('podracer.craft', 'pod'); } catch (e) {} POD = podLook(podIdx); } selectPod(i); } };
       grid.appendChild(d);
     });
     if (loadUnlocks().bedo) {                                   // 🐶 Bedo's own card, right next to Neon Storm
@@ -4200,12 +4283,26 @@
       d.onclick = () => { const nb = !on; try { localStorage.setItem('podracer.driver', nb ? 'cutes' : 'pilot'); } catch (e) {} CAT_DRIVER = CUTES_LEVEL || nb; if (nb) DOG_DRIVER = false; else DOG_DRIVER = BEDO_LEVEL; if (nb) try { meow(1.1); } catch (e) {} renderMenu(); };
       grid.appendChild(d);
     }
+    for (const [kind, need, title, who] of [['bedomobile', 'bedo', '🐶 Bedo Mobile', 'bedo'], ['cutesmobile', 'cutes', '🐱 Cutes Mobile', 'cutes']]) {   // 🚗 the animal mobiles
+      if (!loadUnlocks()[need]) continue;
+      const on = MOBILE === kind, d = document.createElement('div'); d.className = 'pcard mobile ' + (on ? ' sel' : '');
+      const cv = document.createElement('canvas'); cv.width = 160; cv.height = 84; drawMobilePortrait(cv, kind); d.appendChild(cv);
+      const nm = document.createElement('div'); nm.textContent = on ? title + ' · driving' : title; nm.style.marginTop = '4px'; d.appendChild(nm);
+      d.title = on ? 'Click to go back to your pod' : `Click to drive the ${title.slice(3)} (${who === 'bedo' ? 'Bedo' : 'Mister Cutes'} hops in!)`;
+      d.onclick = () => {
+        MOBILE = on ? null : kind; FIGHTER = false;
+        try { localStorage.setItem('podracer.craft', MOBILE || 'pod'); if (MOBILE) localStorage.setItem('podracer.driver', who); } catch (e) {}
+        if (MOBILE) { DOG_DRIVER = who === 'bedo'; CAT_DRIVER = who === 'cutes'; try { who === 'bedo' ? bark(1.1) : meow(1.1); } catch (e) {} }
+        POD = podLook(podIdx); renderMenu();
+      };
+      grid.appendChild(d);
+    }
     if (loadUnlocks().fighter) {                                // 🚀 the starfighter's card (name yourself Anakin to get it)
       const d = document.createElement('div'); d.className = 'pcard fighter' + (FIGHTER ? ' sel' : '');
       const cv = document.createElement('canvas'); cv.width = 160; cv.height = 84; drawFighterPortrait(cv); d.appendChild(cv);
       const nm = document.createElement('div'); nm.textContent = FIGHTER ? '🚀 Starfighter · flying · FASTEST' : '🚀 Starfighter · FASTEST'; nm.style.marginTop = '4px'; d.appendChild(nm);
       d.title = FIGHTER ? 'Click to go back to your pod' : 'Click to fly the starfighter';
-      d.onclick = () => { FIGHTER = !FIGHTER; try { localStorage.setItem('podracer.craft', FIGHTER ? 'fighter' : 'pod'); } catch (e) {} POD = podLook(podIdx); if (FIGHTER) try { chime(); } catch (e) {} renderMenu(); };
+      d.onclick = () => { FIGHTER = !FIGHTER; MOBILE = null; try { localStorage.setItem('podracer.craft', FIGHTER ? 'fighter' : 'pod'); } catch (e) {} POD = podLook(podIdx); if (FIGHTER) try { chime(); } catch (e) {} renderMenu(); };
       grid.appendChild(d);
     }
     const hs = document.createElement('div'); hs.className = 'hidespot'; hs.title = ''; hs.onclick = openScramble; grid.appendChild(hs);   // 📜 the empty space next to Neon Storm
