@@ -1701,7 +1701,7 @@
     sc.br = [];
     for (let k = 0; k <= KM; k++) {
       const m = segments[(sc.entry + k) % segments.length], q = sc.segs[Math.min(k, sc.segs.length - 1)];
-      sc.br.push({ off: side * ROAD_W * (1.75 + 0.1 * k) + (xs - xm), dy: (q.y - base) - (m.y - g0.y), q });
+      sc.br.push({ off: side * ROAD_W * (2.15 + 0.1 * k) + (xs - xm), dy: (q.y - base) - (m.y - g0.y), q });
       xm += dxm; dxm += m.curve; xs += dxs; dxs += q.curve;
     }
     for (let k = -2; k < KM; k++) segments[(sc.entry + k + segments.length) % segments.length].br = { sc, k: Math.max(0, k) };
@@ -2477,22 +2477,22 @@
     const fogAt = d => Math.min(0.85, Math.pow(d / (DRAW * SEG), 1.6));
     paintLoop(L, loopQuads(L, -1.2, 2 * Math.PI + 2.4, 150), proj3, fogAt, C);
   }
-  function drawBranch(br, p1, p2, sg, fog) {                  // 🛣 one slice of a shortcut road as seen from the main track: real 3D, its own curves, walls, ramp and gap
+  function drawBranch(br, p1, p2, sg, fog, alt) {                  // 🛣 one slice of a shortcut road as seen from the main track: real 3D, its own curves, walls, ramp and gap
     const sc = br.sc, k = br.k, A = sc.br[k], B = sc.br[Math.min(k + 1, sc.br.length - 1)];
     if (!A || p1.cz <= 10) return;
-    const side = sc.side, cave = sc.cave, hw = ROAD_W * 0.85, ww = ROAD_W * 1.15;
+    const side = sc.side, cave = sc.cave, hw = ROAD_W, ww = ROAD_W * 1.6;
     const X = (p, b, o) => p.x + (b.off + o) / ROAD_W * p.w, Y = (p, b, up) => p.y - p.scale * (b.dy + up) * H / 2;
     const q = A.q, rock = cave ? [74, 52, 70] : [178, 96, 56], rockD = cave ? [52, 36, 52] : [146, 74, 44];
-    // the road (or the gap you jump)
-    const road = q.chasm ? [24, 12, 8] : cave ? (k & 1 ? [58, 46, 60] : [52, 40, 54]) : (k & 1 ? [120, 74, 48] : [112, 68, 44]);
-    poly([X(p1, A, -hw), Y(p1, A, 0), X(p1, A, hw), Y(p1, A, 0), X(p2, B, hw), Y(p2, B, 0), X(p2, B, -hw), Y(p2, B, 0)], fogMix(road, fog));
-    if (!q.chasm && !cave && (k >> 1) % 2) poly([X(p1, A, -hw * 0.05), Y(p1, A, 0), X(p1, A, hw * 0.05), Y(p1, A, 0), X(p2, B, hw * 0.05), Y(p2, B, 0), X(p2, B, -hw * 0.05), Y(p2, B, 0)], fogMix([240, 226, 196], fog));   // centre dashes
-    if (!q.chasm && k % 3 === 0 && !(q.ramp && q.ramp.chasm)) {   // glowing arrows that show which way the shortcut turns
-      const t = 0.5 + 0.5 * Math.sin(performance.now() / 160 - k * 0.7), col = cave ? [190, 140, 255] : [255, 210, 60];
-      const nx = X(p2, B, 0), ny = Y(p2, B, 0);
-      poly([X(p1, A, -hw * 0.55), Y(p1, A, 0), nx, ny, X(p1, A, hw * 0.55), Y(p1, A, 0), X(p1, A, 0), Y(p1, A, 0) - (Y(p1, A, 0) - ny) * 0.45], fogMix(col.map(v => v * (0.65 + 0.35 * t) | 0), fog * 0.7));
+    // the road, painted exactly like the main road: same width, same rumble stripes, same surface, same centre line
+    const rumble = cave ? (alt ? [60, 40, 30] : [110, 84, 60]) : THEME.swamp ? (alt ? [88, 70, 40] : [132, 116, 72]) : alt ? [140, 60, 30] : [236, 220, 190];
+    const surf = cave ? (alt ? [92, 66, 50] : [86, 62, 46]) : THEME.swamp ? (alt ? [112, 92, 60] : [104, 86, 56]) : THEME.forest ? (alt ? [150, 114, 72] : [142, 106, 66]) : alt ? [196, 140, 92] : [188, 132, 86];
+    const rr = ROAD_W * 1.12;
+    if (q.chasm) poly([X(p1, A, -rr), Y(p1, A, 0), X(p1, A, rr), Y(p1, A, 0), X(p2, B, rr), Y(p2, B, 0), X(p2, B, -rr), Y(p2, B, 0)], fogMix([24, 12, 8], fog));
+    else {
+      poly([X(p1, A, -rr), Y(p1, A, 0), X(p1, A, rr), Y(p1, A, 0), X(p2, B, rr), Y(p2, B, 0), X(p2, B, -rr), Y(p2, B, 0)], fogMix(rumble, fog));
+      poly([X(p1, A, -hw), Y(p1, A, 0), X(p1, A, hw), Y(p1, A, 0), X(p2, B, hw), Y(p2, B, 0), X(p2, B, -hw), Y(p2, B, 0)], fogMix(surf, fog));
+      if (alt) poly([X(p1, A, -ROAD_W * 0.03), Y(p1, A, 0), X(p1, A, ROAD_W * 0.03), Y(p1, A, 0), X(p2, B, ROAD_W * 0.03), Y(p2, B, 0), X(p2, B, -ROAD_W * 0.03), Y(p2, B, 0)], fogMix([240, 215, 170], fog));
     }
-    if (!q.chasm) for (const e of [-1, 1]) poly([X(p1, A, e * hw), Y(p1, A, 0), X(p1, A, e * hw * 0.9), Y(p1, A, 0), X(p2, B, e * hw * 0.9), Y(p2, B, 0), X(p2, B, e * hw), Y(p2, B, 0)], fogMix(k & 1 ? [230, 70, 46] : [240, 236, 226], fog));   // rumble edges
     if (q.ramp && q.ramp.chasm) {                              // the striped jump ramp, rising towards the gap
       const r = q.ramp, u1 = r.h1, u2 = r.h2;
       poly([X(p1, A, -hw), Y(p1, A, u1), X(p1, A, hw), Y(p1, A, u1), X(p2, B, hw), Y(p2, B, u2), X(p2, B, -hw), Y(p2, B, u2)], fogMix(r.j & 1 ? [250, 245, 235] : [214, 54, 36], fog));
@@ -2897,7 +2897,7 @@
           ctx.fillStyle = g; ctx.beginPath(); ctx.arc(lx, p1.y - lr, lr * 5, 0, 7); ctx.fill();
         }
       }
-      if (T.main && sg.br) drawBranch(sg.br, p1, p2, sg, fog);   // 🛣 the shortcut's own road, curving away through the gap
+      if (T.main && sg.br) drawBranch(sg.br, p1, p2, sg, fog, alt);   // 🛣 the shortcut's own road, curving away through the gap
       // canyon walls
       if (sg.canyon || sg.mesaSide) {
         const nx = segFor(idx + 1);
