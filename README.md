@@ -35,7 +35,9 @@ up to an exact copy of you and your pod — and at level 50 they learn that trac
 Open **＋ LEVEL EDITOR** in the track menu to build your own track from sections — straights, turns, climbs and drops,
 canyons with arches, tunnels, rivers (slow you down) or swamp water (full speed), ramp jumps and rock fields — in any of the
 five worlds, with 1–9 laps. A live map and height profile show the track as you build it. Your levels appear as cards in
-the menu and race with the AI rivals, ghosts and standings like the built-in tracks. **⧉ SHARE CODE** gives a code
+the menu and race with the AI rivals, ghosts and standings like the built-in tracks. **🎢 BUILD IN 3D** lets you build Planet Coaster-style: pick the next piece's length, turn (22°/45°/90°), slope and type,
+see it glow at the end of the track in 3D, and press Enter to place it (Backspace to undo).
+**⧉ SHARE CODE** gives a code
 (starting with `POD1:`) a friend can paste into **⇩ IMPORT CODE**.
 
 **AI smartness** — a slider in the menu sets the rivals' level yourself on each track (0–50; at 50 they know the shortcuts).
