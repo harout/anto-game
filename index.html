@@ -2465,6 +2465,56 @@
     const fogAt = d => Math.min(0.85, Math.pow(d / (DRAW * SEG), 1.6));
     paintLoop(L, loopQuads(L, -1.2, 2 * Math.PI + 2.4, 150), proj3, fogAt, C);
   }
+  function drawOpening(sg, side, p1, p2, x1, x2, h1, h2, fog) {   // 🚪 look through the wall: sunlit slot with the jump ramp, or a cave with crystals
+    const gs = sg.gapSc, L = gs.gapLen, k = sg.i - gs.entry, f = (k + 0.5) / L, f2 = Math.min(1, (k + 1.5) / L);
+    const css = (c, ff) => fogMix(c, ff);
+    if (gs.cave) {                                              // 🦇 an arched cave mouth
+      const arch = t => 0.78 * Math.sqrt(Math.max(0, Math.sin(Math.PI * Math.min(1, Math.max(0, t))))), o1 = arch(f), o2 = arch(f2);
+      if (o1 <= 0.01 && o2 <= 0.01) return;
+      const yt1 = p1.y - h1 * o1, yt2 = p2.y - h2 * o2, g = ctx.createLinearGradient(0, Math.min(yt1, yt2), 0, p1.y);
+      g.addColorStop(0, css([14, 8, 20], fog * 0.6)); g.addColorStop(0.55, css([44, 24, 66], fog * 0.6)); g.addColorStop(1, css([70, 46, 60], fog * 0.6));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x1, p1.y); ctx.lineTo(x1, yt1); ctx.lineTo(x2, yt2); ctx.lineTo(x2, p2.y); ctx.closePath(); ctx.fill();
+      if (k % 2 === 0) poly([x1, yt1, (x1 + x2) / 2, yt1 + h1 * (0.09 + 0.05 * ((sg.i * 5) % 3)), x2, yt2], css([96, 70, 60], fog * 0.7));   // stalactites
+      if (k % 5 === 2) {                                        // glowing crystals deep inside
+        const cx = (x1 + x2) / 2, cy = p1.y - h1 * 0.18, cr = Math.max(2, p1.scale * 220 * W / 2), hue = (sg.i % 2) ? '150,90,255' : '80,220,255';
+        const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr * 3); rg.addColorStop(0, `rgba(${hue},${0.9 * (1 - fog)})`); rg.addColorStop(1, `rgba(${hue},0)`);
+        ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(cx, cy, cr * 3, 0, 7); ctx.fill();
+        poly([cx - cr * 0.5, cy + cr, cx, cy - cr * 1.4, cx + cr * 0.5, cy + cr], `rgba(${hue},${0.95 * (1 - fog)})`);
+      }
+      ctx.strokeStyle = css([200, 130, 90], fog); ctx.lineWidth = Math.max(1, p1.scale * 30 * W / 2 * 0.05);   // sunlit rock lip round the arch
+      ctx.beginPath(); ctx.moveTo(x1, yt1); ctx.lineTo(x2, yt2); ctx.stroke();
+      return;
+    }
+    // 🏜 a slot canyon (or the rim-road notch): a bright passage with sky above, sand below, and the jump ramp around the bend
+    const top = t => 0.86 - 0.05 * ((Math.floor(t * L) * 7) % 3), o1 = top(f), o2 = top(f2), yt1 = p1.y - h1 * o1, yt2 = p2.y - h2 * o2;
+    const sky = NIGHT ? [30, 36, 70] : [255, 226, 180], warm = NIGHT ? [70, 50, 60] : [236, 150, 90], sand = NIGHT ? [60, 46, 40] : [214, 160, 104];
+    const g = ctx.createLinearGradient(0, Math.min(yt1, yt2), 0, p1.y);
+    g.addColorStop(0, css(sky, fog * 0.5)); g.addColorStop(0.45, css(warm, fog * 0.6)); g.addColorStop(0.8, css([188, 104, 60], fog * 0.6)); g.addColorStop(1, css(sand, fog * 0.6));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x1, p1.y); ctx.lineTo(x1, yt1); ctx.lineTo(x2, yt2); ctx.lineTo(x2, p2.y); ctx.closePath(); ctx.fill();
+    const fh1 = h1 * (gs.rim ? 0.08 + 0.45 * f : 0.12), fh2 = h2 * (gs.rim ? 0.08 + 0.45 * f2 : 0.12);   // the floor (climbing, for the rim road)
+    if (!gs.rim) {                                              // the far wall of the slot, lit by the sun, with its own rock layers
+      const bw1 = h1 * 0.58, bw2 = h2 * 0.58;
+      poly([x1, p1.y - fh1, x1, p1.y - bw1, x2, p2.y - bw2, x2, p2.y - fh2], css([206, 122, 78], fog * 0.6));
+      for (const [a, b, c] of [[0.2, 0.26, [236, 170, 120]], [0.36, 0.4, [178, 92, 56]], [0.47, 0.52, [244, 196, 150]]]) poly([x1, p1.y - h1 * a, x1, p1.y - h1 * b, x2, p2.y - h2 * b, x2, p2.y - h2 * a], css(c, fog * 0.6));
+      const sh = ctx.createLinearGradient(x1, 0, x2, 0); sh.addColorStop(0, `rgba(60,24,10,${0.35 * (1 - fog)})`); sh.addColorStop(1, 'rgba(60,24,10,0)');   // shadow just inside the cut
+      if (k < 3) { ctx.fillStyle = sh; ctx.beginPath(); ctx.moveTo(x1, p1.y); ctx.lineTo(x1, yt1); ctx.lineTo(x2, yt2); ctx.lineTo(x2, p2.y); ctx.closePath(); ctx.fill(); }
+    }
+    poly([x1, p1.y, x1, p1.y - fh1, x2, p2.y - fh2, x2, p2.y], css(gs.rim ? [150, 90, 56] : sand, fog * 0.6));
+    const r0 = Math.floor(L * 0.4), r1 = Math.floor(L * 0.85);
+    if (!gs.rim && !gs.path && k >= r0 && k < r1) {             // the red-and-white jump ramp rising along the floor, around the bend
+      const t1 = (k - r0) / (r1 - r0), t2 = (k + 1 - r0) / (r1 - r0), rh1 = h1 * 0.28 * t1, rh2 = h2 * 0.28 * t2;
+      poly([x1, p1.y - fh1, x1, p1.y - fh1 - rh1, x2, p2.y - fh2 - rh2, x2, p2.y - fh2], css(k % 2 ? [250, 245, 235] : [214, 54, 36], fog * 0.5));
+      if (k === r1 - 1) { ctx.fillStyle = `rgba(255,220,120,${0.9 * (1 - fog)})`; ctx.font = `bold ${Math.max(6, h1 * 0.07)}px Menlo, monospace`; ctx.textAlign = 'center'; ctx.fillText('JUMP!', (x1 + x2) / 2, p1.y - fh1 - rh1 - h1 * 0.05); }
+    }
+    if (gs.rim && k % 3 === 0) { ctx.strokeStyle = css([255, 236, 190], fog * 0.5); ctx.lineWidth = Math.max(1, p1.scale * 30 * W / 2 * 0.03); ctx.beginPath(); ctx.moveTo(x1, p1.y - fh1 * 0.5); ctx.lineTo(x2, p2.y - fh2 * 0.5); ctx.stroke(); }   // dashes up the rim road
+    if (k === 0 || k === L - 1) {                               // thick sunlit rock edges where the wall is cut
+      ctx.strokeStyle = css([226, 150, 100], fog * 0.8); ctx.lineWidth = Math.max(2, p1.scale * 30 * W / 2 * 0.09);
+      const xe = k === 0 ? x1 : x2, ye = k === 0 ? p1.y : p2.y, yt = k === 0 ? yt1 : yt2;
+      ctx.beginPath(); ctx.moveTo(xe, ye); ctx.lineTo(xe, yt); ctx.stroke();
+    }
+    ctx.strokeStyle = css([120, 60, 36], fog * 0.8); ctx.lineWidth = Math.max(1, p1.scale * 30 * W / 2 * 0.04);   // ragged rock lip along the top
+    ctx.beginPath(); ctx.moveTo(x1, yt1); ctx.lineTo(x2, yt2); ctx.stroke();
+  }
   function drawWallStyle(ws, side, sg, p1, p2, x1, x2, h1, h2, fog) {   // 🧱 the details that make each wall style look different
     const band = (f0, f1, c) => poly([x1, p1.y - h1 * f0, x1, p1.y - h1 * f1, x2, p2.y - h2 * f1, x2, p2.y - h2 * f0], fogMix(side < 0 ? c : c.map(v => v * 0.86), fog * 0.85));
     if (ws.bands) for (const [f0, f1, c] of ws.bands) band(f0, f1, c);
@@ -2824,13 +2874,7 @@
             g.addColorStop(0, `rgba(170,240,255,${0.95 * (1 - fog)})`); g.addColorStop(.25, `rgba(80,190,255,${0.5 * (1 - fog)})`); g.addColorStop(1, 'rgba(40,120,255,0)');
             ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x1, cy, cr * 4, 0, 7); ctx.fill();
           }
-          if (T.main && sg.gap === side) {                     // hidden slot-canyon opening
-            poly([x1, p1.y, x1, p1.y - h1 * 0.7, x2, p2.y - h2 * 0.7, x2, p2.y], fogMix([30, 14, 8], fog * 0.6));
-            const gr = Math.max(2, p1.scale * 150 * W / 2), k = sg.i - sg.gapSc.entry;
-            ctx.fillStyle = `rgba(255,160,50,${0.95 * (1 - fog * 0.7)})`;
-            if (k % 3 === 0) { ctx.beginPath(); ctx.arc(x1, p1.y - gr, gr, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(x1, p1.y - h1 * 0.7, gr, 0, 7); ctx.fill(); }
-            if (k === 0) for (const f of [0.15, 0.3, 0.45, 0.6]) { ctx.beginPath(); ctx.arc(x1, p1.y - h1 * f, gr * 1.3, 0, 7); ctx.fill(); }
-          }
+          if (T.main && sg.gap === side) drawOpening(sg, side, p1, p2, x1, x2, h1, h2, fog);   // 🚪 the doorway into the shortcut
           // body of the cliff beyond the face
           poly([x1, p1.y - h1, x1 + side * W * 3, p1.y - h1, x2 + side * W * 3, p2.y - h2, x2, p2.y - h2], fogMix(ws ? wcol(ws, ws.body) : [108, 56, 34], fog * 0.85));
           poly([x1, p1.y, x1 + side * W * 3, p1.y, x1 + side * W * 3, p1.y - h1, x1, p1.y - h1], fogMix(shade, fog * 0.85));
