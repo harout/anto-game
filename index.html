@@ -290,7 +290,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to unlock anything secret">✔ ENTER</button></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -4113,12 +4113,9 @@
     dn.onblur = () => checkAnakin(dn, 2);
     document.getElementById('nameGo').onclick = () => {          // ✔ ENTER: check the name and hand out the starfighter
       try { localStorage.setItem('podracer.driverName', dn.value.slice(0, 14)); } catch (e) {}
-      const had = !!loadUnlocks().fighter;
-      if (isAnakin(dn.value, 2)) {
-        checkAnakin(dn, 2);
-        if (had) { FIGHTER = true; try { localStorage.setItem('podracer.craft', 'fighter'); } catch (e) {} POD = podLook(podIdx); try { chime(); } catch (e) {}
-          showTx('🚀 <b>STARFIGHTER READY!</b><br>Welcome back, Anakin. You are flying the starfighter. Click its card to switch back to your pod.'); renderMenu(); }
-      } else showTx(`✏ <b>Name saved: ${(dn.value.trim() || 'pilot').replace(/[<>&]/g, '').toUpperCase()}</b><br>No secret ship for that name. Try a secret name!`);
+      checkAnakin(dn, 2);
+      const nm = (dn.value.trim() || 'pilot').replace(/[<>&]/g, '').toUpperCase();
+      showTx(`✏ <b>Name saved: ${nm}</b>` + (loadUnlocks().fighter ? '' : '<br>🤫 Want the starfighter? Turn on night mode and LOSE a race with Bedo driving.'));
     };
     if (document.activeElement !== dn && isAnakin(dn.value) && dn.value !== 'Anakin') checkAnakin(dn);
     dn.onkeydown = e => { if (e.key === 'Enter') dn.blur(); };
@@ -4927,11 +4924,7 @@
   function checkAnakin(dn, maxD = 2) {                                    // 🚀 typed Anakin (or close to it)? fix the spelling and unlock the starfighter
     if (!isAnakin(dn.value, maxD) || (maxD < 2 && dn.value.trim().length < 6)) return;
     if (dn.value !== 'Anakin') { dn.value = 'Anakin'; try { localStorage.setItem('podracer.driverName', 'Anakin'); } catch (e) {} }
-    const u = loadUnlocks(); if (u.fighter) return;
-    u.fighter = true; saveUnlocks(u); unlocks = u; FIGHTER = true; try { localStorage.setItem('podracer.craft', 'fighter'); } catch (e) {} POD = podLook(podIdx);
-    try { chime(); } catch (e) {}
-    showTx('🚀 <b>STARFIGHTER UNLOCKED!</b><br>Welcome, Anakin. Your new ship is on the menu next to your pods. Click it to switch between the starfighter and your pod.');
-    dn.blur(); renderMenu();
+    // (the starfighter is now won by LOSING a night race with Bedo driving, see finishRace)
   }
   function selectPod(i) { podIdx = i; POD = podLook(i); try { localStorage.setItem('podracer.pod', String(i)); } catch (e) {} renderMenu(); }
   function openMenu() {
@@ -4997,6 +4990,8 @@
       else if (n + 1 < AI_SHORTCUT_LEVEL) msgs.push(`${AI_SHORTCUT_LEVEL - n - 1} more wins here and they learn the shortcuts`);
       saveUnlocks(unlocks);
     }
+    const youSuck = NIGHT && DOG_DRIVER && myPlace > 1 && !GHOST_MODE;   // 😝 lose a night race with Bedo driving…
+    if (youSuck) { const u = loadUnlocks(); if (!u.fighter) { u.fighter = true; saveUnlocks(u); unlocks = u; msgs.unshift('🚀 STARFIGHTER UNLOCKED! (…as a prize for losing 😝) Pick it on the menu next to your pods'); } }
     document.getElementById('finUnlock').textContent = msgs.join('\n');
     raceState = 'finished'; finishShownAt = performance.now() / 1000;
     const myTime = TOUR ? TOUR.final : raceTime, bestKey = TOUR ? 'podracer.bestTour' : 'podracer.bestRace';
@@ -5011,6 +5006,7 @@
     document.getElementById('finBest').textContent = isBest ? 'NEW BEST RACE!' : `Best race: ${fmtTime(best)}`;
     document.getElementById('finPlace').textContent = `${ordinal(myPlace).toUpperCase()} PLACE`;
     document.getElementById('finPlace').style.color = myPlace === 1 ? '#ffd36b' : '#fff3dc';
+    if (youSuck) { document.getElementById('finPlace').textContent = `😝 YOU SUCK! · ${ordinal(myPlace).toUpperCase()} PLACE`; document.getElementById('finPlace').style.color = '#ff4a3a'; }
     const rows = finishOrder.map((a, i) => `<div><span style="color:rgb(${a.col})">${i + 1}. ${a.name}</span><span>${fmtTime(a.finishTime)}</span></div>`);
     if (GHOST_MODE && prevGhost != null) rows.push(`<div><span style="color:#9fd8ff">👻 Your best before</span><span>${fmtTime(prevGhost)}</span></div>`);
     rows.push(`<div><span style="color:#6fd3ff">${myPlace}. ${driverName() ? escHtml(driverName()) : 'You'}</span><span>${fmtTime(myTime)}</span></div>`);
