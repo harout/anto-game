@@ -296,7 +296,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v106</span></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v107</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -736,6 +736,67 @@
   // ---------- Simulation ----------
   const MAX_KMH = 900;
   // ---------- Pod roster: unlock one new pod per 1st-place win ----------
+
+  // 🚪 50 DRIVE-THROUGH DECORATIONS: [group, name, shape, colours…]  (you drive through, under or into them — no crashing)
+  const THRU = {
+    // 🦴 fossils & skeletons — ribs arching over the road
+    fossil:   ['🦴 Fossils', 'Dinosaur fossil ribcage', 'ribs', { c: [232, 220, 192], d: [170, 150, 118], every: 4, h: 2700 }],
+    whale:    ['🦴 Fossils', 'Whale skeleton', 'ribs', { c: [242, 240, 232], d: [190, 188, 180], every: 3, h: 3200, wide: 1.25 }],
+    tusks:    ['🦴 Fossils', 'Mammoth tusks', 'tusks', { c: [246, 236, 210], d: [200, 180, 140], every: 7, h: 2800 }],
+    dragonbn: ['🦴 Fossils', 'Dragon bones (glowing)', 'ribs', { c: [96, 84, 120], d: [50, 40, 70], glow: [190, 110, 255], every: 4, h: 3000 }],
+    snakebn:  ['🦴 Fossils', 'Giant snake skeleton', 'ribs', { c: [226, 214, 186], d: [160, 140, 110], every: 2, h: 1900 }],
+    // 🍄 giant canopies you drive under
+    toad:     ['🍄 Giant mushrooms & canopies', 'Giant red mushrooms', 'canopy', { cap: [214, 40, 40], dots: [255, 250, 240], stem: [240, 230, 210], h: 2600 }],
+    glowshr:  ['🍄 Giant mushrooms & canopies', 'Glowing blue mushrooms', 'canopy', { cap: [60, 120, 230], dots: [170, 240, 255], stem: [200, 220, 240], h: 2500, glow: [90, 200, 255] }],
+    purpshr:  ['🍄 Giant mushrooms & canopies', 'Purple spotted mushrooms', 'canopy', { cap: [140, 60, 190], dots: [255, 220, 120], stem: [235, 225, 240], h: 2300 }],
+    flowerc:  ['🍄 Giant mushrooms & canopies', 'Giant flowers', 'flower', { cap: [255, 120, 170], mid: [255, 210, 60], stem: [70, 160, 60], h: 2700 }],
+    sunflwr:  ['🍄 Giant mushrooms & canopies', 'Giant sunflowers', 'flower', { cap: [255, 200, 30], mid: [110, 70, 30], stem: [70, 150, 50], h: 3000 }],
+    umbrella: ['🍄 Giant mushrooms & canopies', 'Beach umbrellas', 'umbrella', { cap: [230, 60, 60], cap2: [250, 250, 245], stem: [90, 90, 100], h: 2300 }],
+    palmc:    ['🍄 Giant mushrooms & canopies', 'Leaning palm trees', 'palm', { cap: [60, 150, 60], stem: [150, 110, 70], h: 2800 }],
+    // 🌳 tree tunnels — trees lean in from both sides and meet overhead
+    oaktun:   ['🌳 Tree tunnels', 'Green oak tunnel', 'trees', { leaf: [70, 140, 60], leaf2: [100, 170, 70], bark: [100, 70, 45] }],
+    cherry:   ['🌳 Tree tunnels', 'Cherry blossom tunnel', 'trees', { leaf: [255, 170, 200], leaf2: [255, 210, 225], bark: [110, 70, 60], petals: true }],
+    autumn:   ['🌳 Tree tunnels', 'Autumn maple tunnel', 'trees', { leaf: [220, 100, 30], leaf2: [245, 170, 40], bark: [95, 60, 40] }],
+    snowtun:  ['🌳 Tree tunnels', 'Snowy pine tunnel', 'pines', { leaf: [40, 100, 70], leaf2: [245, 248, 255], bark: [90, 65, 45] }],
+    jungle:   ['🌳 Tree tunnels', 'Jungle with hanging vines', 'trees', { leaf: [30, 110, 50], leaf2: [60, 150, 60], bark: [80, 60, 40], vines: true }],
+    willow:   ['🌳 Tree tunnels', 'Weeping willow tunnel', 'trees', { leaf: [120, 170, 80], leaf2: [160, 200, 100], bark: [90, 75, 55], vines: true, droop: true }],
+    spooky:   ['🌳 Tree tunnels', 'Spooky dead trees', 'deadtrees', { bark: [70, 62, 60] }],
+    // 🪵 tubes you drive through
+    logtube:  ['🪵 Tubes', 'Giant hollow log', 'tube', { out: [110, 74, 44], out2: [92, 60, 36], inn: [196, 150, 100], inn2: [176, 132, 86], len: 26 }],
+    pipe:     ['🪵 Tubes', 'Giant green pipe', 'tube', { out: [40, 160, 60], out2: [30, 130, 50], inn: [20, 90, 35], inn2: [26, 104, 42], len: 22, bolts: true }],
+    icetube:  ['🪵 Tubes', 'Ice tube', 'tube', { out: [190, 230, 250], out2: [160, 210, 240], inn: [210, 240, 255], inn2: [180, 220, 245], len: 30, alpha: 0.75 }],
+    glass:    ['🪵 Tubes', 'Glass tube', 'tube', { out: [200, 240, 255], out2: [170, 220, 240], inn: [200, 240, 255], inn2: [180, 230, 250], len: 30, alpha: 0.35 }],
+    coral:    ['🪵 Tubes', 'Coral tube', 'tube', { out: [255, 120, 110], out2: [250, 160, 90], inn: [255, 180, 160], inn2: [250, 150, 140], len: 22, bumps: true }],
+    candyt:   ['🪵 Tubes', 'Candy-stripe tube', 'tube', { out: [235, 40, 60], out2: [255, 250, 250], inn: [255, 200, 210], inn2: [255, 240, 240], len: 26 }],
+    crystt:   ['🪵 Tubes', 'Crystal tube', 'tube', { out: [140, 80, 220], out2: [100, 50, 190], inn: [190, 140, 255], inn2: [160, 110, 240], len: 26, glow: [200, 140, 255] }],
+    // 💦 waterfalls over cave entrances (you drive through the falling water into a cave)
+    wfall:    ['💦 Waterfall caves', 'Waterfall cave', 'falls', { rock: [110, 100, 92], fall: [180, 225, 255], len: 28 }],
+    lavafall: ['💦 Waterfall caves', 'Lava-fall cave', 'falls', { rock: [60, 40, 36], fall: [255, 120, 30], len: 28, glow: [255, 100, 30] }],
+    slime:    ['💦 Waterfall caves', 'Green slime-fall cave', 'falls', { rock: [70, 80, 60], fall: [120, 240, 80], len: 26 }],
+    sandfall: ['💦 Waterfall caves', 'Sand-fall cave', 'falls', { rock: [170, 110, 70], fall: [235, 200, 140], len: 26 }],
+    choco:    ['💦 Waterfall caves', 'Chocolate-fall cave', 'falls', { rock: [120, 80, 60], fall: [110, 60, 30], len: 26 }],
+    rainfall: ['💦 Waterfall caves', 'Rainbow-fall cave', 'falls', { rock: [120, 110, 130], fall: 'rainbow', len: 28 }],
+    // 🕳 cave entrances
+    mossycv:  ['🕳 Cave entrances', 'Mossy cave', 'cave', { rock: [96, 92, 80], moss: [80, 140, 60], len: 30 }],
+    icecave:  ['🕳 Cave entrances', 'Ice cave', 'cave', { rock: [170, 210, 235], len: 30, icicles: true }],
+    crystcv:  ['🕳 Cave entrances', 'Crystal cave', 'cave', { rock: [70, 60, 90], len: 30, crystals: [200, 120, 255] }],
+    mine:     ['🕳 Cave entrances', 'Old mine entrance', 'cave', { rock: [120, 100, 80], len: 26, beams: [130, 90, 50] }],
+    lavacave: ['🕳 Cave entrances', 'Lava cave', 'cave', { rock: [50, 34, 30], len: 26, glow: [255, 90, 20] }],
+    // ⛩ arches & gates
+    rockarch: ['⛩ Arches & gates', 'Natural rock arch', 'arch', { c: [190, 110, 70], d: [150, 80, 50], h: 3200, thick: 600 }],
+    mossarch: ['⛩ Arches & gates', 'Mossy stone arch', 'arch', { c: [130, 128, 120], d: [90, 140, 70], h: 3000, thick: 550 }],
+    torii:    ['⛩ Arches & gates', 'Red shrine gate', 'torii', { c: [215, 50, 40], d: [40, 30, 30], h: 3000 }],
+    castleg:  ['⛩ Arches & gates', 'Castle gatehouse', 'castle', { c: [170, 165, 155], d: [110, 105, 100], h: 3400 }],
+    templeg:  ['⛩ Arches & gates', 'Temple columns', 'temple', { c: [236, 230, 214], d: [190, 180, 160], h: 3200 }],
+    crystarc: ['⛩ Arches & gates', 'Crystal arch', 'crystarch', { c: [190, 130, 255], d: [120, 70, 210], h: 3300 }],
+    rainarch: ['⛩ Arches & gates', 'Rainbow arch', 'rainbow', { h: 3600 }],
+    icearch:  ['⛩ Arches & gates', 'Ice arch', 'arch', { c: [200, 235, 255], d: [150, 205, 240], h: 3000, thick: 450 }],
+    bonearch: ['⛩ Arches & gates', 'Crossed giant bones', 'bonex', { c: [240, 232, 210], d: [190, 175, 150], h: 3000 }],
+    candyarc: ['⛩ Arches & gates', 'Candy cane arch', 'candy', { c: [235, 40, 60], d: [255, 250, 250], h: 3200 }],
+    vinearch: ['⛩ Arches & gates', 'Flower vine arch', 'vine', { c: [60, 140, 60], d: [255, 120, 180], h: 2900 }],
+    goldarch: ['⛩ Arches & gates', 'Golden gem arch', 'arch', { c: [240, 190, 60], d: [200, 140, 30], h: 3300, thick: 380, gems: true }],
+    hoopring: ['⛩ Arches & gates', 'Flaming hoops', 'hoop', { c: [255, 140, 30], d: [255, 230, 80], h: 2700 }],
+  };
   // 🎨 50 DECORATIONS for the level editor: [group, emoji, name, height, flying altitude]
   const DECOS = {
     cactus: ["🌿 Nature", "🌵", "Cactuses", 1400, 0],
@@ -3559,6 +3620,7 @@
           ctx.beginPath(); ctx.moveTo(sx - w, sy); ctx.lineTo(sx - w * .5, sy - h); ctx.lineTo(sx + w * .4, sy - h * .8); ctx.lineTo(sx + w, sy); ctx.closePath(); ctx.fill();
         }
       }
+      if (sg.thru && n > 1 && !backface) drawThru(sg, p1, fog, n);   // 🚪 drive-through decorations
     }
 
     if (NIGHT && !inCave) {
@@ -4579,6 +4641,17 @@
     ice: { len: 120, curve: 1.5, fx: 'ice', obs: 'none' }, bumpy: { len: 130, curve: -1, fx: 'bumpy' }, narrow: { len: 140, curve: -1.5, fx: 'narrow' }, storm: { len: 220, curve: 1, fx: 'storm' },
   };
   function placeDeco(sc, a, b) {                              // 🎨 line this section with its decoration, alternating sides
+    const th = sc.deco && THRU[sc.deco];
+    if (th) {                                                    // 🚪 drive-through structures over the road
+      if (sc.tunnel) return;
+      const shape = th[2], P = th[3], ok = g => g && !g.cave && !g.chasm && !g.loop && !g.loopPrev;
+      const mark1 = (k, kk, len) => { const g = segments[k]; if (ok(g)) g.thru = { key: sc.deco, k: kk, len }; };
+      if (shape === 'trees' || shape === 'pines' || shape === 'deadtrees') { for (let k = a + 6; k < b - 6; k++) mark1(k, k - a, b - a); }
+      else if (shape === 'ribs' || shape === 'tusks') { for (let st = a + 8; st + 36 < b; st += 70) for (let k = 0; k < 36; k++) mark1(st + k, k, 36); }
+      else if (shape === 'tube' || shape === 'falls' || shape === 'cave') { const L = P.len || 26; for (let st = a + 10; st + L + 4 < b; st += L + 60) { let all = true; for (let k = 0; k < L; k++) if (!ok(segments[st + k])) all = false; if (all) for (let k = 0; k < L; k++) mark1(st + k, k, L); } }
+      else { for (let k = a + 10, q = 0; k < b - 6; k += 32, q++) mark1(k, q, 1); }   // arches, gates, canopies: one every 32 segments
+      return;
+    }
     const d = sc.deco && DECOS[sc.deco]; if (!d || sc.tunnel) return;
     const big = d[3] >= 3000, small = d[3] <= 800, step = big ? 22 : small ? 7 : 11;
     for (let k = a + 4, q = 0; k < b - 2; k += step, q++) {
@@ -4587,6 +4660,168 @@
       const off = g.canyon ? side * (1.06 + Math.random() * 0.07) : side * (rw + 0.5 + (big ? 1.2 + Math.random() * 2.5 : Math.random() * 2.2));
       g.sprites.push({ kind: 'deco', d: sc.deco, off, size: (g.canyon ? 0.55 : 0.85) + Math.random() * 0.3, ph: Math.random() * 7 });
       if (small && !g.canyon) g.sprites.push({ kind: 'deco', d: sc.deco, off: off + side * (0.35 + Math.random() * 0.4), size: 0.7 + Math.random() * 0.3, ph: Math.random() * 7 });
+    }
+  }
+  function drawThru(sg, p1, fog, n) {                         // 🚪 draw one slice of a drive-through structure at the near edge of this segment
+    const T0 = THRU[sg.thru.key]; if (!T0) return;
+    const shape = T0[2], P = T0[3], k = sg.thru.k, X = p1.x, Y = p1.y, w = p1.w, u = p1.scale * H / 2, t = performance.now() / 1000;
+    const F = c => fogMix(c, fog), lw = v => Math.max(1, v);
+    if (w < 1.2) return;
+    if (w > W * 0.9 && !(shape === 'tube' || shape === 'falls' || shape === 'cave' || shape === 'trees' || shape === 'pines' || shape === 'deadtrees' || shape === 'ribs')) return;   // a single arch right on top of the camera would fill the screen
+    const glow = (x, y, r, c, a) => { ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${c},${a * (1 - fog)})`); g.addColorStop(1, `rgba(${c},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.restore(); };
+    const archPath = (rx, ry) => { ctx.beginPath(); ctx.moveTo(X - rx, Y); ctx.lineTo(X - rx, Y - ry * .45); ctx.ellipse(X, Y - ry * .45, rx, ry * .55, 0, Math.PI, 0); ctx.lineTo(X + rx, Y); };
+    if (shape === 'ribs') {
+      if (k % P.every) return;
+      const rx = w * 1.3 * (P.wide || 1), ry = P.h * u, th = lw(w * 0.09);
+      if (P.glow) { ctx.save(); ctx.shadowColor = `rgb(${P.glow})`; ctx.shadowBlur = 25 * (1 - fog); }
+      ctx.strokeStyle = F(P.d); ctx.lineWidth = th * 1.25; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(X - rx, Y); ctx.bezierCurveTo(X - rx * 1.1, Y - ry * .8, X - rx * .3, Y - ry * 1.05, X, Y - ry); ctx.bezierCurveTo(X + rx * .3, Y - ry * 1.05, X + rx * 1.1, Y - ry * .8, X + rx, Y); ctx.stroke();
+      ctx.strokeStyle = F(P.c); ctx.lineWidth = th * 0.8; ctx.stroke();
+      ctx.fillStyle = F(P.c); ctx.beginPath(); ctx.ellipse(X, Y - ry * 1.02, th * 1.3, th * 0.9, 0, 0, 7); ctx.fill();   // vertebra on the spine
+      ctx.lineCap = 'butt'; if (P.glow) ctx.restore();
+      if (k === 0) {                                           // the skull at the front of the skeleton, resting beside the road
+        const sx = X - rx * 1.25, sy = Y; ctx.fillStyle = F(P.c); ctx.beginPath(); ctx.ellipse(sx, sy - ry * .18, rx * .28, ry * .17, -.2, 0, 7); ctx.fill();
+        ctx.fillStyle = F([40, 30, 25]); ctx.beginPath(); ctx.ellipse(sx + rx * .08, sy - ry * .22, rx * .06, ry * .05, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = F(P.c); for (let q = 0; q < 5; q++) { ctx.beginPath(); ctx.moveTo(sx - rx * .2 + q * rx * .08, sy - ry * .06); ctx.lineTo(sx - rx * .17 + q * rx * .08, sy + ry * .02); ctx.lineTo(sx - rx * .14 + q * rx * .08, sy - ry * .06); ctx.fill(); }
+      }
+      if (P.glow) glow(X, Y - ry, w * .5, P.glow, .35);
+    } else if (shape === 'tusks') {
+      if (k % P.every) return;
+      const rx = w * 1.35, ry = P.h * u;
+      for (const sd of [-1, 1]) {                               // two huge curved tusks crossing above you
+        ctx.fillStyle = F(sd < 0 ? P.c : P.d); ctx.beginPath(); ctx.moveTo(X + sd * rx, Y); ctx.quadraticCurveTo(X + sd * rx * 1.05, Y - ry * .9, X - sd * rx * .25, Y - ry);
+        ctx.quadraticCurveTo(X + sd * rx * .85, Y - ry * .8, X + sd * rx * .86, Y); ctx.closePath(); ctx.fill();
+      }
+    } else if (shape === 'canopy' || shape === 'flower' || shape === 'umbrella' || shape === 'palm') {
+      const sd = k % 2 ? 1 : -1, ry = P.h * u, capW = w * 1.7, sx = X + sd * w * 1.3;
+      ctx.strokeStyle = F(P.stem); ctx.lineWidth = lw(shape === 'umbrella' ? w * .06 : w * .22); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(sx, Y); ctx.quadraticCurveTo(sx, Y - ry * .7, X + sd * w * .2, Y - ry * .95); ctx.stroke(); ctx.lineCap = 'butt';
+      const cx = X + sd * w * .1, cy = Y - ry;
+      if (shape === 'canopy') {
+        ctx.fillStyle = F(P.cap); ctx.beginPath(); ctx.ellipse(cx, cy, capW, ry * .35, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = F(P.stem.map(v => v * .85)); ctx.beginPath(); ctx.ellipse(cx, cy, capW, ry * .07, 0, 0, Math.PI); ctx.fill();   // gills underneath
+        ctx.fillStyle = F(P.dots); for (const [dx, dy, r] of [[-.6, .12, .14], [-.15, .25, .18], [.4, .16, .15], [.75, .07, .09], [-.85, .05, .08], [.1, .08, .1]]) { ctx.beginPath(); ctx.ellipse(cx + capW * dx, cy - ry * dy, capW * r * .5, ry * r * .3, 0, 0, 7); ctx.fill(); }
+        if (P.glow) glow(cx, cy, capW * 1.2, P.glow, NIGHT ? .55 : .3);
+      } else if (shape === 'flower') {
+        for (let q = 0; q < 10; q++) { const a = q / 10 * Math.PI * 2 + t * .2; ctx.fillStyle = F(q % 2 ? P.cap : P.cap.map(v => Math.min(255, v + 25))); ctx.beginPath(); ctx.ellipse(cx + Math.cos(a) * capW * .55, cy + Math.sin(a) * ry * .22, capW * .4, ry * .1, a, 0, 7); ctx.fill(); }
+        ctx.fillStyle = F(P.mid); ctx.beginPath(); ctx.ellipse(cx, cy, capW * .35, ry * .14, 0, 0, 7); ctx.fill();
+      } else if (shape === 'umbrella') {
+        for (let q = 0; q < 8; q++) { ctx.fillStyle = F(q % 2 ? P.cap : P.cap2); ctx.beginPath(); ctx.moveTo(cx, cy - ry * .3); ctx.lineTo(cx - capW + q * capW / 4, cy); ctx.lineTo(cx - capW + (q + 1) * capW / 4, cy); ctx.closePath(); ctx.fill(); }
+      } else {                                                   // palm fronds drooping over the road
+        ctx.strokeStyle = F(P.cap); ctx.lineWidth = lw(w * .12); ctx.lineCap = 'round';
+        for (let q = 0; q < 7; q++) { const a = -Math.PI + q * Math.PI / 6, ex = cx + Math.cos(a) * capW, ey = cy + Math.abs(Math.sin(a)) * -ry * .2 + ry * .25; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.quadraticCurveTo((cx + ex) / 2, cy - ry * .25, ex, ey); ctx.stroke(); }
+        ctx.lineCap = 'butt'; ctx.fillStyle = F([110, 80, 40]); for (const dx of [-.06, .06]) { ctx.beginPath(); ctx.arc(cx + capW * dx, cy + ry * .05, w * .08, 0, 7); ctx.fill(); }
+      }
+    } else if (shape === 'trees' || shape === 'pines' || shape === 'deadtrees') {
+      if (k % 3) return;
+      const ry = 3000 * u, alt = (k / 3) & 1;
+      for (const sd of [-1, 1]) {
+        const bx = X + sd * w * 1.35;
+        ctx.strokeStyle = F(P.bark); ctx.lineWidth = lw(w * .14); ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(bx, Y); ctx.quadraticCurveTo(bx + sd * w * .05, Y - ry * .6, X + sd * w * .35, Y - ry * .95); ctx.stroke();
+        if (shape === 'deadtrees') { ctx.lineWidth = lw(w * .05); for (let q = 0; q < 3; q++) { const yy = Y - ry * (.45 + q * .17); ctx.beginPath(); ctx.moveTo(bx - sd * w * .02, yy); ctx.lineTo(bx - sd * w * (.35 + q * .1), yy - ry * .12); ctx.lineTo(bx - sd * w * (.45 + q * .1), yy - ry * .2); ctx.stroke(); } }
+        ctx.lineCap = 'butt';
+      }
+      if (shape === 'trees') {                                   // a leafy roof joining overhead
+        for (const [dx, dy, r, c] of [[-1.1, .85, .55, P.leaf], [1.1, .85, .55, P.leaf], [-.5, 1.05, .6, alt ? P.leaf2 : P.leaf], [.5, 1.05, .6, alt ? P.leaf : P.leaf2], [0, 1.15, .55, P.leaf2]]) {
+          ctx.fillStyle = F(c); ctx.beginPath(); ctx.ellipse(X + w * dx, Y - ry * dy, w * r, ry * r * .28, 0, 0, 7); ctx.fill();
+        }
+        if (P.vines) { ctx.strokeStyle = F(P.droop ? P.leaf2 : [40, 120, 50]); ctx.lineWidth = lw(w * .025); for (let q = -4; q <= 4; q++) { const vx = X + q * w * .22, len = ry * (P.droop ? .45 : .25 + ((q * 7 + k) % 5) * .05); ctx.beginPath(); ctx.moveTo(vx, Y - ry * .95); ctx.quadraticCurveTo(vx + Math.sin(t * 2 + q) * w * .03, Y - ry * .95 + len * .5, vx, Y - ry * .95 + len); ctx.stroke(); } }
+        if (P.petals) { ctx.fillStyle = F([255, 200, 220]); for (let q = 0; q < 4; q++) { const px = X + Math.sin(k * 1.7 + q * 2.1 + t) * w * 1.1, py = Y - ry * (0.2 + ((q * .23 + t * .15 + k * .07) % 0.7)); ctx.beginPath(); ctx.ellipse(px, py, w * .03, w * .02, t + q, 0, 7); ctx.fill(); } }
+      } else if (shape === 'pines') {
+        for (const sd of [-1, 1]) for (let q = 0; q < 3; q++) { const bx = X + sd * w * (1.25 - q * .25), by = Y - ry * (.35 + q * .25), ww = w * (.75 - q * .15);
+          ctx.fillStyle = F(P.leaf); ctx.beginPath(); ctx.moveTo(bx - ww, by + ry * .12); ctx.lineTo(bx + sd * -ww * .2, by - ry * .3); ctx.lineTo(bx + ww, by + ry * .12); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = F(P.leaf2); ctx.beginPath(); ctx.moveTo(bx - ww * .5, by - ry * .1); ctx.lineTo(bx + sd * -ww * .2, by - ry * .3); ctx.lineTo(bx + ww * .5, by - ry * .1); ctx.closePath(); ctx.fill(); }
+      }
+    } else if (shape === 'tube' || shape === 'falls' || shape === 'cave') {
+      const rx = w * 1.4, ry = 2600 * u, al = P.alpha || 1, ring = shape === 'tube';
+      const inner = () => { ctx.ellipse(X, Y - ry * .45, rx, ry * .62, 0, 0, Math.PI * 2); };
+      ctx.save(); if (al < 1) ctx.globalAlpha = al;
+      const outer = ring ? 1.45 : 6;
+      // the solid frame around the hole (a ring for tubes, rock all around for caves)
+      ctx.beginPath();
+      if (ring) ctx.ellipse(X, Y - ry * .45, rx * outer, ry * .62 * outer, 0, 0, Math.PI * 2); else ctx.rect(X - rx * outer, Y - ry * 3.5, rx * outer * 2, ry * 3.5);
+      inner(); ctx.rect(X - rx * 3, Y, rx * 6, ry * 2);   // (don't cover the road below)
+      const isEntry = k === 0, P2 = (P.out && (k & 1)) ? P.out2 : P.out;
+      ctx.fillStyle = shape === 'tube' ? F(isEntry ? P.out : (k & 1 ? P.inn2 : P.inn)) : F(k & 1 ? P.rock.map(v => v * .85) : P.rock);
+      ctx.fill('evenodd');
+      if (shape === 'tube' && isEntry) {                          // the cut end of the tube: rings like a tree trunk / a metal rim
+        ctx.strokeStyle = F(P.out2); ctx.lineWidth = lw(w * .04); for (const f of [1.12, 1.25, 1.38]) { ctx.beginPath(); ctx.ellipse(X, Y - ry * .45, rx * f, ry * .62 * f, 0, Math.PI, 0); ctx.stroke(); }
+        if (P.bolts) { ctx.fillStyle = F([200, 210, 200]); for (let q = 0; q < 10; q++) { const a = Math.PI + q / 9 * Math.PI; ctx.beginPath(); ctx.arc(X + Math.cos(a) * rx * 1.3, Y - ry * .45 + Math.sin(a) * ry * .62 * 1.3, w * .03, 0, 7); ctx.fill(); } }
+      }
+      if (shape === 'tube' && k === sg.thru.len - 1) { ctx.strokeStyle = F(P2); ctx.lineWidth = lw(w * .08); ctx.beginPath(); inner(); ctx.stroke(); }
+      if (P.bumps && !(k % 3)) { ctx.fillStyle = F(P.out2); for (let q = 0; q < 6; q++) { const a = Math.PI + (q + .5) / 6 * Math.PI; ctx.beginPath(); ctx.arc(X + Math.cos(a) * rx * 1.02, Y - ry * .45 + Math.sin(a) * ry * .64, w * .07, 0, 7); ctx.fill(); } }
+      ctx.restore();
+      if (P.glow && !(k % 4)) glow(X, Y - ry * .2, rx * .9, P.glow, .25);
+      if (shape === 'cave' && isEntry) {
+        if (P.moss) { ctx.fillStyle = F(P.moss); for (let q = 0; q < 14; q++) { const a = Math.PI + q / 13 * Math.PI; ctx.beginPath(); ctx.ellipse(X + Math.cos(a) * rx * 1.08, Y - ry * .45 + Math.sin(a) * ry * .68, w * .14, w * .07, a, 0, 7); ctx.fill(); } }
+        if (P.icicles) { ctx.fillStyle = F([235, 248, 255]); for (let q = 0; q < 12; q++) { const a = Math.PI + (q + .5) / 12 * Math.PI, ix = X + Math.cos(a) * rx, iy = Y - ry * .45 + Math.sin(a) * ry * .62; ctx.beginPath(); ctx.moveTo(ix - w * .04, iy); ctx.lineTo(ix, iy + ry * (.08 + (q % 3) * .04)); ctx.lineTo(ix + w * .04, iy); ctx.fill(); } }
+        if (P.crystals) for (let q = 0; q < 8; q++) { const a = Math.PI + (q + .5) / 8 * Math.PI, ix = X + Math.cos(a) * rx * 1.15, iy = Y - ry * .45 + Math.sin(a) * ry * .7; ctx.fillStyle = F(P.crystals); ctx.beginPath(); ctx.moveTo(ix - w * .06, iy); ctx.lineTo(ix, iy - ry * .15); ctx.lineTo(ix + w * .06, iy); ctx.fill(); glow(ix, iy - ry * .07, w * .25, P.crystals, .5); }
+        if (P.beams) { ctx.fillStyle = F(P.beams); ctx.fillRect(X - rx * 1.02, Y - ry * 1.05, w * .14, ry * 1.05); ctx.fillRect(X + rx * 1.02 - w * .14, Y - ry * 1.05, w * .14, ry * 1.05); ctx.fillRect(X - rx * 1.1, Y - ry * 1.12, rx * 2.2, ry * .1);
+          ctx.fillStyle = F([255, 230, 120]); ctx.font = `bold ${Math.max(6, w * .14)}px Menlo, monospace`; ctx.textAlign = 'center'; ctx.fillText('⚠ MINE', X, Y - ry * 1.2); }
+      }
+      if (shape === 'falls' && isEntry) {                         // the falling curtain over the opening — you drive right through it
+        ctx.save(); ctx.globalAlpha = 0.55 * (1 - fog);
+        const top = Y - ry * 1.15, cols = 26;
+        for (let q = 0; q < cols; q++) {
+          const xx = X - rx * 1.15 + q * rx * 2.3 / cols, off = ((t * 1.6 + q * .37) % 1);
+          const col = P.fall === 'rainbow' ? `hsl(${q / cols * 360},90%,65%)` : `rgb(${P.fall.map((v, j) => Math.min(255, v + (q % 3) * 12))})`;
+          const g = ctx.createLinearGradient(0, top, 0, Y); g.addColorStop(0, col); g.addColorStop(off, 'rgba(255,255,255,.9)'); g.addColorStop(Math.min(1, off + .08), col); g.addColorStop(1, col);
+          ctx.fillStyle = g; ctx.fillRect(xx, top, rx * 2.3 / cols * 0.85, Y - top);
+        }
+        ctx.globalAlpha = 0.8 * (1 - fog); ctx.fillStyle = P.fall === 'rainbow' ? 'rgba(255,255,255,.8)' : `rgba(${P.fall.map(v => Math.min(255, v + 60))},.85)`;   // splash foam
+        for (let q = 0; q < 14; q++) { ctx.beginPath(); ctx.arc(X - rx * 1.1 + q * rx * .17, Y - Math.abs(Math.sin(t * 6 + q)) * ry * .05, w * .09, 0, 7); ctx.fill(); }
+        ctx.restore();
+        if (P.glow) glow(X, Y - ry * .4, rx * 1.4, P.glow, .4);
+      }
+    } else {                                                     // ⛩ arches & gates (one structure)
+      const ry = P.h * u, rx = w * 1.3;
+      if (shape === 'arch') {
+        const th = (P.thick || 500) * u;
+        ctx.fillStyle = F(P.c); ctx.beginPath(); ctx.moveTo(X - rx - th, Y); ctx.lineTo(X - rx - th, Y - ry * .45); ctx.ellipse(X, Y - ry * .45, rx + th, ry * .55 + th, 0, Math.PI, 0); ctx.lineTo(X + rx + th, Y);
+        ctx.lineTo(X + rx, Y); ctx.lineTo(X + rx, Y - ry * .45); ctx.ellipse(X, Y - ry * .45, rx, ry * .55, 0, 0, Math.PI, true); ctx.lineTo(X - rx, Y); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = F(P.d); ctx.lineWidth = lw(th * .25); ctx.beginPath(); ctx.ellipse(X, Y - ry * .45, rx + th * .5, ry * .55 + th * .5, 0, Math.PI, 0); ctx.stroke();
+        if (P.gems) for (let q = 0; q < 7; q++) { const a = Math.PI + (q + .5) / 7 * Math.PI; ctx.fillStyle = F([[255, 60, 80], [60, 200, 255], [80, 230, 120]][q % 3]); ctx.beginPath(); ctx.arc(X + Math.cos(a) * (rx + th * .5), Y - ry * .45 + Math.sin(a) * (ry * .55 + th * .5), th * .28, 0, 7); ctx.fill(); }
+      } else if (shape === 'torii') {
+        ctx.fillStyle = F(P.c); for (const sd of [-1, 1]) ctx.fillRect(X + sd * rx - w * .07, Y - ry * .92, w * .14, ry * .92);
+        ctx.fillRect(X - rx * 1.1, Y - ry * .78, rx * 2.2, ry * .06);
+        ctx.fillStyle = F(P.d); ctx.beginPath(); ctx.moveTo(X - rx * 1.35, Y - ry * .9); ctx.quadraticCurveTo(X, Y - ry * .98, X + rx * 1.35, Y - ry * .9); ctx.lineTo(X + rx * 1.3, Y - ry * 1.02); ctx.quadraticCurveTo(X, Y - ry * 1.1, X - rx * 1.3, Y - ry * 1.02); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = F(P.c); ctx.fillRect(X - rx * 1.25, Y - ry * .92, rx * 2.5, ry * .05);
+      } else if (shape === 'castle') {
+        ctx.fillStyle = F(P.c); ctx.beginPath(); ctx.rect(X - rx * 1.6, Y - ry, rx * 3.2, ry); ctx.moveTo(X - rx * .85, Y); ctx.lineTo(X - rx * .85, Y - ry * .75 * .45); ctx.ellipse(X, Y - ry * .75 * .45, rx * .85, ry * .75 * .55, 0, Math.PI, 0); ctx.lineTo(X + rx * .85, Y); ctx.closePath(); ctx.fill('evenodd');
+        for (const sd of [-1, 1]) { ctx.fillRect(X + sd * rx * 1.3 - rx * .3, Y - ry * 1.3, rx * .6, ry * 1.3); ctx.fillStyle = F([60, 80, 200]); ctx.beginPath(); ctx.moveTo(X + sd * rx * 1.3 - rx * .34, Y - ry * 1.3); ctx.lineTo(X + sd * rx * 1.3, Y - ry * 1.65); ctx.lineTo(X + sd * rx * 1.3 + rx * .34, Y - ry * 1.3); ctx.fill(); ctx.fillStyle = F(P.c); }
+        ctx.fillStyle = F(P.d); for (let q = 0; q < 9; q++) ctx.fillRect(X - rx * 1 + q * rx * .25, Y - ry * 1.08, rx * .14, ry * .08);   // battlements
+        ctx.fillStyle = F([40, 30, 25]); for (let q = 0; q < 7; q++) ctx.fillRect(X - rx * .8 + q * rx * .26, Y - ry * .78, w * .03, ry * .14);   // portcullis spikes
+      } else if (shape === 'temple') {
+        ctx.fillStyle = F(P.c); for (const sd of [-1, 1]) for (const f of [1, 1.35]) { ctx.fillRect(X + sd * rx * f - w * .1, Y - ry * .85, w * .2, ry * .85); }
+        ctx.fillRect(X - rx * 1.55, Y - ry * .95, rx * 3.1, ry * .1);
+        ctx.fillStyle = F(P.d); ctx.beginPath(); ctx.moveTo(X - rx * 1.6, Y - ry * .95); ctx.lineTo(X, Y - ry * 1.3); ctx.lineTo(X + rx * 1.6, Y - ry * .95); ctx.closePath(); ctx.fill();
+      } else if (shape === 'crystarch') {
+        for (let q = 0; q < 13; q++) { const a = Math.PI + q / 12 * Math.PI, cx = X + Math.cos(a) * rx, cy = Y - ry * .4 + Math.sin(a) * ry * .6, sz = w * (.22 + (q % 3) * .06);
+          ctx.fillStyle = F(q % 2 ? P.c : P.d); ctx.beginPath(); ctx.moveTo(cx - sz * .5, cy + sz); ctx.lineTo(cx, cy - sz * 1.3); ctx.lineTo(cx + sz * .5, cy + sz); ctx.closePath(); ctx.fill(); }
+        for (const sd of [-1, 1]) { ctx.fillStyle = F(P.d); ctx.fillRect(X + sd * rx - w * .1, Y - ry * .4, w * .2, ry * .4); }
+        glow(X, Y - ry, rx, [200, 140, 255], .3);
+      } else if (shape === 'rainbow') {
+        const cols = [[255, 70, 70], [255, 160, 50], [255, 230, 60], [80, 210, 90], [70, 150, 255], [150, 90, 230]];
+        cols.forEach((c, q) => { ctx.strokeStyle = F(c); ctx.lineWidth = lw(w * .1); ctx.beginPath(); ctx.ellipse(X, Y, rx * (1.35 - q * .08), ry * (1 - q * .06), 0, Math.PI, 0); ctx.stroke(); });
+        for (const sd of [-1, 1]) { ctx.fillStyle = F([255, 255, 255]); for (let q = 0; q < 4; q++) { ctx.beginPath(); ctx.arc(X + sd * rx * 1.15 + (q - 1.5) * w * .14, Y - w * .05, w * .14, 0, 7); ctx.fill(); } }   // fluffy clouds at each end
+      } else if (shape === 'bonex') {
+        for (const sd of [-1, 1]) { ctx.save(); ctx.translate(X, Y - ry * .55); ctx.rotate(sd * 0.75); ctx.fillStyle = F(sd < 0 ? P.c : P.d);
+          ctx.fillRect(-w * .1, -ry * .85, w * .2, ry * 1.7); for (const e of [-1, 1]) for (const s2 of [-1, 1]) { ctx.beginPath(); ctx.arc(s2 * w * .12, e * ry * .85, w * .15, 0, 7); ctx.fill(); } ctx.restore(); }
+      } else if (shape === 'candy') {
+        for (const sd of [-1, 1]) { ctx.lineWidth = lw(w * .16); ctx.lineCap = 'round';
+          const path = () => { ctx.beginPath(); ctx.moveTo(X + sd * rx, Y); ctx.lineTo(X + sd * rx, Y - ry * .7); ctx.quadraticCurveTo(X + sd * rx, Y - ry, X + sd * rx * .5, Y - ry); ctx.quadraticCurveTo(X + sd * rx * .05, Y - ry, X + sd * rx * .05, Y - ry * .85); };
+          ctx.strokeStyle = F(P.d); path(); ctx.stroke(); ctx.setLineDash([w * .16, w * .16]); ctx.strokeStyle = F(P.c); path(); ctx.stroke(); ctx.setLineDash([]); ctx.lineCap = 'butt'; }
+      } else if (shape === 'vine') {
+        ctx.strokeStyle = F(P.c); ctx.lineWidth = lw(w * .12); ctx.beginPath(); ctx.moveTo(X - rx, Y); ctx.lineTo(X - rx, Y - ry * .5); ctx.ellipse(X, Y - ry * .5, rx, ry * .5, 0, Math.PI, 0); ctx.lineTo(X + rx, Y); ctx.stroke();
+        for (let q = 0; q < 16; q++) { const a = Math.PI + q / 15 * Math.PI, fx = X + Math.cos(a) * rx, fy = Y - ry * .5 + Math.sin(a) * ry * .5;
+          ctx.fillStyle = F(q % 3 ? [70, 160, 70] : P.d); ctx.beginPath(); ctx.arc(fx, fy, w * (q % 3 ? .1 : .13), 0, 7); ctx.fill(); }
+      } else if (shape === 'hoop') {
+        ctx.strokeStyle = F([60, 60, 66]); ctx.lineWidth = lw(w * .06); for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(X + sd * rx * 1.05, Y); ctx.lineTo(X + sd * rx * 1.05, Y - ry * .55); ctx.stroke(); }
+        ctx.strokeStyle = F([80, 80, 90]); ctx.lineWidth = lw(w * .07); ctx.beginPath(); ctx.ellipse(X, Y - ry * .55, rx * 1.05, ry * .5, 0, 0, 7); ctx.stroke();
+        for (let q = 0; q < 24; q++) { const a = q / 24 * Math.PI * 2, fx = X + Math.cos(a) * rx * 1.05, fy = Y - ry * .55 + Math.sin(a) * ry * .5, fl = w * (.12 + Math.abs(Math.sin(t * 9 + q)) * .14);
+          glow(fx, fy - fl * .5, fl, q % 2 ? P.c : P.d, .9); }
+      }
     }
   }
   function drawDeco(s, sx, sy, sc, fog) {
@@ -4683,7 +4918,7 @@
           ${splitOkOf(sc) && !sc.canyon ? `<label>route <select data-k="trail"><option value="plain"${(sc.trail || 'plain') === 'plain' ? ' selected' : ''}>side road</option><option value="logs"${sc.trail === 'logs' ? ' selected' : ''}>log jumps</option><option value="creek"${sc.trail === 'creek' ? ' selected' : ''}>creek</option><option value="tunnel"${sc.trail === 'tunnel' ? ' selected' : ''}>rock tunnel</option><option value="rocks"${sc.trail === 'rocks' ? ' selected' : ''}>boulder garden</option></select></label>` : ''}
           ${sc.canyon ? `<label title="What the canyon walls look like">walls <select data-k="walls">${Object.keys(WALL_STYLES).map(k => `<option value="${k === 'classic' ? '' : k}"${(sc.walls || '') === (k === 'classic' ? '' : k) ? ' selected' : ''}>${k === 'classic' ? '🎨 match the world' : k === 'sandstone' ? '🟫 desert sandstone' : WALL_STYLES[k].name}</option>`).join('')}</select></label>` : ''}
           <label title="A special feature for this section">special <select data-k="fx"${sc.jump ? ' disabled' : ''}>${Object.entries(FX_NAMES).map(([k, n]) => `<option value="${k}"${(sc.fx || '') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
-          <label title="Decorations along the side of this section">🎨 decoration <select data-k="deco"><option value="">none</option>${[...new Set(Object.values(DECOS).map(d => d[0]))].map(g => `<optgroup label="${g}">${Object.entries(DECOS).filter(([, d]) => d[0] === g).map(([k, d]) => `<option value="${k}"${sc.deco === k ? ' selected' : ''}>${d[1]} ${d[2]}</option>`).join('')}</optgroup>`).join('')}</select></label>
+          <label title="Decorations along the side of this section">🎨 decoration <select data-k="deco"><option value="">none</option>${[...new Set(Object.values(THRU).map(d => d[0]))].map(g => `<optgroup label="${g} (drive through)">${Object.entries(THRU).filter(([, d]) => d[0] === g).map(([k, d]) => `<option value="${k}"${sc.deco === k ? ' selected' : ''}>${d[1]}</option>`).join('')}</optgroup>`).join('')}${[...new Set(Object.values(DECOS).map(d => d[0]))].map(g => `<optgroup label="${g}">${Object.entries(DECOS).filter(([, d]) => d[0] === g).map(([k, d]) => `<option value="${k}"${sc.deco === k ? ' selected' : ''}>${d[1]} ${d[2]}</option>`).join('')}</optgroup>`).join('')}</select></label>
           <label>obstacles <select data-k="obs"><option value="none"${sc.obs === 'none' ? ' selected' : ''}>none</option><option value="some"${sc.obs === 'some' ? ' selected' : ''}>some</option><option value="lots"${sc.obs === 'lots' ? ' selected' : ''}>lots</option></select></label>
         </div>`;
       r.onclick = () => { if (edSel !== i) { edSel = i; edList.querySelectorAll('.ed-row').forEach((x, j) => x.classList.toggle('on', j === i)); edPreview(); } };
@@ -4822,7 +5057,7 @@
     return { id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: String(o.n || 'Shared level').slice(0, 28), world: num(o.w, 1, 5, 1) | 0, laps: num(o.l, 1, 9, 3) | 0, smooth: num(o.m, 0, 100, 0) | 0, grounded: !!o.g,
       sections: o.s.map(a => ({ len: num(a[0], 20, 400, 90) | 0, curve: num(a[1], -7, 7, 0), hill: num(a[2], -4000, 4000, 0) | 0, canyon: !!(a[3] & 1), arch: !!(a[3] & 2), tunnel: !!(a[3] & 4), ramp: !!(a[3] & 8), jump: !!(a[3] & 16), flip: !!(a[3] & 32),
         water: a[4] === 'fast' || a[4] === 'slow' ? a[4] : '', obs: ['none', 'some', 'lots'].includes(a[5]) ? a[5] : 'some',
-        split: a[6] === 'left' || a[6] === 'right' ? a[6] : '', trail: ['plain', 'logs', 'creek', 'tunnel', 'rocks', 'rim'].includes(a[7]) ? a[7] : 'plain', fx: ['pads', 'refill', 'whoops', 'ice', 'bumpy', 'narrow', 'storm'].includes(a[8]) ? a[8] : '', walls: a[9] in WALL_STYLES && a[9] !== 'classic' ? a[9] : '', deco: a[10] && DECOS[a[10]] ? a[10] : '' })) };
+        split: a[6] === 'left' || a[6] === 'right' ? a[6] : '', trail: ['plain', 'logs', 'creek', 'tunnel', 'rocks', 'rim'].includes(a[7]) ? a[7] : 'plain', fx: ['pads', 'refill', 'whoops', 'ice', 'bumpy', 'narrow', 'storm'].includes(a[8]) ? a[8] : '', walls: a[9] in WALL_STYLES && a[9] !== 'classic' ? a[9] : '', deco: a[10] && (DECOS[a[10]] || THRU[a[10]]) ? a[10] : '' })) };
   }
   document.querySelectorAll('.ed-add [data-add]').forEach(b => b.onclick = () => {
     if (ED.sections.length >= 120) { edMsg('That is the most sections a level can have (120).'); return; }
