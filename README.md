@@ -69,7 +69,7 @@ Ten secret levels (Canyon Leap, Rim Runner, Barrel Roll Bayou, Frozen Corkscrew,
 ## ✎ Ten new editor pieces
 - **🕳 Canyon jump**: a ramp and a gap in the canyon floor. Hold BOOST or you fall in and restart at the run-up.
 - **⛰ Wall notch + rim**: a notch in a canyon wall leads up onto the rim, across a canyon jump and back down.
-- **🎢 Loop-the-loop**: a roller-coaster loop. You can see the track curl up into a giant circle as you drive towards it. On the ride the camera follows the track up, upside down over the top (ground overhead, sky below) and back down. A loop where the track crosses over itself turns into plain road.
+- **🎢 Loop-the-loop**: a roller-coaster loop made of solid rock, like a natural stone arch bent into a circle (red sandstone, icy rock, granite or mossy stone depending on the world). You can see the track curl up into a giant circle as you drive towards it. On the ride the camera follows the track up, upside down over the top (ground overhead, sky below) and back down. A loop where the track crosses over itself turns into plain road.
 - **⚡ Speed pads**: green arrows that fling you forward.
 - **🔋 Refill pads**: blue pads that fill your boost tank.
 - **〰 Whoops**: a row of bumps.
