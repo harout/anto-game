@@ -96,7 +96,7 @@ The track part of the menu has three pages: **🏁 TRACKS** (the five worlds and
 Every shortcut you're allowed to know about has a sign in its own colour with an icon: 🪵 log jumps, 💧 creek, ⛏ rock tunnel, 🪨 boulders, ↗ side road, ⛰ rim road, 🏜 slot canyon, 🦇 cave. The fork road is tinted to match. Secret paths still have no sign.
 
 ## 🧱 Canyon walls
-Canyon walls come in seven styles: classic, layered rock, hoodoo spires, ancient ruins, crystal cave, ice wall and lava rock. The built-in canyons mix them, and the level editor has a **walls** choice on every canyon section.
+Canyon walls match the world they're in. The desert has red sandstone. The ice world has a 🏔 glacier with a snow cap and blue cracks. The forest has 🌲 mossy cliffs with pine trees on top and waterfalls. The swamp has 🐊 mud banks with hanging vines and roots. There are also layered rock, hoodoo spires, ancient ruins, crystal cave, ice wall and lava rock. The built-in canyons mix them, and the level editor has a **walls** choice on every canyon section (it starts on "match the world").
 
 ## 🏞 National parks
 There's a hidden trick in ♻ RESET GAME. Try it yourself!

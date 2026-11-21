@@ -1713,8 +1713,12 @@
     if (!sp) { const g = segments[sc.entry - 12]; sp = sc.signSprite = { kind: 'sign', off: g.canyon ? -sc.side * 0.9 : sc.side * (g.mesaSide ? Math.max(1.05, (g.wall || 1.6) - 0.3) : 1.4), dir: sc.side }; g.sprites.push(sp); }   // in a canyon: across the road, pointing at the opening
     sp.ty = ty;
   }
+  for (const g of segments) if (g.canyon && !g.cave) {         // 🌲 trees standing behind a canyon wall can't poke out in front of it
+    g.sprites = g.sprites.filter(sp => sp.kind === 'sign' || Math.abs(sp.off) < 1.15);   // the canyon floor is bare rock: the walls bring their own pines, vines and ice
+    g.obs = g.obs.filter(o => o.kind !== 'tree' || Math.abs(o.off) < 1.15);
+  }
   if (!CUSTOM) {                                              // 🧱 every canyon on the built-in tracks gets its own wall style
-    const pal = TRACK_ID === 5 ? ['classic', 'hoodoo', 'layered', 'hoodoo'] : TRACK_ID === 2 ? ['ice', 'classic', 'crystal', 'ice'] : TRACK_ID === 1 ? ['classic', 'layered', 'ruins', 'hoodoo', 'lava'] : null;
+    const pal = TRACK_ID === 5 ? ['classic', 'hoodoo', 'layered', 'hoodoo'] : TRACK_ID === 2 ? ['glacier', 'ice', 'crystal', 'glacier'] : TRACK_ID === 1 ? ['classic', 'layered', 'ruins', 'hoodoo', 'lava'] : null;
     if (pal) { let run = -1, inRun = false; for (const g of segments) { const c = !!(g.canyon && !g.cave && !g.slot); if (c && !inRun) run++; inRun = c; if (c) g.wallStyle = pal[run % pal.length]; } }
   }
   const walkers = THEME.forest ? mark.walk.map((seg, k) => ({ seg, phase: k * 2.1, amp: 3.2, period: 11 + k * 2, x: 0 })) : [];
@@ -2482,7 +2486,7 @@
     if (!A || p1.cz <= 10) return;
     const side = sc.side, cave = sc.cave, hw = ROAD_W, ww = ROAD_W * 1.6;
     const X = (p, b, o) => p.x + (b.off + o) / ROAD_W * p.w, Y = (p, b, up) => p.y - p.scale * (b.dy + up) * H / 2;
-    const q = A.q, rock = cave ? [74, 52, 70] : [178, 96, 56], rockD = cave ? [52, 36, 52] : [146, 74, 44];
+    const wsb = WALL_STYLES[wallStyleOf(sg)], q = A.q, rock = cave ? [74, 52, 70] : wsb ? wcol(wsb, wsb.l[0]) : [178, 96, 56], rockD = cave ? [52, 36, 52] : wsb ? wcol(wsb, wsb.body) : [146, 74, 44];
     // the road, painted exactly like the main road: same width, same rumble stripes, same surface, same centre line
     const rumble = cave ? (alt ? [60, 40, 30] : [110, 84, 60]) : THEME.swamp ? (alt ? [88, 70, 40] : [132, 116, 72]) : alt ? [140, 60, 30] : [236, 220, 190];
     const surf = cave ? (alt ? [92, 66, 50] : [86, 62, 46]) : THEME.swamp ? (alt ? [112, 92, 60] : [104, 86, 56]) : THEME.forest ? (alt ? [150, 114, 72] : [142, 106, 66]) : alt ? [196, 140, 92] : [188, 132, 86];
@@ -2501,7 +2505,7 @@
     // the shortcut's far wall (and, in a cave, its ceiling)
     const hW1 = (sg.wallH || 2600) * 0.95, hW2 = hW1, o = side * ww;
     poly([X(p1, A, o), Y(p1, A, 0), X(p1, A, o), Y(p1, A, hW1), X(p2, B, o), Y(p2, B, hW2), X(p2, B, o), Y(p2, B, 0)], fogMix(k & 1 ? rock : rock.map(v => v * 0.95 | 0), fog * 0.85));
-    if (!cave) for (const [a, b, c] of [[0.22, 0.3, [226, 150, 100]], [0.48, 0.54, [240, 200, 160]], [0.7, 0.76, [200, 110, 66]]]) poly([X(p1, A, o), Y(p1, A, hW1 * a), X(p1, A, o), Y(p1, A, hW1 * b), X(p2, B, o), Y(p2, B, hW2 * b), X(p2, B, o), Y(p2, B, hW2 * a)], fogMix(c, fog * 0.85));
+    if (!cave && !wsb) for (const [a, b, c] of [[0.22, 0.3, [226, 150, 100]], [0.48, 0.54, [240, 200, 160]], [0.7, 0.76, [200, 110, 66]]]) poly([X(p1, A, o), Y(p1, A, hW1 * a), X(p1, A, o), Y(p1, A, hW1 * b), X(p2, B, o), Y(p2, B, hW2 * b), X(p2, B, o), Y(p2, B, hW2 * a)], fogMix(c, fog * 0.85));
     poly([X(p1, A, o), Y(p1, A, hW1), X(p1, A, o + side * ROAD_W * 4), Y(p1, A, hW1), X(p2, B, o + side * ROAD_W * 4), Y(p2, B, hW2), X(p2, B, o), Y(p2, B, hW2)], fogMix(rockD, fog * 0.85));   // the rock beyond
     if (cave) {                                                // the dark inside of the cave, with crystals glowing on its far wall
       const ch = hW1 * 0.72;
@@ -2562,7 +2566,7 @@
     ctx.beginPath(); ctx.moveTo(x1, yt1); ctx.lineTo(x2, yt2); ctx.stroke();
   }
   function drawWallStyle(ws, side, sg, p1, p2, x1, x2, h1, h2, fog) {   // 🧱 the details that make each wall style look different
-    const band = (f0, f1, c) => poly([x1, p1.y - h1 * f0, x1, p1.y - h1 * f1, x2, p2.y - h2 * f1, x2, p2.y - h2 * f0], fogMix(side < 0 ? c : c.map(v => v * 0.86), fog * 0.85));
+    const band = (f0, f1, c) => poly([x1, p1.y - h1 * f0, x1, p1.y - h1 * f1, x2, p2.y - h2 * f1, x2, p2.y - h2 * f0], fogMix(wcol(ws, side < 0 ? c : c.map(v => v * 0.86)), fog * 0.85));
     if (ws.bands) for (const [f0, f1, c] of ws.bands) band(f0, f1, c);
     if (ws.bricks) {                                            // brick rows, joints and a dark window now and then
       ctx.strokeStyle = fogMix(ws.line, fog); ctx.lineWidth = Math.max(1, p1.scale * 30 * W / 2 * 0.012); ctx.beginPath();
@@ -2580,6 +2584,37 @@
     if (ws.icicles) {                                           // 🧊 icicles hanging off the top and cracks in the ice
       const n = 3; for (let q = 0; q < n; q++) { const f = (q + 0.5) / n, x = x1 + (x2 - x1) * f, y = p1.y - h1 + (h1 - h2) * f, L = h1 * (0.08 + 0.06 * ((sg.i + q) % 3)); poly([x - (x2 - x1) / n * 0.3, y, x, y + L, x + (x2 - x1) / n * 0.3, y], fogMix(unmap([240, 250, 255]), fog * 0.85)); }
       if (sg.i % 4 === 0) { ctx.strokeStyle = fogMix(unmap([250, 255, 255]), fog); ctx.lineWidth = Math.max(1, p1.scale * 30 * W / 2 * 0.015); ctx.beginPath(); ctx.moveTo(x1, p1.y - h1 * 0.2); ctx.lineTo((x1 + x2) / 2, p1.y - h1 * 0.45); ctx.lineTo(x1, p1.y - h1 * 0.7); ctx.stroke(); }
+    }
+    if (ws.snowcap) {                                           // 🏔 a thick cap of snow along the top
+      poly([x1, p1.y - h1 * 0.9, x1, p1.y - h1 * 1.04, x2, p2.y - h2 * 1.04, x2, p2.y - h2 * 0.9], fogMix(unmap([250, 252, 255]), fog * 0.85));
+      if (sg.i % 2 === 0) poly([x1, p1.y - h1 * 0.9, (x1 + x2) / 2, p1.y - h1 * (0.82 - 0.04 * (sg.i % 3)), x2, p2.y - h2 * 0.9], fogMix(unmap([240, 248, 255]), fog * 0.85));   // drips of snow
+    }
+    if (ws.cracks && sg.i % 5 === 0) { ctx.strokeStyle = fogMix(unmap([40, 90, 170]), fog); ctx.lineWidth = Math.max(1, p1.scale * 30 * W / 2 * 0.03); ctx.beginPath(); ctx.moveTo(x1, p1.y - h1 * 0.1); ctx.lineTo((x1 + x2) / 2, p1.y - h1 * 0.35); ctx.lineTo(x1, p1.y - h1 * 0.55); ctx.lineTo((x1 + x2) / 2, p1.y - h1 * 0.75); ctx.stroke(); }
+    if (ws.moss) {                                              // 🌿 patches of moss
+      if (sg.i % 3 === 0) poly([x1, p1.y - h1 * 0.05, x1, p1.y - h1 * 0.3, x2, p2.y - h2 * 0.22, x2, p2.y - h2 * 0.05], fogMix(side < 0 ? ws.moss : ws.moss.map(v => v * 0.85), fog * 0.85));
+      if (sg.i % 7 === 2) poly([x1, p1.y - h1 * 0.55, x1, p1.y - h1 * 0.7, x2, p2.y - h2 * 0.64, x2, p2.y - h2 * 0.58], fogMix(ws.moss.map(v => v * 0.9), fog * 0.85));
+    }
+    if (ws.pines && sg.i % 3 === 0) {                           // 🌲 pine trees growing along the rim
+      const tw = p1.w * 0.16, th = h1 * 0.38, bx = x1 + side * tw * 0.6, by = p1.y - h1;
+      poly([bx - tw * 0.5, by, bx, by - th, bx + tw * 0.5, by], fogMix([40, 84, 46], fog * 0.85));
+      poly([bx - tw * 0.38, by - th * 0.35, bx, by - th * 1.1, bx + tw * 0.38, by - th * 0.35], fogMix([52, 100, 56], fog * 0.85));
+    }
+    if (ws.falls && sg.i % 40 < 3) {                            // 💧 a waterfall pouring down the cliff
+      const t = performance.now() / 90, fx1 = x1 + (x2 - x1) * 0.2, fx2 = x1 + (x2 - x1) * 0.8;
+      poly([fx1, p1.y, fx1, p1.y - h1, fx2, p2.y - h2, fx2, p2.y], fogMix([150, 200, 230], fog * 0.6));
+      ctx.strokeStyle = fogMix([235, 248, 255], fog * 0.6); ctx.lineWidth = Math.max(1, p1.scale * 30 * W / 2 * 0.025); ctx.beginPath();
+      for (let q = 0; q < 4; q++) { const yy = ((t * (1 + q * 0.3) + q * 37) % 100) / 100; ctx.moveTo((fx1 + fx2) / 2, p1.y - h1 * (1 - yy)); ctx.lineTo((fx1 + fx2) / 2, p1.y - h1 * Math.max(0, 1 - yy - 0.15)); }
+      ctx.stroke();
+      ctx.fillStyle = fogMix([240, 250, 255], fog * 0.6); ctx.beginPath(); ctx.ellipse((x1 + x2) / 2, p1.y - h1 * 0.02, Math.abs(x2 - x1) * 0.6 + 2, h1 * 0.04, 0, 0, 7); ctx.fill();   // splash
+    }
+    if (ws.vines && sg.i % 2 === 0) {                           // 🐊 vines hanging off the bank
+      ctx.strokeStyle = fogMix([60, 96, 40], fog); ctx.lineWidth = Math.max(1, p1.scale * 30 * W / 2 * 0.03); ctx.beginPath();
+      for (const fq of [0.3, 0.7]) { const vx = x1 + (x2 - x1) * fq, vy = p1.y - h1 + (h1 - h2) * fq, len = h1 * (0.25 + 0.2 * ((sg.i + fq * 10) % 3) / 2); ctx.moveTo(vx, vy); ctx.quadraticCurveTo(vx + side * p1.w * 0.03, vy + len * 0.5, vx, vy + len); }
+      ctx.stroke();
+    }
+    if (ws.roots && sg.i % 3 === 1) {                           // twisted roots along the bottom
+      ctx.strokeStyle = fogMix([40, 32, 22], fog); ctx.lineWidth = Math.max(1, p1.scale * 30 * W / 2 * 0.04); ctx.beginPath();
+      ctx.moveTo(x1, p1.y - h1 * 0.25); ctx.quadraticCurveTo((x1 + x2) / 2, p1.y - h1 * 0.05, x2, p2.y - h2 * 0.18); ctx.stroke();
     }
     if (ws.lava && sg.i % 2 === 0) {                            // 🌋 glowing cracks of lava
       const pulse = 0.6 + 0.4 * Math.sin(performance.now() / 300 + sg.i), a = (1 - fog * 0.7) * pulse;
@@ -2616,7 +2651,11 @@
   let FOG = THEME.fog;
   // 🧱 canyon wall styles (face colours left/right × alt, the rock behind, strata colour, extra details)
   const WALL_STYLES = {
-    classic: null,
+    classic: null,                                              // '' in a level = match the world
+    sandstone: null,                                            // always the classic desert rock
+    glacier: { name: '🏔 glacier (ice world)', l: [[214, 232, 248], [204, 226, 246]], r: [[170, 204, 236], [160, 196, 230]], body: [150, 186, 222], line: [90, 150, 210], bands: [[0.18, 0.24, [150, 200, 240]], [0.42, 0.47, [120, 180, 230]], [0.66, 0.7, [180, 216, 244]]], snowcap: true, cracks: true, keep: true },
+    mossy: { name: '🌲 mossy cliffs (forest)', l: [[132, 130, 120], [124, 122, 112]], r: [[104, 102, 94], [98, 96, 88]], body: [86, 84, 78], line: [72, 72, 66], moss: [70, 120, 52], pines: true, falls: true },
+    mud: { name: '🐊 swamp banks (swamp)', l: [[96, 86, 56], [90, 80, 52]], r: [[74, 68, 44], [68, 62, 40]], body: [56, 52, 34], line: [46, 42, 28], moss: [86, 110, 46], vines: true, roots: true },
     layered: { name: '🟧 layered rock', l: [[178, 92, 52], [168, 86, 48]], r: [[148, 74, 42], [140, 70, 40]], body: [120, 60, 36], line: [110, 54, 32], bands: [[0.12, 0.2, [232, 168, 110]], [0.3, 0.36, [246, 228, 196]], [0.45, 0.55, [196, 96, 58]], [0.62, 0.68, [236, 200, 150]], [0.78, 0.86, [210, 120, 70]]] },
     hoodoo: { name: '🗿 hoodoo spires', l: [[196, 104, 62], [186, 98, 58]], r: [[160, 82, 48], [150, 78, 46]], body: [130, 66, 40], line: [120, 60, 36], spires: true },
     ruins: { name: '🏛 ancient ruins', l: [[204, 172, 126], [194, 164, 120]], r: [[170, 142, 104], [162, 136, 98]], body: [150, 124, 90], line: [120, 98, 70], bricks: true },
@@ -2624,6 +2663,7 @@
     ice: { name: '🧊 ice wall', l: [[176, 214, 240], [166, 206, 236]], r: [[140, 186, 222], [132, 178, 216]], body: [120, 164, 204], line: [228, 244, 255], icicles: true, keep: true },
     lava: { name: '🌋 lava rock', l: [[58, 48, 52], [52, 44, 48]], r: [[42, 36, 40], [38, 32, 36]], body: [30, 26, 30], line: [255, 110, 30], lava: true, keep: true },
   };
+  const wallStyleOf = sg => sg.wallStyle || (THEME.snow ? 'glacier' : THEME.forest ? 'mossy' : THEME.swamp ? 'mud' : '');   // 🎨 match the world
   const unmapCache = new Map();
   function unmap(c) {                                          // undo a world's colour filter so ice stays icy and lava stays hot
     if (!THEME.map) return c;
@@ -2917,7 +2957,7 @@
             }
             continue;
           }
-          const ws = !sg.cave && !sg.slot && sg.wallStyle ? WALL_STYLES[sg.wallStyle] : null;
+          const ws = !sg.cave && !sg.slot ? WALL_STYLES[wallStyleOf(sg)] || null : null;
           const shade = ws ? wcol(ws, side < 0 ? ws.l[alt ? 0 : 1] : ws.r[alt ? 0 : 1]) : sg.cave ? (side < 0 ? (alt ? [92, 62, 48] : [84, 56, 44]) : (alt ? [72, 48, 38] : [66, 44, 35])) : sg.slot ? (side < 0 ? (alt ? [120, 58, 36] : [110, 52, 32]) : (alt ? [96, 46, 30] : [88, 42, 28]))
             : side < 0 ? (alt ? [150, 82, 48] : [140, 76, 44]) : (alt ? [124, 64, 38] : [116, 60, 36]);
           poly([x1, p1.y, x1, p1.y - h1, x2, p2.y - h2, x2, p2.y], fogMix(shade, fog * 0.85));
@@ -3938,7 +3978,7 @@
           <label title="A roller-coaster loop: the track curls up, you go upside down over the top, and come back down"><input type="checkbox" data-k="flip"${sc.flip ? ' checked' : ''}${sc.jump ? ' disabled' : ''}>🎢 loop-the-loop</label>
           ${sc.canyon && !sc.jump ? `<label title="A notch in the canyon wall: a road climbs up onto the rim, jumps across the canyon and comes back down">⛰ wall notch <select data-k="split"><option value="">none</option><option value="left"${sc.split === 'left' ? ' selected' : ''}>left wall</option><option value="right"${sc.split === 'right' ? ' selected' : ''}>right wall</option></select></label>` : `<label title="${sc.tunnel || sc.water || sc.jump ? 'Not on tunnel, water or jump sections' : 'A second route that splits off and rejoins at the end of this section'}">split <select data-k="split"${sc.tunnel || sc.water || sc.jump ? ' disabled' : ''}><option value="">none</option><option value="left"${sc.split === 'left' ? ' selected' : ''}>⑂ left</option><option value="right"${sc.split === 'right' ? ' selected' : ''}>⑂ right</option></select></label>`}
           ${splitOkOf(sc) && !sc.canyon ? `<label>route <select data-k="trail"><option value="plain"${(sc.trail || 'plain') === 'plain' ? ' selected' : ''}>side road</option><option value="logs"${sc.trail === 'logs' ? ' selected' : ''}>log jumps</option><option value="creek"${sc.trail === 'creek' ? ' selected' : ''}>creek</option><option value="tunnel"${sc.trail === 'tunnel' ? ' selected' : ''}>rock tunnel</option><option value="rocks"${sc.trail === 'rocks' ? ' selected' : ''}>boulder garden</option></select></label>` : ''}
-          ${sc.canyon ? `<label title="What the canyon walls look like">walls <select data-k="walls">${Object.keys(WALL_STYLES).map(k => `<option value="${k === 'classic' ? '' : k}"${(sc.walls || '') === (k === 'classic' ? '' : k) ? ' selected' : ''}>${k === 'classic' ? '🟫 classic' : WALL_STYLES[k].name}</option>`).join('')}</select></label>` : ''}
+          ${sc.canyon ? `<label title="What the canyon walls look like">walls <select data-k="walls">${Object.keys(WALL_STYLES).map(k => `<option value="${k === 'classic' ? '' : k}"${(sc.walls || '') === (k === 'classic' ? '' : k) ? ' selected' : ''}>${k === 'classic' ? '🎨 match the world' : k === 'sandstone' ? '🟫 desert sandstone' : WALL_STYLES[k].name}</option>`).join('')}</select></label>` : ''}
           <label title="A special feature for this section">special <select data-k="fx"${sc.jump ? ' disabled' : ''}>${Object.entries(FX_NAMES).map(([k, n]) => `<option value="${k}"${(sc.fx || '') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
           <label>obstacles <select data-k="obs"><option value="none"${sc.obs === 'none' ? ' selected' : ''}>none</option><option value="some"${sc.obs === 'some' ? ' selected' : ''}>some</option><option value="lots"${sc.obs === 'lots' ? ' selected' : ''}>lots</option></select></label>
         </div>`;
@@ -4078,7 +4118,7 @@
     return { id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: String(o.n || 'Shared level').slice(0, 28), world: num(o.w, 1, 5, 1) | 0, laps: num(o.l, 1, 9, 3) | 0, smooth: num(o.m, 0, 100, 0) | 0,
       sections: o.s.map(a => ({ len: num(a[0], 20, 400, 90) | 0, curve: num(a[1], -7, 7, 0), hill: num(a[2], -4000, 4000, 0) | 0, canyon: !!(a[3] & 1), arch: !!(a[3] & 2), tunnel: !!(a[3] & 4), ramp: !!(a[3] & 8), jump: !!(a[3] & 16), flip: !!(a[3] & 32),
         water: a[4] === 'fast' || a[4] === 'slow' ? a[4] : '', obs: ['none', 'some', 'lots'].includes(a[5]) ? a[5] : 'some',
-        split: a[6] === 'left' || a[6] === 'right' ? a[6] : '', trail: ['plain', 'logs', 'creek', 'tunnel', 'rocks', 'rim'].includes(a[7]) ? a[7] : 'plain', fx: ['pads', 'refill', 'whoops', 'ice', 'bumpy', 'narrow', 'storm'].includes(a[8]) ? a[8] : '', walls: WALL_STYLES[a[9]] ? a[9] : '' })) };
+        split: a[6] === 'left' || a[6] === 'right' ? a[6] : '', trail: ['plain', 'logs', 'creek', 'tunnel', 'rocks', 'rim'].includes(a[7]) ? a[7] : 'plain', fx: ['pads', 'refill', 'whoops', 'ice', 'bumpy', 'narrow', 'storm'].includes(a[8]) ? a[8] : '', walls: a[9] in WALL_STYLES && a[9] !== 'classic' ? a[9] : '' })) };
   }
   document.querySelectorAll('.ed-add [data-add]').forEach(b => b.onclick = () => {
     if (ED.sections.length >= 120) { edMsg('That is the most sections a level can have (120).'); return; }
