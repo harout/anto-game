@@ -659,6 +659,33 @@
     const P = new Float64Array(3 * N + 1); for (let i = 0; i < 3 * N; i++) P[i + 1] = P[i] + a[i % N];
     return a.map((_, i) => (P[N + i + R + 1] - P[N + i - R]) / (2 * R + 1));
   }
+  // ✕ OVERLAPS: where a level's loop crosses itself, the lower road dives into a tunnel and the upper one becomes a bridge
+  const OV_CLEAR = 3000, OV_TUN = 14, OV_BRIDGE = 10;
+  function findCrossings(P, Y, skipStart = 50, skipEnd = 60) {  // P: [[x, z]] one point per segment around the closed loop, Y: heights
+    const N = P.length, st = 2, idx = []; for (let i = 0; i < N; i += st) idx.push(i);
+    const M = idx.length, cell = 8, grid = new Map(), out = [];
+    for (let k = 0; k < M; k++) {
+      const a = P[idx[k]], b = P[idx[(k + 1) % M]];
+      for (let cx = Math.floor(Math.min(a[0], b[0]) / cell); cx <= Math.floor(Math.max(a[0], b[0]) / cell); cx++)
+        for (let cz = Math.floor(Math.min(a[1], b[1]) / cell); cz <= Math.floor(Math.max(a[1], b[1]) / cell); cz++) { const key = cx * 73856093 ^ cz * 19349663; (grid.get(key) || grid.set(key, []).get(key)).push(k); }
+    }
+    const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), seen = new Set();
+    for (const list of grid.values()) for (let u = 0; u < list.length; u++) for (let v = u + 1; v < list.length; v++) {
+      const s1 = list[u], s2 = list[v], i = idx[s1], j = idx[s2], gap = Math.min(Math.abs(i - j), N - Math.abs(i - j));
+      if (gap < 90 || seen.has(s1 + ',' + s2)) continue; seen.add(s1 + ',' + s2);
+      const A = P[i], B = P[idx[(s1 + 1) % M]], C = P[j], D = P[idx[(s2 + 1) % M]];
+      if (cr(A, B, C) * cr(A, B, D) >= 0 || cr(C, D, A) * cr(C, D, B) >= 0) continue;
+      const edge = x => x < skipStart + OV_TUN || x > N - skipEnd - OV_TUN;
+      if (edge(i) || edge(j)) continue;                          // keep the start / finish straight clear
+      if (out.some(o => (Math.abs(o.i - i) < 50 && Math.abs(o.j - j) < 50) || (Math.abs(o.i - j) < 50 && Math.abs(o.j - i) < 50))) continue;
+      out.push({ i, j });
+    }
+    return out.map(({ i, j }) => { const up = Y[i] >= Y[j] ? i : j, low = up === i ? j : i; return { up, low, need: Math.max(0, Y[low] + OV_CLEAR - Y[up]) }; });
+  }
+  function liftForCrossing(Y, up, need) {                       // a smooth hump that carries the upper road high enough over the lower one
+    const N = Y.length;
+    for (let k = -62; k <= 62; k++) { const a = Math.abs(k), env = a <= 12 ? 1 : 0.5 + 0.5 * Math.cos(Math.PI * (a - 12) / 50); Y[((up + k) % N + N) % N] += need * env; }
+  }
   const smoothRadius = lv => Math.round(Math.max(0, Math.min(100, +(lv && lv.smooth) || 0)) * 0.6);   // 0–100 → up to 60 segments either side
   // ✎ CUSTOM LEVELS from the level editor (track 7 + the chosen level's id)
   const loadLevels = () => { try { const a = JSON.parse(localStorage.getItem('podracer.levels') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
@@ -813,10 +840,29 @@
     if (hillSum) addRoad(30, 60, 30, 0, { hill: -hillSum });   // ease back down (or up) to the start height
     addRoad(0, 60, 0, 0, CLEAR);                               // finish straight
     const SR = smoothRadius(CUSTOM);
+    mark.overlaps = [];
+    const ovApply = () => {                                    // ✕ bridges + underpass tunnels wherever the loop crosses itself
+      const N = segments.length, k = 0.006, net = segments.reduce((t, g) => t + g.curve, 0) * k, dir = net < 0 ? -1 : 1, fix = (dir * 2 * Math.PI - net) / N;
+      let a = 0, x = 0, z = 0; const raw = [];
+      for (const g of segments) { a += g.curve * k + fix; x += Math.sin(a); z -= Math.cos(a); raw.push([x, z]); }
+      const ex = raw[N - 1][0], ez = raw[N - 1][1], P = raw.map((p, i) => [p[0] - ex * (i + 1) / N, p[1] - ez * (i + 1) / N]);
+      const Y = segments.map(g => g.y), list = findCrossings(P, Y);
+      for (const c of list) if (c.need > 0) liftForCrossing(Y, c.up, c.need);
+      segments.forEach((g, i) => { g.y = Y[i]; });
+      for (const c of list) {
+        const at = i => segments[((i % N) + N) % N], yUp = at(c.up).y, yLow = at(c.low).y;
+        for (let q = -OV_TUN; q <= OV_TUN; q++) {               // underpass: a short tunnel for the lower road
+          const g = at(c.low + q); Object.assign(g, { canyon: true, cave: true, mtn: false, wall: 1.6, river: false, swamp: false, frozen: false, under: yUp, wallH: Math.max(1600, Math.min(2400, yUp - g.y - 500)) });
+        }
+        for (let q = -OV_BRIDGE; q <= OV_BRIDGE; q++) { const g = at(c.up + q); g.bridge = { low: yLow, k: q }; g.canyon = false; g.cave = false; g.river = false; g.swamp = false; }
+        mark.overlaps.push({ up: c.up, low: c.low, yUp, yLow });
+      }
+    };
     if (SR) {                                                  // SMOOTHING from the 3D view
       const cs = smoothLoop(segments.map(g => g.curve), SR), ys = smoothLoop(segments.map(g => g.y), SR);
       segments.forEach((g, i) => { g.curve = cs[i]; g.y = ys[i]; g.bank = Math.abs(cs[i]) >= 3 && !g.canyon && !THEME.swamp ? cs[i] : 0; });   // same banking rule as the builder
     }
+    ovApply();
   } else if (TRACK_ID === 5) {
     // 🏜 BRYCE CANYON: a rim road above a hoodoo amphitheater, switchbacks down through the hoodoos, back up to the rim
     addRoad(0, 50, 0, 0, CLEAR);                  // start straight on the rim
@@ -1094,6 +1140,11 @@
       let j = i; while (j < segments.length && segments[j].clear) j++;
       if (j - i >= 60 && !THEME.swamp && !CUSTOM) addRamp(i + 25, 9, 750, 0, 1.0);
       i = j;
+    }
+    if (CUSTOM) for (const o of mark.overlaps || []) {
+      const N = segments.length, at = i => segments[((i % N) + N) % N];
+      for (let q = -OV_TUN - 4; q <= OV_TUN + 4; q++) { const g = at(o.low + q); g.obs = []; g.ramp = null; if (Math.abs(q) <= OV_TUN) g.sprites = []; }
+      for (let q = -OV_BRIDGE - 2; q <= OV_BRIDGE + 2; q++) { const g = at(o.up + q); g.obs = []; g.ramp = null; g.sprites = g.sprites.filter(t => Math.abs(t.off) > 8); }
     }
     if (CUSTOM) for (const { a, b, sc } of mark.custom) {
       if (sc.ramp) { const at = a + Math.floor((b - a) / 2) - 4; for (let k = at - 6; k < at + 12; k++) segments[k].obs = []; addRamp(at, 9, 750, 0, 1.0); }
@@ -2123,7 +2174,9 @@
       if (n >= 1 && n < DRAW) { if (!aiBuckets.has(n)) aiBuckets.set(n, []); aiBuckets.get(n).push({ ai, f: za / SEG - Math.floor(za / SEG) }); }
     }
     // paint far → near
+    postRail = [];
     for (let n = DRAW - 1; n >= 0; n--) {
+      if (postRail.length) flushRails();                       // railings of the (farther) bridge segment just drawn
       const { p1, p2, sg, idx } = proj[n];
       if (p1.cz <= 10 || p2.y >= p1.y + 0.01 && false) continue;
       const fog = Math.min(1, Math.pow(n / DRAW, 1.6));
@@ -2166,12 +2219,32 @@
         if (!nx.river) { ctx.fillStyle = fogMix([96, 72, 44], fog); ctx.fillRect(-W, p2.y, W * 3, Math.max(1, (p1.y - p2.y) * 0.4)); }
       } else {
       ctx.fillStyle = fogMix(THEME.swamp ? (alt ? [66 + sg.tint, 88 + sg.tint, 44] : [58 + sg.tint, 80 + sg.tint, 42]) : THEME.forest && !sg.canyon && (sg.y > snowLine(sg) || sg.winter) ? (alt ? [236, 240, 246] : [222, 230, 240]) : THEME.forest && !sg.canyon ? (alt ? [76 + sg.tint, 138 + sg.tint, 56] : [68 + sg.tint, 128 + sg.tint, 50]) : sg.cave ? (alt ? [74, 52, 40] : [66, 46, 36]) : sg.slot ? (alt ? [138, 80, 52] : [128, 74, 48]) : sg.canyon ? (alt ? [176, 112, 70] : [166, 104, 64]) : (alt ? [214 + sg.tint, 160 + sg.tint * .8, 104 + sg.tint * .5] : [204 + sg.tint, 148 + sg.tint * .8, 94 + sg.tint * .5]), fog);
+      if (sg.bridge) {                                         // ✕ overpass: look down at the lower road crossing underneath
+        const nb = segFor(idx + 1), pb = segFor(idx - 1), low = sg.bridge.low, k2 = H / 2;
+        const yl1 = p1.y + p1.scale * (sg.y - low) * k2, yl2 = p2.y + p2.scale * (nb.y - low) * k2;
+        const edgeIn = !pb.bridge, edgeOut = !nb.bridge, kk = sg.bridge.k;
+        const dg = ctx.createLinearGradient(0, p2.y, 0, p1.y + (p1.y - p2.y)); dg.addColorStop(0, fogMix([70, 62, 58], fog)); dg.addColorStop(1, fogMix([34, 30, 28], fog));
+        ctx.fillStyle = dg; ctx.fillRect(-W, p2.y, W * 3, p1.y - p2.y + 1);                                     // the drop beside the deck, in shadow
+        const bandT = Math.max(p2.y, Math.min(yl2, p1.y)), bandB = Math.max(bandT + 1, Math.min(yl1, H * 2));
+        ctx.fillStyle = fogMix(Math.abs(kk) >= OV_BRIDGE - 1 ? ((sg.i & 1) ? [236, 220, 190] : [150, 60, 32]) : [92, 88, 84], fog);   // the lower road far below (rumble at its edges)
+        ctx.fillRect(-W, yl2, W * 3, Math.max(1, yl1 - yl2 + 1));
+        if (Math.abs(kk) < OV_BRIDGE - 1) {                    // the lower road seen through the gap: a band of asphalt with a moving lane line, drawn at deck level so you can see it from the bridge
+          const mid = (p1.y + p2.y) / 2, bh = Math.max(1, (p1.y - p2.y) * 0.9);
+          ctx.fillStyle = fogMix([88, 84, 82], fog * 0.6 + 0.25); ctx.fillRect(-W, mid - bh / 2, W * 3, bh);
+          if (kk === 0 || kk === 1) { ctx.fillStyle = fogMix([240, 236, 220], fog * 0.6 + 0.25); for (let xx = -W + ((performance.now() / 3) % (240 * DPR)); xx < W * 2; xx += 240 * DPR) ctx.fillRect(xx, mid - bh * 0.12, 110 * DPR, Math.max(1, bh * 0.24)); }
+        }
+        if (kk === 0) { ctx.fillStyle = fogMix([240, 236, 220], fog); for (let xx = -W + ((performance.now() / 3) % (240 * DPR)); xx < W * 2; xx += 240 * DPR) ctx.fillRect(xx, yl2, 110 * DPR, Math.max(1, (yl1 - yl2) * 0.5)); }   // lane line
+        if (edgeOut) { ctx.fillStyle = fogMix([120, 116, 112], fog); ctx.fillRect(-W, p2.y, W * 3, Math.max(1, yl2 - p2.y)); }   // far abutment wall
+        if (edgeIn) { ctx.fillStyle = fogMix([96, 92, 88], fog); ctx.fillRect(-W, p1.y, W * 3, Math.max(1, yl1 - p1.y)); }       // near abutment wall
+        if (kk % 4 === 0) { const pw = Math.max(1, p1.w * 0.06); ctx.fillStyle = fogMix([140, 140, 150], fog); for (const sd of [-1, 1]) ctx.fillRect(p1.x + sd * p1.w * 1.05 - pw / 2, p1.y, pw, Math.max(1, yl1 - p1.y)); }   // pillars
+      } else
       ctx.fillRect(-W, p2.y, W * 3, p1.y - p2.y + 1);
       // rumble + road (sharp turns are banked: the outer edge is raised)
       const rw = sg.roadW || 1, w1 = p1.w * rw, w2 = p2.w * rw, r1 = w1 * 1.12, r2 = w2 * 1.12, nxB = segFor(idx + 1);
       const bk1 = sg.bank * BANK_K * p1.scale * H / 2, bk2 = nxB.bank * BANK_K * p2.scale * H / 2;
       const eL = b => b > 0 ? 1.6 * b : 0.4 * b, eR = b => b > 0 ? -0.4 * b : -1.6 * b;   // edge lift (px) left / right
       const L1 = eL(bk1), R1 = eR(bk1), L2 = eL(bk2), R2 = eR(bk2);
+      if (sg.bridge) postRail.push([p1.x, p1.y, p2.x, p2.y, r1, r2, p1.scale * 260 * H / 2, p2.scale * 260 * H / 2, fog]);
       if (bk1 || bk2) {                                      // earth embankment under the raised edge
         const sd = (sg.bank || nxB.bank) > 0 ? -1 : 1, e1 = sd < 0 ? L1 : R1, e2 = sd < 0 ? L2 : R2;
         poly([p1.x + sd * r1, p1.y - e1 * 1.12, p2.x + sd * r2, p2.y - e2 * 1.12, p2.x + sd * r2 * 1.7, p2.y, p1.x + sd * r1 * 1.7, p1.y], fogMix(THEME.forest ? [92, 84, 60] : [170, 120, 80], fog));
@@ -2684,6 +2757,14 @@
     return pts;
   }
   function ringPath(r) { ctx.moveTo(r[0], r[1]); for (let k = 2; k < r.length; k += 2) ctx.lineTo(r[k], r[k + 1]); ctx.closePath(); }
+  let postRail = [];
+  function flushRails() {
+    for (const [x1, y1, x2, y2, r1, r2, h1, h2, fog] of postRail) for (const sd of [-1, 1]) {
+      poly([x1 + sd * r1, y1, x2 + sd * r2, y2, x2 + sd * r2, y2 - h2, x1 + sd * r1, y1 - h1], fogMix([200, 202, 210], fog));
+      ctx.strokeStyle = fogMix([120, 122, 130], fog); ctx.lineWidth = Math.max(1, h1 * 0.12); ctx.beginPath(); ctx.moveTo(x1 + sd * r1, y1 - h1); ctx.lineTo(x2 + sd * r2, y2 - h2); ctx.stroke();
+    }
+    postRail = [];
+  }
   function drawCaveSeg(p1, p2, sg, nx, idx, fog, alt) {
     const r1 = caveRing(p1, sg, idx), r2 = caveRing(p2, nx.cave ? nx : sg, idx + 1), CS = CAVE_STYLE;
     const entrance = !segFor(idx - 1).cave;
@@ -2705,6 +2786,12 @@
       ctx.fillStyle = fogMix(CS.cap, fog); ctx.beginPath();
       ctx.moveTo(cx - ww * 3.1, p1.y - hh * 4.6); ctx.lineTo(cx - ww * 1.5, p1.y - hh * 5.6); ctx.lineTo(cx + ww * 0.5, p1.y - hh * 6.4); ctx.lineTo(cx + ww * 2.6, p1.y - hh * 5.0);
       ctx.lineTo(cx + ww * 1.2, p1.y - hh * 5.2); ctx.lineTo(cx - ww * 0.5, p1.y - hh * 4.8); ctx.closePath(); ctx.fill();
+    } else if (entrance && sg.under != null) {                  // ✕ underpass: the upper road crosses overhead
+      const yTop = p1.y - p1.scale * (sg.under - sg.y) * H / 2, th = Math.max(2, p1.scale * 380 * H / 2);
+      ctx.fillStyle = fogMix([120, 116, 112], fog); ctx.beginPath(); ctx.rect(-W, yTop, W * 3, p1.y - yTop); ringPath(r1); ctx.fill('evenodd');   // abutment around the opening
+      ctx.fillStyle = fogMix([150, 148, 150], fog); ctx.fillRect(-W, yTop - th, W * 3, th);                                                        // the upper deck's edge
+      ctx.fillStyle = fogMix([210, 212, 220], fog); ctx.fillRect(-W, yTop - th * 1.6, W * 3, th * 0.35);                                           // its railing
+      ctx.fillStyle = fogMix([255, 214, 90], fog); for (let xx = -W + ((sg.i * 37) % 200) * DPR; xx < W * 2; xx += 200 * DPR) ctx.fillRect(xx, yTop - th * 0.65, 90 * DPR, Math.max(1, th * 0.18));   // hazard stripe
     } else if (entrance) {                                      // plain rock face around the opening
       ctx.fillStyle = fogMix(CS.face, fog); ctx.beginPath(); ctx.rect(p1.x - p1.w * 6, p1.y - p1.w * 5, p1.w * 12, p1.w * 5); ringPath(r1); ctx.fill('evenodd');
     }
@@ -3221,9 +3308,15 @@
     const kk = 0.006, net = C.reduce((t, c) => t + c, 0) * kk, dir = net < 0 ? -1 : 1, fix = opt.open ? 0 : (dir * 2 * Math.PI - net) / N;
     let a = 0, x = 0, y = 0; const pts = [];
     C.forEach((c, i) => { a += c * kk + fix; x += Math.sin(a); y -= Math.cos(a); pts.push([x, y, HH[i]]); });
-    if (!opt.open) { const ex = pts[N - 1][0], ey = pts[N - 1][1]; pts.forEach((p, i) => { p[0] -= ex * (i + 1) / N; p[1] -= ey * (i + 1) / N; }); }
-    const geom = pts.map((p, i) => ({ x: p[0], z: p[1], y: p[2] / SEG, kind: segs[i].kind, ramp: segs[i].ramp, rocks: segs[i].rocks, sel: segs[i].sel, split: segs[i].split, st: segs[i].st }));
-    return { segs, pts, hs, N, geom };
+    let crossings = [];
+    if (!opt.open) {
+      const ex = pts[N - 1][0], ey = pts[N - 1][1]; pts.forEach((p, i) => { p[0] -= ex * (i + 1) / N; p[1] -= ey * (i + 1) / N; });
+      crossings = findCrossings(pts.map(p => [p[0], p[1]]), pts.map(p => p[2]));
+      const Y = pts.map(p => p[2]); for (const c of crossings) if (c.need > 0) liftForCrossing(Y, c.up, c.need); pts.forEach((p, i) => { p[2] = Y[i]; });
+      for (const c of crossings) { for (let q = -OV_TUN; q <= OV_TUN; q++) { const g = segs[((c.low + q) % N + N) % N]; if (g.kind !== 'preview') g.kind = 'tunnel'; } for (let q = -OV_BRIDGE; q <= OV_BRIDGE; q++) segs[((c.up + q) % N + N) % N].bridge = true; }
+    }
+    const geom = pts.map((p, i) => ({ x: p[0], z: p[1], y: p[2] / SEG, kind: segs[i].kind, ramp: segs[i].ramp, rocks: segs[i].rocks, sel: segs[i].sel, split: segs[i].split, st: segs[i].st, bridge: segs[i].bridge }));
+    return { segs, pts, hs, N, geom, crossings };
   }
   // 🔄 AUTO-COMPLETE: add turn → straight → turn so the track ends exactly where (and how) it started, at the start height
   const secLen = sc => Math.max(sc.split && !sc.canyon && !sc.tunnel && !sc.water ? 150 : 20, Math.min(400, sc.len));
@@ -3289,7 +3382,8 @@
     pc.beginPath(); pts.forEach((p, i) => { const px = 6 + i / (N - 1) * 348, py = 84 - (p[2] - mnh) / (mxh - mnh) * 62; i ? pc.lineTo(px, py) : pc.moveTo(px, py); });
     pc.strokeStyle = '#ffb347'; pc.lineWidth = 2; pc.stroke();
     const km = N * 200 / 1000 * ED.laps / 10;
-    document.getElementById('edStats').innerHTML = `${ED.sections.length} sections · ${N} segments a lap${ED.smooth ? ` · smoothing ${ED.smooth}` : ''} · ${ED.laps} lap${ED.laps > 1 ? 's' : ''}<br>about ${Math.round(N / 45 * ED.laps)} s of racing · highest +${Math.round(Math.max(0, ...hsArr))} · lowest ${Math.round(Math.min(0, ...hsArr))}${hs ? ' · eases back to the start height' : ''}`;
+    const nX = levelLayout(ED).crossings.length;
+    document.getElementById('edStats').innerHTML = `${ED.sections.length} sections · ${N} segments a lap${nX ? ` · ${nX} overpass${nX > 1 ? 'es' : ''} (bridge over a tunnel)` : ''}${ED.smooth ? ` · smoothing ${ED.smooth}` : ''} · ${ED.laps} lap${ED.laps > 1 ? 's' : ''}<br>about ${Math.round(N / 45 * ED.laps)} s of racing · highest +${Math.round(Math.max(0, ...hsArr))} · lowest ${Math.round(Math.min(0, ...hsArr))}${hs ? ' · eases back to the start height' : ''}`;
   }
   const edCodeOf = lv => 'POD1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ n: lv.name, w: lv.world, l: lv.laps, m: lv.smooth || 0, s: lv.sections.map(sc => [sc.len, sc.curve, sc.hill, (sc.canyon ? 1 : 0) | (sc.arch ? 2 : 0) | (sc.tunnel ? 4 : 0) | (sc.ramp ? 8 : 0), sc.water || '', sc.obs || 'some', sc.split || '', sc.trail || 'plain']) }))));
   function edFromCode(code) {
@@ -3504,6 +3598,10 @@
       face([la, lb, rb, ra], i < 4 ? ((i & 1) ? [40, 40, 40] : [255, 255, 255]) : col);
       face([[la[0], g.floor, la[2]], [lb[0], g.floor, lb[2]], lb, la], [70, 46, 30], 0.55);          // the track's side, down to the ground
       face([[ra[0], g.floor, ra[2]], [rb[0], g.floor, rb[2]], rb, ra], [70, 46, 30], 0.55);
+      if (a.bridge) {                                          // overpass: railings and pillars
+        const rh = hw * 0.5; face([la, lb, [lb[0], lb[1] + rh, lb[2]], [la[0], la[1] + rh, la[2]]], [210, 210, 220]); face([ra, rb, [rb[0], rb[1] + rh, rb[2]], [ra[0], ra[1] + rh, ra[2]]], [190, 190, 200]);
+        if (i % 4 === 0) { const pw = hw * 0.25; face([[a.X - pw, g.floor, a.Z], [a.X + pw, g.floor, a.Z], [a.X + pw, a.Y, a.Z], [a.X - pw, a.Y, a.Z]], [150, 150, 160]); }
+      }
       if (a.kind === 'canyon') { const h = hw * 3.2;
         face([la, lb, [lb[0], lb[1] + h, lb[2]], [la[0], la[1] + h, la[2]]], [184, 112, 62]);
         face([ra, rb, [rb[0], rb[1] + h, rb[2]], [ra[0], ra[1] + h, ra[2]]], [168, 100, 56]); }
@@ -3540,7 +3638,7 @@
     for (const sg of segments) { a += sg.curve * k + fix; x += Math.sin(a); z -= Math.cos(a); raw.push([x, z]); }
     const ex = raw[N - 1][0], ez = raw[N - 1][1];
     return segments.map((sg, i) => ({ x: raw[i][0] - ex * (i + 1) / N, z: raw[i][1] - ez * (i + 1) / N, y: sg.y / SEG,
-      kind: sg.cave ? 'tunnel' : sg.river ? (sg.swamp ? 'swamp' : 'river') : sg.canyon ? 'canyon' : 'road', ramp: !!(sg.ramp && sg.ramp.j === 0 && Math.abs(sg.ramp.off) < 1), rocks: sg.obs.some(o => Math.abs(o.off) < 1 && o.kind !== 'tree') }));
+      bridge: !!sg.bridge, kind: sg.cave ? 'tunnel' : sg.river ? (sg.swamp ? 'swamp' : 'river') : sg.canyon ? 'canyon' : 'road', ramp: !!(sg.ramp && sg.ramp.j === 0 && Math.abs(sg.ramp.off) < 1), rocks: sg.obs.some(o => Math.abs(o.off) < 1 && o.kind !== 'tree') }));
   }
   document.getElementById('view3dBtn').onclick = () => {
     const lv = CUSTOM && loadLevels().find(l => l.id === CUSTOM.id);
@@ -3855,7 +3953,7 @@
         if (now >= c.c0 + CHASM_LEN && podY >= 0 && podY <= 1) return { result: 'CLEARED', peak: Math.round(peak), speedAtLanding: Math.round(speed) };
       }
       return { result: 'timeout', peak };
-    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, get testMode() { return TEST_MODE; }, edSet(S) { ED.sections = S.map(x => Object.assign(newSection("straight"), x)); edSel = 0; edRenderList(); edPreview(); }, randSec() { return randomSection(); }, acTest() { const before = ED.sections.length; const m = runAutoComplete(); const segs = levelLayout(ED, -1, { open: true }); const p = segs.pts, L = p[p.length - 1], P2 = p[p.length - 2]; return { msg: m, added: ED.sections.length - before, endX: +L[0].toFixed(1), endY: +L[1].toFixed(1), heading: +(Math.atan2(L[0] - P2[0], -(L[1] - P2[1])) * 180 / Math.PI).toFixed(1), hillSum: ED.sections.reduce((t, s) => t + (+s.hill || 0), 0) }; }, get build() { return { on: v3build, pieces: ED && ED.sections.length, last: ED && ED.sections[ED.sections.length - 1], bp: { ...BP } }; }, segCurves() { return segments.map(g => g.curve); }, segYs() { return segments.map(g => g.y); }, get v3() { return { open: v3open, src: v3src, pts: v3geo && v3geo.P.length }; }, get custom() { return CUSTOM && { id: CUSTOM.id, name: CUSTOM.name, laps: TOTAL_LAPS, segs: segments.length, theme: THEME.name }; }, edCode(lv) { return edCodeOf(lv); }, edFrom(c) { return edFromCode(c); }, autoRace(maxSec, lazy = 0) { menuEl.style.display = "none"; restartRace(); raceState = "racing"; countdown = 0; let t = 0; while (t < maxSec && raceState === "racing") { L = R = 1 - lazy; const sg = segAt(position + PLAYER_Z); playerX += (sg.curve * 0.09 - playerX) * 0.2; physicsStep(1 / 60, false); t += 1 / 60; } return { state: raceState, time: raceTime, lap }; }, get ghostPos() { return ghostAt(raceTime); }, get ghost() { return { mode: GHOST_MODE, have: !!GHOST, time: GHOST && GHOST.time, n: GHOST && GHOST.s.length, rec: ghostRec.length, delta: ghostDelta() }; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
+    }, enterSc(k, idx, spd) { T = shortcuts[k]; position = idx * SEG; speed = spd; playerX = 0; podY = 0; podVY = 0; onRamp = false; }, chasmOf(k) { const c = shortcuts[k].chasm; return { ...c, respawn: shortcuts[k].respawn }; }, caveInfo() { const sc = shortcuts.find(x => x.cave); return { idx: sc.idx, entry: sc.entry, exit: sc.exit, len: sc.segs.length, obs: sc.segs.reduce((t, x) => t + x.obs.length, 0) }; }, scInfo() { return shortcuts.map(sc => ({ entry: sc.entry, exit: sc.exit, side: sc.side, len: sc.segs.length, wall: segments[sc.entry].wall })); }, get track() { return T.main ? 'main' : 'sc' + T.idx; }, rampList() { return ramps.map(i => ({ i, r: segments[i].ramp })); }, finishNow() { raceTime = 171.3; lapTimes = [58.2, 56.4, 56.7]; finishRace(); }, get race() { return { raceState, lap, lapTimes: lapTimes.slice(), raceTime }; }, simAI(sec) { raceState = 'racing'; L = 0; R = 0; let hits = 0; const before = ais.map(a => a.lastObs); for (let i = 0; i < sec * 60; i++) { raceTime += 1 / 60; physicsStep(1 / 60, false); } return { lapLen: TRACK_LEN, end: RACE_END(), ais: ais.map(a => ({ name: a.name, laps: +(a.dist / TRACK_LEN).toFixed(2), fin: a.finished ? +a.finishTime.toFixed(1) : null, x: +a.x.toFixed(2) })) }; }, get ais() { return ais.map(a => ({ name: a.name, dist: Math.round(a.dist), x: +a.x.toFixed(2), y: Math.round(a.y), speed: Math.round(a.speed), finished: a.finished, boosting: a.boosting, finishTime: a.finishTime, trail: a.trail ? a.trail.idx : null, tp: a.tp, trailsTaken: a.trailsTaken || 0, falls: a.falls || 0, forks: a.forks || {} })); }, setAITrail(i, k, tp = 0) { const a = ais[i], sc = shortcuts[k]; a.trail = sc; a.tBase = 0; a.tp = tp; a.x = 0; a.dist = sc.entry * SEG; }, get pos() { return racePosition(); }, get s() { return { podY, position, playerX, speed, lap, offRoad, hitFlash, len: TRACK_LEN, obs: segments.reduce((t, x) => t + x.obs.length, 0) }; }, clearInfo() { const c = segments.filter(x => x.clear); return { segs: segments.length, clear: c.length, obsOnClear: c.reduce((t, x) => t + x.obs.length, 0), firstClear: segments.findIndex((x, i) => x.clear && i > 100) }; }, firstObs() { const sg = segments.find(x => x.obs.length && x.i > 100); return { i: sg.i, o: sg.obs, canyon: sg.canyon }; }, canyonObs() { const sg = segments.find(x => x.obs.length && x.canyon && x.obs.some(o => o.kind === 'pillar')); return sg ? { i: sg.i, o: sg.obs } : null; }, jump(z, x = 0) { T = MAIN; position = z; playerX = x; podY = 0; podVY = 0; onRamp = false; }, setSpeed(v) { speed = v; }, segInfoFull(i) { const g = segments[((i % segments.length) + segments.length) % segments.length]; return { bridge: g.bridge, y: g.y, cave: g.cave, canyon: g.canyon }; }, get overlaps() { return mark.overlaps || []; }, get testMode() { return TEST_MODE; }, edSet(S) { ED.sections = S.map(x => Object.assign(newSection("straight"), x)); edSel = 0; edRenderList(); edPreview(); }, randSec() { return randomSection(); }, acTest() { const before = ED.sections.length; const m = runAutoComplete(); const segs = levelLayout(ED, -1, { open: true }); const p = segs.pts, L = p[p.length - 1], P2 = p[p.length - 2]; return { msg: m, added: ED.sections.length - before, endX: +L[0].toFixed(1), endY: +L[1].toFixed(1), heading: +(Math.atan2(L[0] - P2[0], -(L[1] - P2[1])) * 180 / Math.PI).toFixed(1), hillSum: ED.sections.reduce((t, s) => t + (+s.hill || 0), 0) }; }, get build() { return { on: v3build, pieces: ED && ED.sections.length, last: ED && ED.sections[ED.sections.length - 1], bp: { ...BP } }; }, segCurves() { return segments.map(g => g.curve); }, segYs() { return segments.map(g => g.y); }, get v3() { return { open: v3open, src: v3src, pts: v3geo && v3geo.P.length }; }, get custom() { return CUSTOM && { id: CUSTOM.id, name: CUSTOM.name, laps: TOTAL_LAPS, segs: segments.length, theme: THEME.name }; }, edCode(lv) { return edCodeOf(lv); }, edFrom(c) { return edFromCode(c); }, autoRace(maxSec, lazy = 0) { menuEl.style.display = "none"; restartRace(); raceState = "racing"; countdown = 0; let t = 0; while (t < maxSec && raceState === "racing") { L = R = 1 - lazy; const sg = segAt(position + PLAYER_Z); playerX += (sg.curve * 0.09 - playerX) * 0.2; physicsStep(1 / 60, false); t += 1 / 60; } return { state: raceState, time: raceTime, lap }; }, get ghostPos() { return ghostAt(raceTime); }, get ghost() { return { mode: GHOST_MODE, have: !!GHOST, time: GHOST && GHOST.time, n: GHOST && GHOST.s.length, rec: ghostRec.length, delta: ghostDelta() }; }, get tour() { return TOUR; }, get state() { return raceState; }, finishStage() { lapTimes = [1]; finishRace(); }, get flight() { return { t: flightT, fx, fy, rings: fRings, rocks: fRocks, adj: flightAdj, objs: fobjs.length }; }, skipFlight(t) { flightT = t; }, probeHit(seg, x, y, spd) { T = MAIN; position = (seg - 4) * SEG - PLAYER_Z; playerX = x; podY = y; podVY = 0; onRamp = false; speed = spd; hitFlash = 0; lastObsHit = -1; let hit = false; for (let i = 0; i < 40; i++) { if (y) { podY = y; podVY = 0; } playerX = x; stepTrack(1 / 60); if (hitFlash > 1) { hit = true; break; } if (Math.floor((position + PLAYER_Z) / SEG) > seg + 1) break; } return hit; }, obsAt(i) { return segments[i].obs.map(o => ({ off: o.off, w: o.w, kind: o.kind })); }, segInfo(i) { const g = segments[i]; return { bank: g.bank, canyon: g.canyon, cave: g.cave, wall: g.wall, curve: g.curve, gap: g.gap, river: g.river, branch: !!g.branchSc }; }, get nSeg() { return segments.length; }, rearEnd(k, gapSegs, spd) { const ai = ais[k]; raceState = "racing"; T = MAIN; ai.trail = null; position = ai.dist - PLAYER_Z - gapSegs * SEG; playerX = ai.x; podY = 0; podVY = 0; speed = spd; superT = 0; const log = []; for (let i = 0; i < 120; i++) { L = 1; R = 1; boost = true; physicsStep(1 / 60, false); let dz = modL(ai.dist) - modL(position + PLAYER_Z); if (dz > TRACK_LEN / 2) dz -= TRACK_LEN; if (dz < -TRACK_LEN / 2) dz += TRACK_LEN; log.push([Math.round(dz), +(ai.x - playerX).toFixed(2), Math.round(speed), Math.round(ai.speed)]); } return log; }, setPodY(y, vy = 0) { podY = y; podVY = vy; }, get podHalf() { return podHalf(); }, get hitF() { return hitFlash; } };
   refreshPadList(); buildAxisRows();
   if (TOUR) { const lb = document.getElementById('lapBox'); if (lb && lb.firstChild) lb.firstChild.textContent = 'WORLD '; }
   if (TOUR && TOUR.stage > 0 && TOUR.arriving) { TOUR.arriving = false; saveTour(); beginTourStage(); }

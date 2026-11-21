@@ -39,6 +39,8 @@ the menu and race with the AI rivals, ghosts and standings like the built-in tra
 see it glow at the end of the track in 3D, and press Enter to place it (Backspace to undo).
 **🧪 TEST DRIVE** drives the level right away without saving (one lap, no rivals; Esc returns to the editor).
 **≈✕ Remove water** clears every river and swamp stretch at once.
+**✕ Overpasses**: where your track crosses itself, the lower road goes through a tunnel and the upper one becomes a bridge
+(lifted if needed); from the bridge you can see the lower road crossing underneath.
 **🔄 Auto-complete** adds the turn, straight and turn that join the end of your track back to the start line, level with it.
 **⑂ Split tracks**: any plain section can split off a second route (left or right — a side road, log jumps, a creek,
 a rock tunnel or a boulder garden) that rejoins at the end of the section; rivals take it now and then.
