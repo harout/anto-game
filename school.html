@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 9 Quiz: The Early Middle Ages</title>
+<style>
+  body { font-family: Georgia, "Times New Roman", serif; background: #f6f1e7; color: #2b2116; margin: 0; padding: 0; line-height: 1.45; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 20px 16px 60px; }
+  h1 { font-size: 28px; margin: 10px 0 4px; }
+  .sub { color: #6b5a44; margin: 0 0 20px; }
+  .q { background: #fffdf8; border: 1px solid #d9ccb4; border-radius: 8px; padding: 14px 16px; margin: 0 0 14px; }
+  .q h2 { font-size: 17px; margin: 0 0 10px; font-weight: bold; }
+  .num { color: #8a5a1f; }
+  label { display: block; padding: 7px 10px; margin: 4px 0; border: 1px solid #e6dcc9; border-radius: 6px; cursor: pointer; }
+  label:hover { background: #f7efe0; }
+  input[type=radio] { margin-right: 8px; }
+  .right { background: #dff2dc !important; border-color: #6aa964; }
+  .wrong { background: #f8dcd8 !important; border-color: #c0675c; }
+  .why { display: none; margin-top: 8px; font-size: 15px; color: #4a3b28; }
+  .show .why { display: block; }
+  .btns { margin: 20px 0; }
+  button { font-family: inherit; font-size: 17px; padding: 10px 18px; margin: 0 8px 8px 0; border-radius: 6px; border: 1px solid #8a5a1f; background: #8a5a1f; color: #fff; cursor: pointer; }
+  button.alt { background: #fff; color: #8a5a1f; }
+  #score { font-size: 22px; font-weight: bold; margin: 10px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Chapter 9 Quiz: The Early Middle Ages</h1>
+  <p class="sub">30 questions. Pick one answer for each, then press <b>Check my answers</b> at the bottom.</p>
+  <div id="quiz"></div>
+  <div class="btns">
+    <button onclick="checkQuiz()">Check my answers</button>
+    <button class="alt" onclick="resetQuiz()">Start over</button>
+  </div>
+  <div id="score"></div>
+</div>
+
+<script>
+var QUESTIONS = [
+  ["The Ural Mountains are the boundary between which two continents?", ["Europe and Africa", "Europe and Asia", "Asia and Africa", "North and South America"], 1, "Europe and Asia together form Eurasia, and the Urals divide them."],
+  ["What does \"topography\" mean?", ["The weather in a region", "The study of old maps", "The shape and elevation of land", "The plants that grow in an area"], 2, "Topography is the shape and elevation (height) of land in a region."],
+  ["Why was northern Europe invaded so often?", ["Its flat plain had no natural barriers", "It had no rivers", "Its people refused to build castles", "It was surrounded by mountains"], 0, "The Northern European Plain had no mountains to block invaders."],
+  ["Which crops grew well in the dry summers of southern Europe?", ["Rice and tea", "Corn and potatoes", "Wheat and barley only", "Grapes and olives"], 3, "Grapes and olives can survive southern Europe's dry summers."],
+  ["Why was the city of Paris built on an island in a river?", ["To make it hard for raiders to reach", "Because the island had gold", "So kings could fish", "To be closer to the sea"], 0, "Rivers gave protection. The island made Paris hard to attack."],
+  ["About when did the Middle Ages take place?", ["100 BC to AD 400", "500 to 1500", "1500 to 1800", "1000 to 2000"], 1, "The Middle Ages, or medieval period, lasted from about 500 to about 1500."],
+  ["What is a missionary?", ["A soldier who guards the pope", "A person who copies books", "A person who tries to convert others to a religion", "A farmer tied to the land"], 2, "Missionaries travel to teach people about a religion and convert them."],
+  ["Who brought Christianity to Ireland in the 400s?", ["Charlemagne", "Benedict", "Clovis", "Patrick"], 3, "Patrick traveled alone from Britain to Ireland and converted the Irish."],
+  ["Who wrote the set of rules followed by most European monasteries?", ["Benedict", "Patrick", "Alfred the Great", "Pope Leo III"], 0, "Benedict, an Italian monk, wrote the Benedictine Rule in the early 500s."],
+  ["Which of these was NOT something monks did?", ["Copied books", "Ran schools", "Led armies of knights into battle", "Saved ancient Greek and Roman writings"], 2, "Monks prayed, taught, copied books, and helped the poor. They did not lead armies."],
+  ["What happened to Charlemagne on Christmas Day in the year 800?", ["He was defeated by the Vikings", "The pope crowned him Emperor of the Romans", "He became a monk", "He signed the Concordat of Worms"], 1, "Pope Leo III crowned Charlemagne Emperor of the Romans."],
+  ["Besides war, what was Charlemagne known for?", ["Building schools and bringing scholars to Aachen", "Inventing the heavy plow", "Writing Beowulf", "Starting the Benedictine Rule"], 0, "Charlemagne loved education and built schools across Europe."],
+  ["Which invaders came from Scandinavia and were the most feared?", ["Magyars", "Muslims", "Franks", "Vikings"], 3, "The Vikings raided Britain, Ireland, and western Europe."],
+  ["Why could Viking raids reach cities far from the coast?", ["They rode camels", "They sailed their ships up rivers", "They built roads", "They used catapults"], 1, "Viking ships could travel up rivers to inland cities."],
+  ["In Beowulf, what monster does the hero defeat?", ["A dragon named Smaug", "Grendel", "Medusa", "The Minotaur"], 1, "Beowulf kills Grendel to help the Danish king Hrothgar."],
+  ["What was a fief?", ["A piece of land given for military service", "A type of sword", "A tax paid to the pope", "A church service"], 0, "Lords gave knights fiefs (land) instead of money."],
+  ["A knight who promised to serve a lord in exchange for land was called a...", ["serf", "monk", "vassal", "daimyo"], 2, "A vassal swore loyalty to his lord in return for land."],
+  ["Which was a duty a lord owed his vassals?", ["Giving them a ring and staff", "Sending help if an enemy attacked", "Paying their taxes to the king", "Teaching them to read"], 1, "Lords had to protect their vassals and treat them fairly."],
+  ["How were serfs different from slaves?", ["Serfs could vote", "Serfs owned large estates", "Serfs were not owned, but they could not leave the land without permission", "There was no difference"], 2, "Serfs were tied to the land but were not slaves."],
+  ["A manor was...", ["a church in a big city", "a large estate owned by a lord or knight", "a Viking ship", "a book of laws"], 1, "Manors had a house or castle, fields, pastures, forests, and a village."],
+  ["Who was one of the most powerful women of the Middle Ages, queen of both France and England?", ["Eleanor of Aquitaine", "Joan of Arc", "Queen Elizabeth I", "Saint Patrick's sister"], 0, "Eleanor of Aquitaine married Louis VII of France, then Henry II of England."],
+  ["Which new inventions helped farmers grow more food after about 1000?", ["Tractors and fertilizer", "The heavy plow and the horse collar", "Windmills and steam engines", "Gunpowder and cannons"], 1, "The heavy plow dug deeper, and the horse collar let faster horses pull plows."],
+  ["How did the growth of trade help end feudalism?", ["Kings banned trade", "Knights wanted money instead of land, and serfs left for towns", "The Vikings took over trade", "Monks stopped copying books"], 1, "Money and towns gave people other choices than the manor."],
+  ["The knights' code of honorable behavior was called...", ["Bushido", "chivalry", "the Domesday Book", "the Danelaw"], 1, "Chivalry required knights to be brave, loyal, humble, and kind."],
+  ["In feudal Japan, the warriors who served the lords were called...", ["samurai", "daimyo", "serfs", "vassals"], 0, "Samurai were Japan's warriors. Daimyo were the lords they served."],
+  ["What was the main difference between feudal Europe and feudal Japan?", ["Only Japan had warriors", "Only Europe had peasants", "Religion and the themes of their art", "Only Japan had lords"], 2, "Europe was Christian with religious art. Japan blended Buddhism, Shinto, and Confucianism, and its art focused on nature."],
+  ["Which English king stopped the Danes and kept part of England free?", ["William the Conqueror", "Edward the Confessor", "Henry II", "Alfred the Great"], 3, "Alfred the Great stopped the Danes, though they still ruled about half of England (the Danelaw)."],
+  ["What happened at the Battle of Hastings in 1066?", ["The Vikings captured Paris", "William of Normandy defeated Harold and became king of England", "Charlemagne was crowned", "Henry IV stood in the snow"], 1, "William won at Hastings and became William the Conqueror."],
+  ["Why did Pope Gregory VII and King Henry IV of Germany fight?", ["Over who could appoint bishops", "Over who owned Ireland", "Over who wrote Beowulf", "Over the price of grain"], 0, "This was the investiture problem. Henry IV stood barefoot in the snow at Canossa to ask the pope's forgiveness."],
+  ["Who was Thomas à Becket?", ["A Viking chief", "The Archbishop of Canterbury who was killed after opposing Henry II", "A French king", "The monk who wrote the Benedictine Rule"], 1, "Four knights killed Becket in 1170. His grave at Canterbury became a pilgrimage site."]
+];
+
+function shuffleChoices() {
+  for (var i = 0; i < QUESTIONS.length; i++) {
+    var q = QUESTIONS[i], answer = q[1][q[2]], opts = q[1].slice(0);
+    for (var k = opts.length - 1; k > 0; k--) {
+      var r = Math.floor(Math.random() * (k + 1)), t = opts[k];
+      opts[k] = opts[r]; opts[r] = t;
+    }
+    q[1] = opts;
+    for (var m = 0; m < opts.length; m++) { if (opts[m] === answer) { q[2] = m; } }
+  }
+}
+
+function buildQuiz() {
+  shuffleChoices();
+  var html = "";
+  for (var i = 0; i < QUESTIONS.length; i++) {
+    var q = QUESTIONS[i];
+    html += '<div class="q" id="q' + i + '"><h2><span class="num">' + (i + 1) + '.</span> ' + q[0] + '</h2>';
+    for (var j = 0; j < q[1].length; j++) {
+      html += '<label id="q' + i + 'o' + j + '"><input type="radio" name="q' + i + '" value="' + j + '">' +
+        String.fromCharCode(65 + j) + '. ' + q[1][j] + '</label>';
+    }
+    html += '<div class="why">' + q[3] + '</div></div>';
+  }
+  document.getElementById("quiz").innerHTML = html;
+}
+
+function checkQuiz() {
+  var score = 0, blank = 0;
+  for (var i = 0; i < QUESTIONS.length; i++) {
+    var q = QUESTIONS[i];
+    var radios = document.getElementsByName("q" + i);
+    var picked = -1;
+    for (var j = 0; j < radios.length; j++) {
+      document.getElementById("q" + i + "o" + j).className = "";
+      if (radios[j].checked) { picked = j; }
+    }
+    if (picked === -1) { blank++; }
+    if (picked === q[2]) { score++; }
+    else if (picked !== -1) { document.getElementById("q" + i + "o" + picked).className = "wrong"; }
+    document.getElementById("q" + i + "o" + q[2]).className = "right";
+    document.getElementById("q" + i).className = "q show";
+  }
+  var pct = Math.round(score * 100 / QUESTIONS.length);
+  var msg = "You got " + score + " out of " + QUESTIONS.length + " (" + pct + "%).";
+  if (blank > 0) { msg += " You left " + blank + " blank."; }
+  document.getElementById("score").innerHTML = msg;
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function resetQuiz() {
+  buildQuiz();
+  document.getElementById("score").innerHTML = "";
+  window.scrollTo(0, 0);
+}
+
+buildQuiz();
+</script>
+</body>
+</html>
