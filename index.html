@@ -296,7 +296,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v105</span></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v106</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -736,6 +736,59 @@
   // ---------- Simulation ----------
   const MAX_KMH = 900;
   // ---------- Pod roster: unlock one new pod per 1st-place win ----------
+  // 🎨 50 DECORATIONS for the level editor: [group, emoji, name, height, flying altitude]
+  const DECOS = {
+    cactus: ["🌿 Nature", "🌵", "Cactuses", 1400, 0],
+    palm: ["🌿 Nature", "🌴", "Palm trees", 2300, 0],
+    flowers: ["🌿 Nature", "🌸", "Giant flowers", 700, 0],
+    sunflower: ["🌿 Nature", "🌻", "Sunflowers", 950, 0],
+    mushroom: ["🌿 Nature", "🍄", "Giant mushrooms", 1300, 0],
+    tulips: ["🌿 Nature", "🌷", "Tulips", 550, 0],
+    boulder: ["🌿 Nature", "🪨", "Boulders", 750, 0],
+    bamboo: ["🌿 Nature", "🎋", "Bamboo", 2100, 0],
+    roses: ["🌿 Nature", "🌹", "Roses", 600, 0],
+    wheat: ["🌿 Nature", "🌾", "Wheat", 550, 0],
+    castle: ["🏰 Buildings", "🏰", "Castles", 4200, 0],
+    pagoda: ["🏰 Buildings", "🏯", "Pagodas", 3600, 0],
+    house: ["🏰 Buildings", "🏠", "Houses", 1700, 0],
+    hut: ["🏰 Buildings", "🛖", "Huts", 1300, 0],
+    tent: ["🏰 Buildings", "⛺", "Tents", 1000, 0],
+    tower: ["🏰 Buildings", "🗼", "Towers", 5200, 0],
+    temple: ["🏰 Buildings", "🏛", "Temples", 2900, 0],
+    chapel: ["🏰 Buildings", "⛪", "Chapels", 2600, 0],
+    factory: ["🏰 Buildings", "🏭", "Factories", 3000, 0],
+    fountain: ["🏰 Buildings", "⛲", "Fountains", 1250, 0],
+    circus: ["🎡 Fun park", "🎪", "Circus tents", 2700, 0],
+    ferris: ["🎡 Fun park", "🎡", "Ferris wheels", 4300, 0],
+    coaster: ["🎡 Fun park", "🎢", "Roller coasters", 3900, 0],
+    balloons: ["🎡 Fun park", "🎈", "Balloons", 800, 1500],
+    kites: ["🎡 Fun park", "🪁", "Kites", 750, 2600],
+    trophy: ["🎡 Fun park", "🏆", "Giant trophies", 1600, 0],
+    moai: ["🗿 Monuments", "🗿", "Stone heads", 2300, 0],
+    statue: ["🗿 Monuments", "🗽", "Big statues", 4600, 0],
+    gem: ["🗿 Monuments", "💎", "Giant gems", 1250, 0],
+    rainbow: ["🗿 Monuments", "🌈", "Rainbows", 3000, 0],
+    rocket: ["🚀 Vehicles", "🚀", "Rockets", 3600, 0],
+    ufo: ["🚀 Vehicles", "🛸", "UFOs", 950, 2500],
+    heli: ["🚀 Vehicles", "🚁", "Helicopters", 950, 2200],
+    train: ["🚀 Vehicles", "🚂", "Trains", 1250, 0],
+    tractor: ["🚀 Vehicles", "🚜", "Tractors", 950, 0],
+    boat: ["🚀 Vehicles", "⛵", "Sailboats", 1450, 0],
+    planet: ["🌌 Space & magic", "🪐", "Planets", 2100, 4200],
+    star: ["🌌 Space & magic", "⭐", "Stars", 750, 2700],
+    ghost: ["🌌 Space & magic", "👻", "Ghosts", 950, 900],
+    dragon: ["🌌 Space & magic", "🐉", "Dragons", 2300, 3100],
+    xmas: ["🎄 Holidays", "🎄", "Christmas trees", 2100, 0],
+    snowman: ["🎄 Holidays", "⛄", "Snowmen", 1150, 0],
+    pumpkin: ["🎄 Holidays", "🎃", "Pumpkins", 750, 0],
+    dino: ["🦖 Animals", "🦖", "Dinosaurs", 2500, 0],
+    elephant: ["🦖 Animals", "🐘", "Elephants", 1700, 0],
+    giraffe: ["🦖 Animals", "🦒", "Giraffes", 2700, 0],
+    penguin: ["🦖 Animals", "🐧", "Penguins", 650, 0],
+    flamingo: ["🦖 Animals", "🦩", "Flamingos", 950, 0],
+    lollipop: ["🍭 Candy land", "🍭", "Lollipops", 1600, 0],
+    donut: ["🍭 Candy land", "🍩", "Donuts", 950, 0]
+  };
   const PODS = [
     { name: 'Sandrunner',      band: '#c94a1c', binder: [120, 180, 255], glow: [120, 200, 255], size: [1, 1],       top: 1.00, accel: 1.00, turn: 1.00, boost: 1.45, dur: 1.0 },
     { name: 'Red Comet',       band: '#e02a2a', binder: [255, 120, 120], glow: [255, 140, 120], size: [1.05, 0.95], top: 1.04, accel: 0.95, turn: 0.95, boost: 1.42, dur: 1.0 },
@@ -1108,6 +1161,7 @@
         addRoad(0, 30, 0, 0, o);
         for (let k = 0; k < JUMP_LEN; k++) segments[c0 + k].chasmLeft = JUMP_LEN - k;
         for (let k = a; k < segments.length; k++) { segments[k].chasmRun = a; if (sc.walls) segments[k].wallStyle = sc.walls; }
+        placeDeco(sc, a, segments.length);
         mark.custom.push({ a, b: segments.length, sc, c0 }); continue;
       }
       addRoad(ease, len - 2 * ease, ease, Math.max(-7, Math.min(7, +sc.curve || 0)), o);
@@ -1127,6 +1181,7 @@
       }
       if (sc.water === 'fast') for (let k = a; k < segments.length; k++) segments[k].swamp = true;
       if (sc.tunnel) mark.tunnels.push([a, segments.length]);
+      placeDeco(sc, a, segments.length);
       mark.custom.push({ a, b: segments.length, sc });
       if (sc.canyon && splitOkOf(sc)) for (let k = a; k < segments.length; k++) segments[k].arch = false;   // keep the wall gap clear
     }
@@ -3339,6 +3394,7 @@
         const sx = p1.x + s.off * p1.w, sc = p1.scale * W / 2, sy = p1.y;
         if (sx < -W * .5 || sx > W * 1.5) continue;
         if (s.kind === 'pine' || s.kind === 'oak') { drawTree(s, sx, sy, sc, fog); continue; }
+        if (s.kind === 'deco') { drawDeco(s, sx, sy, sc, fog); continue; }   // 🎨 editor decorations
         if (s.kind === 'bone' || s.kind === 'dball' || s.kind === 'dcloud' || s.kind === 'heartb') { drawDreamThing(s, sx, sy, sc, fog); continue; }
         if (s.kind === 'shroom') {                             // trail mushrooms — they glow at night
           const r = 150 * s.size * sc, h = 170 * s.size * sc; if (r < 0.8) continue;
@@ -4522,6 +4578,30 @@
     pads: { len: 160, curve: 0, fx: 'pads', obs: 'none' }, refill: { len: 120, curve: 1, fx: 'refill' }, whoops: { len: 140, curve: 0, fx: 'whoops', obs: 'none' },
     ice: { len: 120, curve: 1.5, fx: 'ice', obs: 'none' }, bumpy: { len: 130, curve: -1, fx: 'bumpy' }, narrow: { len: 140, curve: -1.5, fx: 'narrow' }, storm: { len: 220, curve: 1, fx: 'storm' },
   };
+  function placeDeco(sc, a, b) {                              // 🎨 line this section with its decoration, alternating sides
+    const d = sc.deco && DECOS[sc.deco]; if (!d || sc.tunnel) return;
+    const big = d[3] >= 3000, small = d[3] <= 800, step = big ? 22 : small ? 7 : 11;
+    for (let k = a + 4, q = 0; k < b - 2; k += step, q++) {
+      const g = segments[k]; if (!g || g.cave || g.chasm || g.loop) continue;
+      const side = q % 2 ? 1 : -1, rw = g.roadW || 1;
+      const off = g.canyon ? side * (1.06 + Math.random() * 0.07) : side * (rw + 0.5 + (big ? 1.2 + Math.random() * 2.5 : Math.random() * 2.2));
+      g.sprites.push({ kind: 'deco', d: sc.deco, off, size: (g.canyon ? 0.55 : 0.85) + Math.random() * 0.3, ph: Math.random() * 7 });
+      if (small && !g.canyon) g.sprites.push({ kind: 'deco', d: sc.deco, off: off + side * (0.35 + Math.random() * 0.4), size: 0.7 + Math.random() * 0.3, ph: Math.random() * 7 });
+    }
+  }
+  function drawDeco(s, sx, sy, sc, fog) {
+    const d = DECOS[s.d]; if (!d) return;
+    const size = d[3] * s.size * sc; if (size < 3 || size > H * 1.4) return;
+    let y = sy;
+    if (d[4]) {                                                  // flying things bob up and down, with a shadow on the ground
+      const t = performance.now() / 1000; y = sy - (d[4] + Math.sin(t * 1.4 + s.ph) * 180) * sc;
+      ctx.fillStyle = `rgba(0,0,0,${0.18 * (1 - fog)})`; ctx.beginPath(); ctx.ellipse(sx, sy, size * .35, size * .07, 0, 0, 7); ctx.fill();
+    }
+    ctx.save(); ctx.globalAlpha = Math.max(0, 1 - fog * 0.9);
+    if (NIGHT) ctx.globalAlpha *= 0.75;
+    ctx.font = `${size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText(d[1], sx, y + size * 0.08); ctx.restore();
+  }
   const FX_NAMES = { '': 'none', pads: '⚡ speed pads', refill: '🔋 boost refill pads', whoops: '〰 whoops (bumps)', ice: '🧊 ice sheet', bumpy: '🪨 bumpy road', narrow: '↔ narrow road', storm: '🌪 sandstorm' };
   const newSection = kind => Object.assign({ len: 90, curve: 0, hill: 0, canyon: false, arch: false, tunnel: false, water: '', ramp: false, obs: 'some', split: '', trail: 'plain' }, kind === 'random' ? randomSection() : ED_PRESETS[kind] || {});
   function randomSection() {
@@ -4603,6 +4683,7 @@
           ${splitOkOf(sc) && !sc.canyon ? `<label>route <select data-k="trail"><option value="plain"${(sc.trail || 'plain') === 'plain' ? ' selected' : ''}>side road</option><option value="logs"${sc.trail === 'logs' ? ' selected' : ''}>log jumps</option><option value="creek"${sc.trail === 'creek' ? ' selected' : ''}>creek</option><option value="tunnel"${sc.trail === 'tunnel' ? ' selected' : ''}>rock tunnel</option><option value="rocks"${sc.trail === 'rocks' ? ' selected' : ''}>boulder garden</option></select></label>` : ''}
           ${sc.canyon ? `<label title="What the canyon walls look like">walls <select data-k="walls">${Object.keys(WALL_STYLES).map(k => `<option value="${k === 'classic' ? '' : k}"${(sc.walls || '') === (k === 'classic' ? '' : k) ? ' selected' : ''}>${k === 'classic' ? '🎨 match the world' : k === 'sandstone' ? '🟫 desert sandstone' : WALL_STYLES[k].name}</option>`).join('')}</select></label>` : ''}
           <label title="A special feature for this section">special <select data-k="fx"${sc.jump ? ' disabled' : ''}>${Object.entries(FX_NAMES).map(([k, n]) => `<option value="${k}"${(sc.fx || '') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+          <label title="Decorations along the side of this section">🎨 decoration <select data-k="deco"><option value="">none</option>${[...new Set(Object.values(DECOS).map(d => d[0]))].map(g => `<optgroup label="${g}">${Object.entries(DECOS).filter(([, d]) => d[0] === g).map(([k, d]) => `<option value="${k}"${sc.deco === k ? ' selected' : ''}>${d[1]} ${d[2]}</option>`).join('')}</optgroup>`).join('')}</select></label>
           <label>obstacles <select data-k="obs"><option value="none"${sc.obs === 'none' ? ' selected' : ''}>none</option><option value="some"${sc.obs === 'some' ? ' selected' : ''}>some</option><option value="lots"${sc.obs === 'lots' ? ' selected' : ''}>lots</option></select></label>
         </div>`;
       r.onclick = () => { if (edSel !== i) { edSel = i; edList.querySelectorAll('.ed-row').forEach((x, j) => x.classList.toggle('on', j === i)); edPreview(); } };
@@ -4732,7 +4813,7 @@
     const nX = levelLayout(ED).crossings.length;
     document.getElementById('edStats').innerHTML = `${ED.sections.length} sections · ${N} segments a lap${nX ? ` · ${nX} overpass${nX > 1 ? 'es' : ''} (bridge over a tunnel)` : ''}${ED.smooth ? ` · smoothing ${ED.smooth}` : ''} · ${ED.laps} lap${ED.laps > 1 ? 's' : ''}<br>about ${Math.round(N / 45 * ED.laps)} s of racing · highest +${Math.round(Math.max(0, ...hsArr))} · lowest ${Math.round(Math.min(0, ...hsArr))}${hs ? ' · eases back to the start height' : ''}`;
   }
-  const edCodeOf = lv => 'POD1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ n: lv.name, w: lv.world, l: lv.laps, m: lv.smooth || 0, g: lv.grounded ? 1 : 0, s: lv.sections.map(sc => [sc.len, sc.curve, sc.hill, (sc.canyon ? 1 : 0) | (sc.arch ? 2 : 0) | (sc.tunnel ? 4 : 0) | (sc.ramp ? 8 : 0) | (sc.jump ? 16 : 0) | (sc.flip ? 32 : 0), sc.water || '', sc.obs || 'some', sc.split || '', sc.trail || 'plain', sc.fx || '', sc.walls || '']) }))));
+  const edCodeOf = lv => 'POD1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ n: lv.name, w: lv.world, l: lv.laps, m: lv.smooth || 0, g: lv.grounded ? 1 : 0, s: lv.sections.map(sc => [sc.len, sc.curve, sc.hill, (sc.canyon ? 1 : 0) | (sc.arch ? 2 : 0) | (sc.tunnel ? 4 : 0) | (sc.ramp ? 8 : 0) | (sc.jump ? 16 : 0) | (sc.flip ? 32 : 0), sc.water || '', sc.obs || 'some', sc.split || '', sc.trail || 'plain', sc.fx || '', sc.walls || '', sc.deco || '']) }))));
   function edFromCode(code) {
     const m = String(code).trim().match(/^POD1:([A-Za-z0-9+/=]+)$/); if (!m) throw new Error('That is not a level code (it should start with POD1:)');
     const o = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
@@ -4741,7 +4822,7 @@
     return { id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: String(o.n || 'Shared level').slice(0, 28), world: num(o.w, 1, 5, 1) | 0, laps: num(o.l, 1, 9, 3) | 0, smooth: num(o.m, 0, 100, 0) | 0, grounded: !!o.g,
       sections: o.s.map(a => ({ len: num(a[0], 20, 400, 90) | 0, curve: num(a[1], -7, 7, 0), hill: num(a[2], -4000, 4000, 0) | 0, canyon: !!(a[3] & 1), arch: !!(a[3] & 2), tunnel: !!(a[3] & 4), ramp: !!(a[3] & 8), jump: !!(a[3] & 16), flip: !!(a[3] & 32),
         water: a[4] === 'fast' || a[4] === 'slow' ? a[4] : '', obs: ['none', 'some', 'lots'].includes(a[5]) ? a[5] : 'some',
-        split: a[6] === 'left' || a[6] === 'right' ? a[6] : '', trail: ['plain', 'logs', 'creek', 'tunnel', 'rocks', 'rim'].includes(a[7]) ? a[7] : 'plain', fx: ['pads', 'refill', 'whoops', 'ice', 'bumpy', 'narrow', 'storm'].includes(a[8]) ? a[8] : '', walls: a[9] in WALL_STYLES && a[9] !== 'classic' ? a[9] : '' })) };
+        split: a[6] === 'left' || a[6] === 'right' ? a[6] : '', trail: ['plain', 'logs', 'creek', 'tunnel', 'rocks', 'rim'].includes(a[7]) ? a[7] : 'plain', fx: ['pads', 'refill', 'whoops', 'ice', 'bumpy', 'narrow', 'storm'].includes(a[8]) ? a[8] : '', walls: a[9] in WALL_STYLES && a[9] !== 'classic' ? a[9] : '', deco: a[10] && DECOS[a[10]] ? a[10] : '' })) };
   }
   document.querySelectorAll('.ed-add [data-add]').forEach(b => b.onclick = () => {
     if (ED.sections.length >= 120) { edMsg('That is the most sections a level can have (120).'); return; }
