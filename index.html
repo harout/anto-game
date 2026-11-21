@@ -164,6 +164,12 @@
   #scrOut { min-height:40px; color:#7dffb0; font-size:15px; } #scrOut b { font-size:24px; letter-spacing:4px; }
   #scrBack { background:#8a5cff; color:#fff; border:0; border-radius:7px; padding:9px 14px; font:bold 13px Menlo, monospace; cursor:pointer; align-self:flex-start; }
   .se-p .clue { margin:8px 0 6px; font-size:14px; color:#fff; line-height:1.45; } .se-p .hintx { color:#ffd36b; margin-top:6px; }
+  #resetBox { position:fixed; left:50%; top:80px; transform:translateX(-50%); width:480px; max-width:calc(100vw - 32px); display:none; flex-direction:column; gap:10px; z-index:12; background:#1a0806f4; border:2px solid #d8402a; border-radius:12px; padding:16px; font:13px Menlo, monospace; color:#ffe7c2; line-height:1.45; box-shadow:0 0 60px #000c; }
+  #resetBox .sh-title { color:#ff7a5a; letter-spacing:4px; font-size:16px; } #resetBox b { color:#ff9a7a; }
+  #rbType { background:#2a100a; color:#fff; border:1px solid #d8402a; border-radius:7px; padding:9px; font:bold 16px Menlo, monospace; letter-spacing:3px; text-transform:uppercase; }
+  #rbGo { background:#d8402a; color:#fff; border:0; border-radius:7px; padding:9px 14px; font:bold 13px Menlo, monospace; cursor:pointer; } #rbGo:disabled { background:#4a2a20; color:#9a7a68; cursor:not-allowed; }
+  #rbNo { background:#3aa860; color:#fff; border:0; border-radius:7px; padding:9px 14px; font:bold 13px Menlo, monospace; cursor:pointer; margin-left:auto; }
+  #resetBox .sh-btns { display:flex; gap:8px; } #resetBox small { color:#b8916a; font-size:10px; } .rb-keep { color:#7dffb0; cursor:pointer; }
   .tcard.secretc { border-color:#8a5cff !important; color:#d8c8ff; background:linear-gradient(135deg,#1a1236,#2a1a50) !important; }
   #garage { position:fixed; left:16px; top:16px; bottom:16px; width:380px; display:none; flex-direction:column; gap:9px; overflow:auto; z-index:8; background:#140a04ee; border:1px solid #6a3a18; border-radius:12px; padding:14px 16px; font:12px Menlo, monospace; color:#ffe7c2; }
   #garage .sh-title { color:#ffb347; letter-spacing:4px; font-size:16px; } #gaName { color:#b8916a; letter-spacing:2px; margin-top:-4px; }
@@ -270,7 +276,7 @@
   <div id="trackGrid"></div>
   <div id="aiLvl"></div>
   <div id="masterRow"></div>
-  <div id="optRow"><button id="timeBtn" class="secondary"></button> <button id="aimBtn" class="secondary"></button> <button id="resetAiBtn" class="secondary">↺ RESET AI</button> <button id="editLvlBtn" class="secondary" style="display:none">✎ EDIT THIS LEVEL</button> <button id="view3dBtn" class="secondary">🧊 3D VIEW</button></div>
+  <div id="optRow"><button id="timeBtn" class="secondary"></button> <button id="aimBtn" class="secondary"></button> <button id="resetAiBtn" class="secondary">↺ RESET AI</button> <button id="resetGameBtn" class="secondary">♻ RESET GAME</button> <button id="editLvlBtn" class="secondary" style="display:none">✎ EDIT THIS LEVEL</button> <button id="view3dBtn" class="secondary">🧊 3D VIEW</button></div>
   <button id="startBtn">START RACE</button>
   <button id="shopBtn" class="secondary">🎨 CUSTOMIZE POD</button>
   <button id="garageBtn" class="secondary">🔧 GARAGE</button>
@@ -336,6 +342,15 @@
   <div class="v3-legend"><i style="background:#e8c79a"></i>road <i style="background:#b8703e"></i>canyon walls <i style="background:#5b5048"></i>tunnel <i style="background:#4aa3ff"></i>river <i style="background:#6f9a52"></i>swamp water <i style="background:#ffd23f"></i>ramp <i style="background:#ff5a4a"></i>rocks <i style="background:#b0804e"></i>split route <i style="background:#fff"></i>start</div>
 </div>
 <div id="tx"></div>
+<div id="resetBox">
+  <b class="sh-title">♻ RESET GAME</b>
+  <div>This starts the whole game over: locked pods and tracks, 0 credits, no upgrades or paint jobs, AI back to level 0, no ghosts or best times, and every secret level hidden again.</div>
+  <label class="rb-keep"><input type="checkbox" id="rbKeep" checked> Keep the levels I built in the level editor</label>
+  <div>Type <b>RESET</b> to be sure:</div>
+  <input id="rbType" maxlength="10" autocomplete="off" spellcheck="false" placeholder="type RESET">
+  <div class="sh-btns"><button id="rbGo" disabled>♻ RESET EVERYTHING</button><button id="rbNo">✖ NO, KEEP MY GAME</button></div>
+  <small>Your controller setup is kept.</small>
+</div>
 <div id="scr"></div>
 <div id="secret">
   <b class="sh-title">🔐 SECRET LEVELS</b>
@@ -537,7 +552,7 @@
 
   // ---------- Keyboard fallback ----------
   const keys = {}; let kbL = 0, kbR = 0, usingKeyboard = false;
-  const inEditor = e => e.target && e.target.closest && (e.target.closest('#editor') || e.target.closest('#shop') || e.target.closest('#secret') || e.target.closest('#scr'));
+  const inEditor = e => e.target && e.target.closest && (e.target.closest('#editor') || e.target.closest('#shop') || e.target.closest('#secret') || e.target.closest('#scr') || e.target.closest('#resetBox'));
   addEventListener('keydown', e => { if (inEditor(e) || (typeof v3open !== 'undefined' && v3open)) return; if (e.key === ' ') e.preventDefault(); keys[e.key.toLowerCase()] = true; if (e.key.toLowerCase() === 'h') togglePanel(); });
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   function updateKeyboard(dt) {
@@ -623,7 +638,7 @@
   soundBtn.addEventListener('click', e => { e.stopPropagation(); if (!audio) { initAudio(); muted = false; } else { muted = !muted; initAudio(); } setSoundUi(); });
   addEventListener('pointerdown', e => { if (e.target === soundBtn) return; if (!audio) { initAudio(); setSoundUi(); } });
   addEventListener('keydown', e => {
-    if (e.target && e.target.closest && (e.target.closest('#editor') || e.target.closest('#shop') || e.target.closest('#secret') || e.target.closest('#scr'))) return;
+    if (e.target && e.target.closest && (e.target.closest('#editor') || e.target.closest('#shop') || e.target.closest('#secret') || e.target.closest('#scr') || e.target.closest('#resetBox'))) return;
     if (e.key.toLowerCase() === 'm') { muted = !muted; }
     if (!audio || audio.ctx.state !== 'running') initAudio();
     setSoundUi();
@@ -3435,7 +3450,7 @@
   }
   function raceTick(dt, p) {
     if (raceState === 'menu') {
-      if (edEl.style.display === 'flex' || v3open || shopOpen || garageOpen || secretOpen) { menuHeld = true; return; }   // editing a level: no race starts behind the editor
+      if (edEl.style.display === 'flex' || v3open || shopOpen || garageOpen || secretOpen || resetOpen) { menuHeld = true; return; }   // editing a level: no race starts behind the editor
       const b = p && p.buttons[BOOST_BUTTON], pressed = !!(b && b.pressed) || !!keys['enter'];
       if (pressed && !menuHeld && menuOpenedAt + 0.6 < performance.now() / 1000) startFromMenu();
       menuHeld = pressed; return;
@@ -4084,6 +4099,24 @@
   }
   function closeScramble() { document.body.classList.remove('slid'); }
 
+  // ===================== ♻ RESET GAME =====================
+  const rbEl = document.getElementById('resetBox'), rbType = document.getElementById('rbType'), rbGo = document.getElementById('rbGo');
+  let resetOpen = false;
+  document.getElementById('resetGameBtn').onclick = () => { resetOpen = true; rbType.value = ''; rbGo.disabled = true; rbEl.style.display = 'flex'; rbType.focus(); };
+  rbType.oninput = () => { rbGo.disabled = rbType.value.trim().toUpperCase() !== 'RESET'; };
+  document.getElementById('rbNo').onclick = () => { resetOpen = false; rbEl.style.display = 'none'; };
+  rbGo.onclick = () => {
+    if (rbType.value.trim().toUpperCase() !== 'RESET') return;
+    const keepLevels = document.getElementById('rbKeep').checked, secretIds = new Set(EXAMPLE_LEVELS.map(l => l.id));
+    try {
+      const mine = keepLevels ? loadLevels().filter(l => !secretIds.has(l.id)) : [];
+      Object.keys(localStorage).filter(k => k.startsWith('podracer.') && k !== STORE).forEach(k => localStorage.removeItem(k));
+      Object.keys(sessionStorage).filter(k => k.startsWith('podracer.')).forEach(k => sessionStorage.removeItem(k));
+      if (mine.length) localStorage.setItem('podracer.levels', JSON.stringify(mine));
+    } catch (e) {}
+    location.reload();
+  };
+
   // ===================== 🔐 SECRET LEVELS =====================
   const secretEl = document.getElementById('secret'); let secretOpen = false, seShow = -1;
   function seMsg(html) { document.getElementById('seMsg').innerHTML = html; }
@@ -4221,7 +4254,7 @@
   function startFromMenu() { menuEl.style.display = 'none'; if (TOUR) { TOUR = { stage: 0, total: 0, aiTotals: AI_DEFS.map(() => 0), log: [] }; saveTour(); } restartRace(); }
   document.getElementById('startBtn').onclick = startFromMenu;
   addEventListener('keydown', e => {
-    if (raceState !== 'menu' || edEl.style.display === 'flex' || shopOpen || garageOpen || secretOpen) return;
+    if (raceState !== 'menu' || edEl.style.display === 'flex' || shopOpen || garageOpen || secretOpen || resetOpen) return;
     const k = e.key.toLowerCase();
     konami.push(k); if (konami.length > 8) konami.shift();
     if (konami.join(',') === 'arrowup,arrowup,arrowdown,arrowdown,arrowleft,arrowright,arrowleft,arrowright') { konami = []; missionDone(6); }   // 🎮
