@@ -69,7 +69,7 @@ Ten secret levels (Canyon Leap, Rim Runner, Barrel Roll Bayou, Frozen Corkscrew,
 ## ✎ Ten new editor pieces
 - **🕳 Canyon jump**: a ramp and a gap in the canyon floor. Hold BOOST or you fall in and restart at the run-up.
 - **⛰ Wall notch + rim**: a notch in a canyon wall leads up onto the rim, across a canyon jump and back down.
-- **🙃 Upside down (loop)**: a giant glowing Ω-shaped arch. The road climbs up inside the loop, you drive upside down over the top, then come back down through a second arch. Climbing the loop does not slow you down.
+- **🎢 Loop-the-loop**: a roller-coaster loop. You can see the track curl up into a giant circle as you drive towards it. On the ride the camera follows the track up, upside down over the top (ground overhead, sky below) and back down. A loop where the track crosses over itself turns into plain road.
 - **⚡ Speed pads**: green arrows that fling you forward.
 - **🔋 Refill pads**: blue pads that fill your boost tank.
 - **〰 Whoops**: a row of bumps.
