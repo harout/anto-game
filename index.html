@@ -1498,7 +1498,13 @@
   const BEDO_LEVEL = hasName('bedo');                           // 🐶 a level named Bedo: Bedo drives (and gets unlocked)
   const pickedDriver = () => { try { return localStorage.getItem('podracer.driver') || 'pilot'; } catch (e) { return 'pilot'; } };
   let DOG_DRIVER = BEDO_LEVEL || (!!loadUnlocks().bedo && pickedDriver() === 'bedo');   // …or you picked him on the main menu
-  const isAnakin = n => /^an+[aeiy]k+[aeiy]n+$/i.test(String(n || '').trim());   // 🚀 Anakin (spelled any close way) unlocks the starfighter
+  const isAnakin = (n, maxD = 2) => {                                       // 🚀 Anakin, spelled any close way (anikin, anaskin, annakin…), unlocks the starfighter
+    const w = String(n || '').trim().toLowerCase().replace(/[^a-z]/g, ''), t = 'anakin';
+    if (w.length < 5 || w.length > 8 || w[0] !== 'a') return false;
+    const d = Array.from({ length: w.length + 1 }, (_, i) => [i]); for (let j = 1; j <= t.length; j++) d[0][j] = j;
+    for (let i = 1; i <= w.length; i++) for (let j = 1; j <= t.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (w[i - 1] === t[j - 1] ? 0 : 1));
+    return d[w.length][t.length] <= maxD;                       // at most 2 letters different (1 while you're still typing)
+  };
   const pickedCraft = () => { try { return localStorage.getItem('podracer.craft') || 'pod'; } catch (e) { return 'pod'; } };
   let FIGHTER = !!loadUnlocks().fighter && pickedCraft() === 'fighter';
   const MOON = hasName('moon');                                 // 🌙 low gravity: huge floaty jumps
@@ -4101,7 +4107,8 @@
     const nUp = UPGRADES.reduce((t, u) => t + Math.min(UP_MAX, (p.ups || {})[u.k] || 0), 0);
     const dn = document.getElementById('drvName');
     if (document.activeElement !== dn) { dn.value = loadDriverName(); dn.placeholder = DOG_DRIVER ? 'BEDO (type a name)' : 'type your name'; }
-    dn.oninput = () => { try { localStorage.setItem('podracer.driverName', dn.value.slice(0, 14)); } catch (e) {} checkAnakin(dn); };
+    dn.oninput = () => { try { localStorage.setItem('podracer.driverName', dn.value.slice(0, 14)); } catch (e) {} checkAnakin(dn, 1); };
+    dn.onblur = () => checkAnakin(dn, 2);
     if (document.activeElement !== dn && isAnakin(dn.value) && dn.value !== 'Anakin') checkAnakin(dn);
     dn.onkeydown = e => { if (e.key === 'Enter') dn.blur(); };
     const dr = document.getElementById('driverRow');
@@ -4906,8 +4913,8 @@
     const b = document.getElementById('resetAiBtn'); b.textContent = '✓ AI RESET ON ALL TRACKS'; setTimeout(() => { b.textContent = '↺ RESET AI'; }, 1800);
   };
   document.getElementById('aimBtn').onclick = () => { AUTO_AIM = !AUTO_AIM; try { localStorage.setItem('podracer.autoAim', AUTO_AIM ? '1' : '0'); } catch (e) {} renderOpts(); };
-  function checkAnakin(dn) {                                    // 🚀 typed Anakin (or close to it)? fix the spelling and unlock the starfighter
-    if (!isAnakin(dn.value)) return;
+  function checkAnakin(dn, maxD = 2) {                                    // 🚀 typed Anakin (or close to it)? fix the spelling and unlock the starfighter
+    if (!isAnakin(dn.value, maxD) || (maxD < 2 && dn.value.trim().length < 6)) return;
     if (dn.value !== 'Anakin') { dn.value = 'Anakin'; try { localStorage.setItem('podracer.driverName', 'Anakin'); } catch (e) {} }
     const u = loadUnlocks(); if (u.fighter) return;
     u.fighter = true; saveUnlocks(u); unlocks = u; FIGHTER = true; try { localStorage.setItem('podracer.craft', 'fighter'); } catch (e) {} POD = podLook(podIdx);
