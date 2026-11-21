@@ -169,7 +169,7 @@
   #rbType { background:#2a100a; color:#fff; border:1px solid #d8402a; border-radius:7px; padding:9px; font:bold 16px Menlo, monospace; letter-spacing:3px; text-transform:uppercase; }
   #rbGo { background:#d8402a; color:#fff; border:0; border-radius:7px; padding:9px 14px; font:bold 13px Menlo, monospace; cursor:pointer; } #rbGo:disabled { background:#4a2a20; color:#9a7a68; cursor:not-allowed; }
   #rbNo { background:#3aa860; color:#fff; border:0; border-radius:7px; padding:9px 14px; font:bold 13px Menlo, monospace; cursor:pointer; margin-left:auto; }
-  #resetBox .sh-btns { display:flex; gap:8px; } #resetBox small { color:#b8916a; font-size:10px; } .rb-keep { color:#7dffb0; cursor:pointer; }
+  #resetBox .sh-btns { display:flex; gap:8px; } #resetBox small { color:#b8916a; font-size:10px; } .rb-tour { color:#ffd36b; background:#2a1a08; border:1px solid #7a5a20; border-radius:8px; padding:8px 10px; } .rb-keep { color:#7dffb0; cursor:pointer; }
   .tcard.secretc { border-color:#8a5cff !important; color:#d8c8ff; background:linear-gradient(135deg,#1a1236,#2a1a50) !important; }
   #garage { position:fixed; left:16px; top:16px; bottom:16px; width:380px; display:none; flex-direction:column; gap:9px; overflow:auto; z-index:8; background:#140a04ee; border:1px solid #6a3a18; border-radius:12px; padding:14px 16px; font:12px Menlo, monospace; color:#ffe7c2; }
   #garage .sh-title { color:#ffb347; letter-spacing:4px; font-size:16px; } #gaName { color:#b8916a; letter-spacing:2px; margin-top:-4px; }
@@ -344,7 +344,8 @@
 <div id="tx"></div>
 <div id="resetBox">
   <b class="sh-title">♻ RESET GAME</b>
-  <div>This starts the whole game over: locked pods and tracks, 0 credits, no upgrades or paint jobs, AI back to level 0, no ghosts or best times, and every secret level hidden again.</div>
+  <div>This starts the whole game over: locked pods and tracks, 0 credits, no upgrades or paint jobs, AI back to level 0, no ghosts or best race times, and secret levels hidden again.</div>
+  <div class="rb-tour" id="rbTour"></div>
   <label class="rb-keep"><input type="checkbox" id="rbKeep" checked> Keep the levels I built in the level editor</label>
   <div>Type <b>RESET</b> to be sure:</div>
   <input id="rbType" maxlength="10" autocomplete="off" spellcheck="false" placeholder="type RESET">
@@ -4102,17 +4103,38 @@
   // ===================== ♻ RESET GAME =====================
   const rbEl = document.getElementById('resetBox'), rbType = document.getElementById('rbType'), rbGo = document.getElementById('rbGo');
   let resetOpen = false;
-  document.getElementById('resetGameBtn').onclick = () => { resetOpen = true; rbType.value = ''; rbGo.disabled = true; rbEl.style.display = 'flex'; rbType.focus(); };
+  const TOUR_SECRETS = [2, 9];                                  // 🌌 hyperspace + 👑 final mission: both won in the Grand Tour
+  function tourPrizes() {                                      // 🏆 everything the Grand Tour gave you
+    const u = loadUnlocks(), sec = loadSecrets(), lv = {};
+    let best = null; try { best = localStorage.getItem('podracer.bestTour'); } catch (e) {}
+    const open = TOUR_SECRETS.filter(i => sec.open.includes(EXAMPLE_LEVELS[i].id)), solved = TOUR_SECRETS.filter(i => sec.solved.includes(i));
+    for (const l of loadLevels()) if (open.some(i => EXAMPLE_LEVELS[i].id === l.id)) lv[l.id] = l;
+    return { master: !!u.master, best, open, solved, lv };
+  }
+  function tourPrizeText() {
+    const t = tourPrizes(), list = [];
+    if (t.master) list.push('👻 ghost racing');
+    if (t.best) list.push('⏱ your best Grand Tour time');
+    for (const i of t.open) list.push('🔓 ' + EXAMPLE_LEVELS[i].name);
+    for (const i of t.solved) if (!t.open.includes(i)) list.push('🔑 the ' + (SECRETS[i].last ? 'final' : 'hyperspace') + ' secret code');
+    return list.length ? '🏆 You KEEP your Grand Tour prizes: ' + list.join(' · ') : '🏆 Grand Tour prizes are always kept — you have not won any yet.';
+  }
+  document.getElementById('resetGameBtn').onclick = () => { document.getElementById('rbTour').textContent = tourPrizeText(); resetOpen = true; rbType.value = ''; rbGo.disabled = true; rbEl.style.display = 'flex'; rbType.focus(); };
   rbType.oninput = () => { rbGo.disabled = rbType.value.trim().toUpperCase() !== 'RESET'; };
   document.getElementById('rbNo').onclick = () => { resetOpen = false; rbEl.style.display = 'none'; };
   rbGo.onclick = () => {
     if (rbType.value.trim().toUpperCase() !== 'RESET') return;
     const keepLevels = document.getElementById('rbKeep').checked, secretIds = new Set(EXAMPLE_LEVELS.map(l => l.id));
     try {
-      const mine = keepLevels ? loadLevels().filter(l => !secretIds.has(l.id)) : [];
+      const mine = keepLevels ? loadLevels().filter(l => !secretIds.has(l.id)) : [], prize = tourPrizes();
       Object.keys(localStorage).filter(k => k.startsWith('podracer.') && k !== STORE).forEach(k => localStorage.removeItem(k));
       Object.keys(sessionStorage).filter(k => k.startsWith('podracer.')).forEach(k => sessionStorage.removeItem(k));
-      if (mine.length) localStorage.setItem('podracer.levels', JSON.stringify(mine));
+      // 🏆 put the Grand Tour prizes back
+      if (prize.master) saveUnlocks({ pods: 1, track2: false, master: true });
+      if (prize.best) localStorage.setItem('podracer.bestTour', prize.best);
+      if (prize.open.length || prize.solved.length) saveSecrets({ open: prize.open.map(i => EXAMPLE_LEVELS[i].id), solved: prize.solved.slice() });
+      const keepLv = mine.concat(prize.open.map(i => prize.lv[EXAMPLE_LEVELS[i].id] || JSON.parse(JSON.stringify(EXAMPLE_LEVELS[i]))));
+      if (keepLv.length) localStorage.setItem('podracer.levels', JSON.stringify(keepLv));
     } catch (e) {}
     location.reload();
   };
