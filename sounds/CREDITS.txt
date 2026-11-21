@@ -27,3 +27,5 @@ bark_17.wav  <-  ESC-50 clip 1-32318-A-0.wav  (0.21 s)
 bark_18.wav  <-  ESC-50 clip 1-100032-A-0.wav  (0.25 s)
 bark_19.wav  <-  ESC-50 clip 1-59513-A-0.wav  (0.24 s)
 bark_20.wav  <-  ESC-50 clip 1-30344-A-0.wav  (0.3 s)
+
+pant_12.wav - dog panting made with code for this game (synthesized, no recording). Free to use.
