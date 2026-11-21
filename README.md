@@ -103,3 +103,6 @@ There's a hidden trick in ♻ RESET GAME. Try it yourself!
 
 ## 🚪 Shortcut openings
 Where a shortcut goes through a canyon wall, the wall is open and you can see the shortcut's own road in 3D. It leaves the track looking just like the main road (same surface, red-and-white edges and centre line) and follows its own curves and hills. You can see its striped jump ramp and the gap you have to boost over. The cave road disappears into the mesa with glowing crystals inside.
+
+## 🌳 Move all scenery to the ground
+In the level editor, **🌳 Move all scenery to the ground** stops trees and rocks floating. They stand on flat ground beside banked turns instead of hanging in the air, and nothing is left hovering beside raised bridge ramps, bridges, gaps or loops. New levels have it switched on already.

@@ -310,7 +310,7 @@
         <button data-add="straight">▮ Straight</button><button data-add="left">↰ Left turn</button><button data-add="right">↱ Right turn</button>
         <button data-add="up">▲ Climb</button><button data-add="down">▼ Drop</button><button data-add="canyon">⛰ Canyon</button>
         <button data-add="tunnel">◖ Tunnel</button><button data-add="river">≈ River</button><button data-add="swamp">≋ Swamp water</button>
-        <button data-add="ramp">⤴ Ramp jump</button><button data-add="rocks">● Rock field</button><button data-add="split">⑂ Split</button><button data-add="jump">🕳 Canyon jump</button><button data-add="rim">⛰ Wall notch + rim</button><button data-add="flip">🎢 Loop</button><button data-add="pads">⚡ Speed pads</button><button data-add="refill">🔋 Refill pads</button><button data-add="whoops">〰 Whoops</button><button data-add="ice">🧊 Ice</button><button data-add="bumpy">🪨 Bumpy</button><button data-add="narrow">↔ Narrow</button><button data-add="storm">🌪 Sandstorm</button><button id="edAuto" class="auto" title="Add the pieces that join the end of the track back to the start">🔄 Auto-complete</button><button id="edNoWater" class="sub" title="Remove every river and swamp-water stretch">≈✕ Remove water</button><button id="edNoRamps" class="sub" title="Remove every ramp jump">⤴✕ Remove ramps</button><button data-add="random">🎲 Random</button>
+        <button data-add="ramp">⤴ Ramp jump</button><button data-add="rocks">● Rock field</button><button data-add="split">⑂ Split</button><button data-add="jump">🕳 Canyon jump</button><button data-add="rim">⛰ Wall notch + rim</button><button data-add="flip">🎢 Loop</button><button data-add="pads">⚡ Speed pads</button><button data-add="refill">🔋 Refill pads</button><button data-add="whoops">〰 Whoops</button><button data-add="ice">🧊 Ice</button><button data-add="bumpy">🪨 Bumpy</button><button data-add="narrow">↔ Narrow</button><button data-add="storm">🌪 Sandstorm</button><button id="edAuto" class="auto" title="Add the pieces that join the end of the track back to the start">🔄 Auto-complete</button><button id="edNoWater" class="sub" title="Remove every river and swamp-water stretch">≈✕ Remove water</button><button id="edNoRamps" class="sub" title="Remove every ramp jump">⤴✕ Remove ramps</button><button id="edGround" class="sub" title="Put every tree and rock down on the ground: nothing floats beside banked turns, bridges or their ramps">🌳 Move all scenery to the ground</button><button data-add="random">🎲 Random</button>
       </div>
       <div id="edList"></div>
     </div>
@@ -884,7 +884,7 @@
     const secs = [S(120, 0)];
     for (const f of plan) { secs.push(G[f]()); if (rnd() < 0.5) secs.push(G.curve()); }
     secs.push(S(140, sg() * 2.5));
-    return { id: parkId(p), name: p.n, world: p.w, laps: 3, park: true, sections: secs };
+    return { id: parkId(p), name: p.n, world: p.w, laps: 3, park: true, grounded: true, sections: secs };
   }
   const loadParks = () => { try { return JSON.parse(localStorage.getItem('podracer.parks') || '[]'); } catch (e) { return []; } };
   const SECRETS = [
@@ -1096,7 +1096,9 @@
       for (const g of segments) { a += g.curve * k + fix; x += Math.sin(a); z -= Math.cos(a); raw.push([x, z]); }
       const ex = raw[N - 1][0], ez = raw[N - 1][1], P = raw.map((p, i) => [p[0] - ex * (i + 1) / N, p[1] - ez * (i + 1) / N]);
       const Y = segments.map(g => g.y), list = findCrossings(P, Y);
+      const Y0 = Y.slice();
       for (const c of list) if (c.need > 0) liftForCrossing(Y, c.up, c.need);
+      segments.forEach((g, i) => { g.raised = Y[i] - Y0[i]; });
       segments.forEach((g, i) => { g.y = Y[i]; });
       for (const c of list) for (const L of (mark.loops || []).slice()) {   // a crossing on a loop: that loop becomes plain road
         const near = k => { const d = ((k - L.ia) % N + N) % N; return d < L.ib - L.ia + 30 || d > N - 30; };
@@ -1712,6 +1714,10 @@
     let sp = sc.signSprite;
     if (!sp) { const g = segments[sc.entry - 12]; sp = sc.signSprite = { kind: 'sign', off: g.canyon ? -sc.side * 0.9 : sc.side * (g.mesaSide ? Math.max(1.05, (g.wall || 1.6) - 0.3) : 1.4), dir: sc.side }; g.sprites.push(sp); }   // in a canyon: across the road, pointing at the opening
     sp.ty = ty;
+  }
+  if (CUSTOM && CUSTOM.grounded) for (const g of segments) if (g.raised > 150 || g.bridge || g.chasm || g.loop) {   // 🌳 on the ground: nothing beside a raised bridge ramp, a bridge, a gap or a loop
+    g.sprites = g.sprites.filter(sp => sp.kind === 'sign');
+    g.obs = g.obs.filter(o => o.kind !== 'tree' || Math.abs(o.off) < 1.0);
   }
   for (const g of segments) if (g.canyon && !g.cave) {         // 🌲 trees standing behind a canyon wall can't poke out in front of it
     g.sprites = g.sprites.filter(sp => sp.kind === 'sign' || Math.abs(sp.off) < 1.15);   // the canyon floor is bare rock: the walls bring their own pines, vines and ice
@@ -3003,7 +3009,8 @@
       }
       // obstacles
       if (n > 0) for (const o of sg.obs) {
-        const bkO = sg.bank * BANK_K * p1.scale * H / 2, gy = p1.y - (o.off <= 0 ? -o.off * (bkO > 0 ? 1.6 * bkO : 0.4 * bkO) : o.off * (bkO > 0 ? -0.4 * bkO : -1.6 * bkO));
+        const bkO = sg.bank * BANK_K * p1.scale * H / 2, gOff = CUSTOM && CUSTOM.grounded && Math.abs(o.off) > 1.12 ? Math.sign(o.off) * 1.12 * Math.max(0, (1.9 - Math.abs(o.off)) / 0.78) : o.off;   // 🌳 off the road: the bank slopes down to flat ground
+        const gy = p1.y - (gOff <= 0 ? -gOff * (bkO > 0 ? 1.6 * bkO : 0.4 * bkO) : gOff * (bkO > 0 ? -0.4 * bkO : -1.6 * bkO));
         const ox = p1.x + o.off * p1.w * 1, hw = o.w * p1.w;
         o._sx = ox; o._sy = o.kind === 'stalactite' ? gy - 300 * p1.scale * H / 2 : gy - hw * 0.8; o._f = frameNo + 1;
         if (ox < -W * .5 || ox > W * 1.5 || hw < 0.3) continue;
@@ -3909,7 +3916,7 @@
     if (!sc.canyon && !sc.tunnel && !sc.water && Math.random() < .2) { sc.split = Math.random() < .5 ? 'left' : 'right'; sc.trail = ['plain', 'logs', 'creek', 'tunnel', 'rocks'][Math.random() * 5 | 0]; sc.len = Math.max(sc.len, 150); }
     return sc;
   }
-  const defaultLevel = () => ({ id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: 'My Level ' + (loadLevels().length + 1), world: 1, laps: 3,
+  const defaultLevel = () => ({ id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: 'My Level ' + (loadLevels().length + 1), world: 1, laps: 3, grounded: true,
     sections: ['straight', 'right', 'canyon', 'up', 'ramp', 'left', 'down', 'river', 'rocks', 'right'].map(newSection) });
   let ED = null, edSel = 0, edDirty = false, edGeom = null;
   function openEditor(id, obj) {
@@ -3953,6 +3960,7 @@
     pk.innerHTML = all.map(l => `<option value="${l.id}"${l.id === ED.id ? ' selected' : ''}>${escHtml(l.name)}</option>`).join('') + (all.some(l => l.id === ED.id) ? '' : `<option value="${ED.id}" selected>${escHtml(ED.name)} (unsaved)</option>`);
   }
   function edRenderAll() {
+    try { edGroundBtn(); } catch (e) {}
     edRenderPick();
     document.getElementById('edName').value = ED.name; document.getElementById('edWorld').value = String(ED.world); document.getElementById('edLaps').value = ED.laps;
     edRenderList(); edPreview();
@@ -4109,13 +4117,13 @@
     const nX = levelLayout(ED).crossings.length;
     document.getElementById('edStats').innerHTML = `${ED.sections.length} sections · ${N} segments a lap${nX ? ` · ${nX} overpass${nX > 1 ? 'es' : ''} (bridge over a tunnel)` : ''}${ED.smooth ? ` · smoothing ${ED.smooth}` : ''} · ${ED.laps} lap${ED.laps > 1 ? 's' : ''}<br>about ${Math.round(N / 45 * ED.laps)} s of racing · highest +${Math.round(Math.max(0, ...hsArr))} · lowest ${Math.round(Math.min(0, ...hsArr))}${hs ? ' · eases back to the start height' : ''}`;
   }
-  const edCodeOf = lv => 'POD1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ n: lv.name, w: lv.world, l: lv.laps, m: lv.smooth || 0, s: lv.sections.map(sc => [sc.len, sc.curve, sc.hill, (sc.canyon ? 1 : 0) | (sc.arch ? 2 : 0) | (sc.tunnel ? 4 : 0) | (sc.ramp ? 8 : 0) | (sc.jump ? 16 : 0) | (sc.flip ? 32 : 0), sc.water || '', sc.obs || 'some', sc.split || '', sc.trail || 'plain', sc.fx || '', sc.walls || '']) }))));
+  const edCodeOf = lv => 'POD1:' + btoa(unescape(encodeURIComponent(JSON.stringify({ n: lv.name, w: lv.world, l: lv.laps, m: lv.smooth || 0, g: lv.grounded ? 1 : 0, s: lv.sections.map(sc => [sc.len, sc.curve, sc.hill, (sc.canyon ? 1 : 0) | (sc.arch ? 2 : 0) | (sc.tunnel ? 4 : 0) | (sc.ramp ? 8 : 0) | (sc.jump ? 16 : 0) | (sc.flip ? 32 : 0), sc.water || '', sc.obs || 'some', sc.split || '', sc.trail || 'plain', sc.fx || '', sc.walls || '']) }))));
   function edFromCode(code) {
     const m = String(code).trim().match(/^POD1:([A-Za-z0-9+/=]+)$/); if (!m) throw new Error('That is not a level code (it should start with POD1:)');
     const o = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
     if (!o || !Array.isArray(o.s) || !o.s.length || o.s.length > 300) throw new Error('That level code is broken');
     const num = (v, a, b, d) => Number.isFinite(+v) ? Math.max(a, Math.min(b, +v)) : d;
-    return { id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: String(o.n || 'Shared level').slice(0, 28), world: num(o.w, 1, 5, 1) | 0, laps: num(o.l, 1, 9, 3) | 0, smooth: num(o.m, 0, 100, 0) | 0,
+    return { id: 'L' + Date.now().toString(36) + (Math.random() * 1e4 | 0), name: String(o.n || 'Shared level').slice(0, 28), world: num(o.w, 1, 5, 1) | 0, laps: num(o.l, 1, 9, 3) | 0, smooth: num(o.m, 0, 100, 0) | 0, grounded: !!o.g,
       sections: o.s.map(a => ({ len: num(a[0], 20, 400, 90) | 0, curve: num(a[1], -7, 7, 0), hill: num(a[2], -4000, 4000, 0) | 0, canyon: !!(a[3] & 1), arch: !!(a[3] & 2), tunnel: !!(a[3] & 4), ramp: !!(a[3] & 8), jump: !!(a[3] & 16), flip: !!(a[3] & 32),
         water: a[4] === 'fast' || a[4] === 'slow' ? a[4] : '', obs: ['none', 'some', 'lots'].includes(a[5]) ? a[5] : 'some',
         split: a[6] === 'left' || a[6] === 'right' ? a[6] : '', trail: ['plain', 'logs', 'creek', 'tunnel', 'rocks', 'rim'].includes(a[7]) ? a[7] : 'plain', fx: ['pads', 'refill', 'whoops', 'ice', 'bumpy', 'narrow', 'storm'].includes(a[8]) ? a[8] : '', walls: a[9] in WALL_STYLES && a[9] !== 'classic' ? a[9] : '' })) };
@@ -4132,6 +4140,11 @@
     edMsg(`≈✕ Removed water from ${wet.length} section${wet.length > 1 ? 's' : ''}`);
   };
   document.getElementById('edTest').onclick = () => testLevel();
+  const edGroundBtn = () => { const b = document.getElementById('edGround'); b.textContent = ED && ED.grounded ? '🌳 Scenery is on the ground ✓' : '🌳 Move all scenery to the ground'; };
+  document.getElementById('edGround').onclick = () => {        // 🌳 nothing floats any more
+    ED.grounded = !ED.grounded; edDirty = true; edGroundBtn();
+    edMsg(ED.grounded ? '🌳 All trees and rocks now stand on the ground — none float beside banked turns or bridges' : '🌳 Scenery is back where it was');
+  };
   document.getElementById('edNoRamps').onclick = () => {      // ⤴✕ every ramp jump goes
     const rs = ED.sections.filter(sc => sc.ramp);
     if (!rs.length) { edMsg('There are no ramps in this level.'); return; }
