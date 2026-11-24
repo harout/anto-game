@@ -216,6 +216,13 @@
   .tcard { background:#2a160a; border:2px solid #4a2a12; border-radius:10px; padding:12px; cursor:pointer; font-size:14px; letter-spacing:2px; }
   .tcard small { display:block; margin-top:4px; font-size:11px; color:#b8916a; letter-spacing:1px; }
   .tcard.sel { border-color:#ffb347; box-shadow:0 0 14px rgba(255,160,60,.5); } .tcard.locked { opacity:.5; cursor:not-allowed; }
+  #keyHelp { position:fixed; left:150px; bottom:18px; z-index:5; display:none; background:#1a0e06d8; border:1px solid #ffb34788; border-radius:10px; padding:8px 10px; font:11px Menlo, monospace; color:#ffe7c2; pointer-events:none; }
+  #keyHelp .kh-t { color:#ffb347; letter-spacing:2px; font-weight:700; margin-bottom:6px; } #keyHelp .kh-t span { color:#a07a52; font-weight:400; letter-spacing:1px; margin-left:8px; }
+  #keyHelp .kh-row { display:flex; gap:5px; margin-bottom:5px; } #keyHelp .kh-row:nth-child(3) { margin-left:14px; } #keyHelp .kh-row:nth-child(4) { margin-left:0; }
+  #keyHelp .k { display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:52px; height:44px; padding:0 4px; background:#3a2414; border:1px solid #8a5a2a; border-bottom-width:3px; border-radius:7px; font-size:15px; color:#fff3dc; }
+  #keyHelp .k i { font-style:normal; font-size:9px; color:#ffcf8a; margin-top:2px; white-space:nowrap; } #keyHelp .k.hot { background:#5a3412; border-color:#ffb347; }
+  #keyHelp .k.on { background:#ffb347; color:#2a160a; } #keyHelp .k.on i { color:#2a160a; }
+  #keyHelp .k.wide { min-width:86px; } #keyHelp .k.space { min-width:150px; } #keyHelp .kh-more { color:#c9a27a; font-size:10px; margin-top:2px; }
   #exitBtn { position:fixed; top:16px; right:362px; display:none; z-index:6; background:#4a1a10dd; color:#ffe2c8; border:1px solid #ff8a4a; border-radius:8px; padding:8px 14px; font:bold 13px Menlo, monospace; letter-spacing:2px; cursor:pointer; }
   #exitBtn:hover { background:#7a2a14; box-shadow:0 0 12px #ff8a4a88; }
   #testBar { position:fixed; top:96px; left:50%; transform:translateX(-50%); display:none; z-index:6; background:#1f4a2acc; color:#c8ffd8; border:1px solid #3aa860; border-radius:8px; padding:7px 14px; font:bold 13px Menlo, monospace; letter-spacing:2px; cursor:pointer; }
@@ -259,6 +266,13 @@
   <div id="status"></div>
 </div>
 
+<div id="keyHelp" title="Press K to show or hide">
+  <div class="kh-t">⌨ KEYBOARD <span>K hides this</span></div>
+  <div class="kh-row"><b class="k">Q<i>shield</i></b><b class="k hot">W<i>go</i></b><b class="k">E<i>laser</i></b></div>
+  <div class="kh-row"><b class="k hot">A<i>left</i></b><b class="k hot">S<i>brake</i></b><b class="k hot">D<i>right</i></b></div>
+  <div class="kh-row"><b class="k wide">Shift<i>super boost</i></b><b class="k space">Space<i>boost</i></b></div>
+  <div class="kh-more">hold E = missile · P pet · M sound · Esc exit</div>
+</div>
 <button id="exitBtn" title="Leave this level and go back to the main menu (Esc)">⏏ EXIT LEVEL</button>
 <button id="testBar">🧪 TEST DRIVE · ✎ BACK TO EDITOR (Esc)</button>
 <div class="hud" id="warnBox" style="top:18px;left:50%;transform:translateX(-50%)"><div id="warn"></div><div id="ghostDelta"></div></div>
@@ -283,7 +297,7 @@
     <div id="axes"></div>
     <div style="margin-top:8px" class="muted">BUTTONS</div>
     <div id="buttons"></div>
-    <div style="margin-top:12px" class="muted">No controller? Keyboard: W/S both, Q/A left, E/D right, ←/→ steer, Space boost, M mutes sound. H hides this panel.</div>
+    <div style="margin-top:12px" class="muted">No controller? Keyboard: W go · S brake · A/D steer · Space boost · E laser (hold = missile) · Q shield · Shift super boost · P pet · M sound · K shows the keys · H hides this panel.</div>
   </div>
 </div>
 
@@ -296,7 +310,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v109</span></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v110</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -306,7 +320,7 @@
   <button id="startBtn">START RACE</button>
   <button id="shopBtn" class="secondary">🎨 CUSTOMIZE POD</button>
   <button id="garageBtn" class="secondary">🔧 GARAGE</button>
-  <div class="hint">Win a race in 1st place to unlock the next pod · first win also unlocks Frost Canyon<br>←/→ change pod · Enter or boost button (14) to start<br>Laser: tap button 0 (F) · Homing missile: hold button 0 (5 per race) · Shield: hold button 23 (G key) · Boost: button 14 (Space)<br>Super boost: button 13 (L) — once per race, light-speed jump into 1st place<br>Rivals use shields too — shoot a shield to destroy it, then shoot again to hit them</div>
+  <div class="hint">Win a race in 1st place to unlock the next pod · first win also unlocks Frost Canyon<br>←/→ change pod · Enter or boost button (14) to start<br>Laser: tap button 0 (E) · Homing missile: hold button 0 / E (5 per race) · Shield: hold button 23 (Q) · Boost: button 14 (Space)<br>Super boost: button 13 (Shift) — once per race, light-speed jump into 1st place<br>Rivals use shields too — shoot a shield to destroy it, then shoot again to hit them</div>
 </div></div>
 <div id="editor">
   <div class="ed-top">
@@ -579,14 +593,16 @@
   // ---------- Keyboard fallback ----------
   const keys = {}; let kbL = 0, kbR = 0, usingKeyboard = false;
   const inEditor = e => e.target && e.target.closest && (e.target.closest('#editor') || e.target.closest('#shop') || e.target.closest('#secret') || e.target.closest('#scr') || e.target.closest('#resetBox') || e.target.closest('#nameRow'));
-  addEventListener('keydown', e => { if (inEditor(e) || (typeof v3open !== 'undefined' && v3open)) return; if (e.key === ' ') e.preventDefault(); keys[e.key.toLowerCase()] = true; if (e.key.toLowerCase() === 'h') togglePanel(); });
+  addEventListener('keydown', e => { if (inEditor(e) || (typeof v3open !== 'undefined' && v3open)) return; if (e.key === ' ' || e.key.startsWith('Arrow')) { if (raceState !== 'menu') e.preventDefault(); } keys[e.key.toLowerCase()] = true; if (e.key.toLowerCase() === 'h') togglePanel(); if (e.key.toLowerCase() === 'k') toggleKeyHelp(); });
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   function updateKeyboard(dt) {
-    const r = 0.6 * dt; let touched = false;
-    if (keys['w']) { kbL += r; kbR += r; touched = true; }
-    if (keys['s']) { kbL -= r; kbR -= r; touched = true; }
-    if (keys['q']) { kbL += r; touched = true; } if (keys['a']) { kbL -= r; touched = true; }
-    if (keys['e']) { kbR += r; touched = true; } if (keys['d']) { kbR -= r; touched = true; }
+    // ⌨ easy keyboard: hold W (or ↑) to go, S (or ↓) to brake, let go to coast; A/D (or ←/→) steer
+    let touched = false;
+    const up = keys['w'] || keys['arrowup'], down = keys['s'] || keys['arrowdown'];
+    if (up) { kbL += 2.2 * dt; kbR += 2.2 * dt; touched = true; }
+    else if (down) { kbL -= 3 * dt; kbR -= 3 * dt; touched = true; }
+    else if (usingKeyboard) { kbL -= 0.7 * dt; kbR -= 0.7 * dt; }
+    if (keys['a'] || keys['d'] || keys['arrowleft'] || keys['arrowright']) touched = true;
     kbL = Math.max(0, Math.min(1, kbL)); kbR = Math.max(0, Math.min(1, kbR));
     if (touched) usingKeyboard = true;
   }
@@ -594,7 +610,19 @@
   // ---------- Status ----------
   const statusEl = document.getElementById('status'); let flashMsg = '', flashUntil = 0;
   function flash(m) { flashMsg = m; flashUntil = performance.now() + 3500; }
+  let keyHelpWant = null;                                      // ⌨ null = automatic (shows when you use the keyboard or have no controller)
+  try { const v = localStorage.getItem('podracer.keyHelp'); if (v === '0' || v === '1') keyHelpWant = v === '1'; } catch (e) {}
+  function toggleKeyHelp() { const el = document.getElementById('keyHelp'); keyHelpWant = el.style.display !== 'block' ? true : false; try { localStorage.setItem('podracer.keyHelp', keyHelpWant ? '1' : '0'); } catch (e) {} }
+  function updateKeyHelp(p) {
+    const el = document.getElementById('keyHelp'); if (!el) return;
+    let show = keyHelpWant != null ? keyHelpWant : (usingKeyboard || !p || !map.calibrated);
+    try { if (menuEl.style.display === 'flex' || edEl.style.display === 'flex') show = false; } catch (e) {}
+    if ((el.style.display === 'block') !== show) el.style.display = show ? 'block' : 'none';
+    if (show) { const K = { Q: keys['q'], W: keys['w'] || keys['arrowup'], E: keys['e'], A: keys['a'] || keys['arrowleft'], S: keys['s'] || keys['arrowdown'], D: keys['d'] || keys['arrowright'], Shift: keys['shift'], Space: keys[' '] };
+      el.querySelectorAll('.k').forEach(k => { const n = k.firstChild.textContent.trim(); k.classList.toggle('on', !!K[n]); }); }
+  }
   function updateStatus(p) {
+    updateKeyHelp(p);
     try {                                                        // ⏏ the EXIT LEVEL button shows whenever you're in a level
       const eb = document.getElementById('exitBtn'), showExit = menuEl.style.display !== 'flex' && raceState !== 'menu' && !(typeof v3open !== 'undefined' && v3open) && edEl.style.display !== 'flex';
       if ((eb.style.display === 'block') !== showExit) eb.style.display = showExit ? 'block' : 'none';
@@ -2479,7 +2507,7 @@
     const dx = dt * 2 * Math.max(0.25, Math.min(1.4, sp));
     let steer = (L - R) * 3.9 * POD.turn * (onIce ? 0.4 : 1);   // ice: hardly any grip
     const fc = Math.cos(flipNow); if (flipNow) steer *= Math.sign(fc || 1) * Math.max(0.35, Math.abs(fc));   // 🙃 upside down: left is still screen-left
-    if (keys['arrowleft']) steer -= 2.4; if (keys['arrowright']) steer += 2.4;
+    if (keys['arrowleft'] || keys['a']) steer -= 2.4; if (keys['arrowright'] || keys['d']) steer += 2.4;   // ⌨ A/D or ←/→
     const airborne = podY > 1 && !onRamp;
     playerX += dx * steer * (airborne ? 0.35 : 1);
     playerX -= dx * Math.min(1.4, sp) * seg.curve * 0.17 * (airborne ? 0.3 : 1) * (seg.bank ? 0.55 : 1) * (onIce ? 1.6 : 1);   // centrifugal push (banking helps, ice slides)
@@ -4415,8 +4443,8 @@
     const btn = p && p.buttons[BOOST_BUTTON];
     raceTick(dt, p);
     const fireB = p && p.buttons[LASER_BTN], shB = p && p.buttons[SHIELD_BTN];
-    weaponsStep(dt, !!(fireB && fireB.pressed) || !!keys['f'], !!(shB && shB.pressed) || !!keys['g']);
-    const supB = p && p.buttons[SUPER_BTN], supNow = !!(supB && supB.pressed) || !!keys['l'];
+    weaponsStep(dt, !!(fireB && fireB.pressed) || !!keys['e'] || !!keys['f'], !!(shB && shB.pressed) || !!keys['q'] || !!keys['g']);   // ⌨ E = laser (hold = missile), Q = shield
+    const supB = p && p.buttons[SUPER_BTN], supNow = !!(supB && supB.pressed) || !!keys['shift'] || !!keys['l'];   // ⌨ Shift = super boost
     if (supNow && !superPrev) startSuper(); superPrev = supNow;
     physicsStep(dt, !!(btn && btn.pressed) || !!keys[' ']);
 
@@ -5763,7 +5791,7 @@
   }
   function flightStep(dt) {
     flightT += dt;
-    const steer = (L - R) * 2.4 + (keys['arrowleft'] ? -1.6 : 0) + (keys['arrowright'] ? 1.6 : 0);
+    const steer = (L - R) * 2.4 + (keys['arrowleft'] || keys['a'] ? -1.6 : 0) + (keys['arrowright'] || keys['d'] ? 1.6 : 0);
     fx = Math.max(-1, Math.min(1, fx + steer * dt * 1.1));
     fy += ((Math.max(0, Math.min(1, (L + R) / 2)) - 0.5) * 2.2 - fy) * (1 - Math.exp(-3 * dt)); fy = Math.max(-1, Math.min(1, fy));
     speed = MAX_KMH * 1.6; fShake = Math.max(0, fShake - dt * 2);
