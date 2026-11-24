@@ -310,13 +310,13 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v110</span></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v111</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
   <div id="aiLvl"></div>
   <div id="masterRow"></div>
-  <div id="optRow"><button id="timeBtn" class="secondary"></button> <button id="aimBtn" class="secondary"></button> <button id="resetAiBtn" class="secondary">↺ RESET AI</button> <button id="resetGameBtn" class="secondary">♻ RESET GAME</button> <button id="editLvlBtn" class="secondary" style="display:none">✎ EDIT THIS LEVEL</button> <button id="view3dBtn" class="secondary">🧊 3D VIEW</button></div>
+  <div id="optRow"><button id="fastBtn" class="secondary" title="Fast mode: smoother on Chromebooks and slower computers (the picture is a little less sharp)"></button> <button id="timeBtn" class="secondary"></button> <button id="aimBtn" class="secondary"></button> <button id="resetAiBtn" class="secondary">↺ RESET AI</button> <button id="resetGameBtn" class="secondary">♻ RESET GAME</button> <button id="editLvlBtn" class="secondary" style="display:none">✎ EDIT THIS LEVEL</button> <button id="view3dBtn" class="secondary">🧊 3D VIEW</button></div>
   <button id="startBtn">START RACE</button>
   <button id="shopBtn" class="secondary">🎨 CUSTOMIZE POD</button>
   <button id="garageBtn" class="secondary">🔧 GARAGE</button>
@@ -938,9 +938,17 @@
   let raceState = 'countdown', countdown = 3.5, raceTime = 0, lapTimes = [];
 
   // ---------- Rendering ----------
-  const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+  // ⚡ FAST MODE (for Chromebooks and slower computers): fewer pixels, shorter view distance, no blur effects
+  const IS_CHROMEBOOK = /CrOS/.test(navigator.userAgent);
+  let FAST = false;
+  try {
+    const q = new URLSearchParams(location.search).get('fast'); if (q === '1' || q === '0') localStorage.setItem('podracer.fast', q);
+    const v = localStorage.getItem('podracer.fast'); FAST = v === '1' || (v == null && IS_CHROMEBOOK);   // Chromebooks start in fast mode
+  } catch (e) {}
+  const cv = document.getElementById('c'), ctx = cv.getContext('2d', FAST ? { alpha: false, desynchronized: true } : undefined);
+  if (FAST) try { Object.defineProperty(ctx, 'shadowBlur', { get() { return 0; }, set() {} }); } catch (e) {}   // glows without the slow blur
   let W, H, DPR;
-  function resize() { DPR = Math.min(2, devicePixelRatio || 1); W = cv.width = innerWidth * DPR; H = cv.height = innerHeight * DPR; }
+  function resize() { DPR = FAST ? Math.min(0.62, (devicePixelRatio || 1) * 0.62) : Math.min(2, devicePixelRatio || 1); W = cv.width = innerWidth * DPR; H = cv.height = innerHeight * DPR; }
   addEventListener('resize', resize); resize();
 
   // ---------- Track selection + colour themes ----------
@@ -1125,7 +1133,7 @@
   const nightMap = c => [c[0] * 0.3 + 4, c[1] * 0.32 + 5, c[2] * 0.42 + 14];
 
   // ---------- Track (pseudo-3D segments) ----------
-  const SEG = 200, ROAD_W = 2000, CAM_H = 1000, CAM_DEPTH = 1 / Math.tan(50 * Math.PI / 180), DRAW = 240;
+  const SEG = 200, ROAD_W = 2000, CAM_H = 1000, CAM_DEPTH = 1 / Math.tan(50 * Math.PI / 180), DRAW = FAST ? 130 : 240;
   const PLAYER_Z = CAM_H * CAM_DEPTH, TOP_V = SEG * 55; // units/sec at 100% throttle
   const segments = [];
   let tgt = segments;
@@ -5590,9 +5598,11 @@
   }
   function renderOpts() {
     renderMaster();
+    document.getElementById('fastBtn').textContent = FAST ? '⚡ FAST MODE: ON' : '🐢 FAST MODE: OFF';
     document.getElementById('timeBtn').textContent = NIGHT ? '🌙 NIGHT RACE' : '☀️ DAY RACE';
     document.getElementById('aimBtn').textContent = AUTO_AIM ? '🎯 AUTO-AIM: ON' : '🎯 AUTO-AIM: OFF';
   }
+  document.getElementById('fastBtn').onclick = () => { try { localStorage.setItem('podracer.fast', FAST ? '0' : '1'); } catch (e) {} location.reload(); };   // ⚡ needs a quick reload
   document.getElementById('timeBtn').onclick = () => { NIGHT = !NIGHT; try { localStorage.setItem('podracer.night', NIGHT ? '1' : '0'); } catch (e) {} renderOpts(); };
   document.getElementById('resetAiBtn').onclick = () => {
     try { localStorage.setItem('podracer.aiLevel', '0'); } catch (e) {}
