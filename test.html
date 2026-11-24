@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Middle Ages Practice Test (50 Questions)</title>
+<style>
+  body { font-family: Georgia, "Times New Roman", serif; background: #f6f1e7; color: #2b2116; margin: 0; padding: 0; line-height: 1.45; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 20px 16px 60px; }
+  h1 { font-size: 28px; margin: 10px 0 4px; }
+  .sub { color: #6b5a44; margin: 0 0 12px; }
+  #tally { position: sticky; top: 0; background: #8a5a1f; color: #fff; padding: 8px 14px; border-radius: 6px; font-size: 17px; margin: 0 0 16px; z-index: 5; }
+  .q { background: #fffdf8; border: 1px solid #d9ccb4; border-radius: 8px; padding: 14px 16px; margin: 0 0 14px; }
+  .q h2 { font-size: 17px; margin: 0 0 10px; font-weight: bold; }
+  .num { color: #8a5a1f; }
+  .opt { display: block; width: 100%; text-align: left; font-family: inherit; font-size: 16px; padding: 8px 10px; margin: 5px 0; border: 1px solid #e6dcc9; border-radius: 6px; background: #fff; color: #2b2116; cursor: pointer; }
+  .opt:hover { background: #f7efe0; }
+  .opt[disabled] { cursor: default; }
+  .opt.right { background: #dff2dc; border-color: #4f8f49; font-weight: bold; }
+  .opt.wrong { background: #f8dcd8; border-color: #b8564a; text-decoration: line-through; }
+  .fb { margin-top: 8px; font-size: 15px; padding: 8px 10px; border-radius: 6px; display: none; }
+  .fb.good { display: block; background: #e9f6e7; color: #2d5e29; }
+  .fb.bad { display: block; background: #fbe9e6; color: #7a2c22; }
+  button.reset { font-family: inherit; font-size: 17px; padding: 10px 18px; border-radius: 6px; border: 1px solid #8a5a1f; background: #fff; color: #8a5a1f; cursor: pointer; }
+  #final { font-size: 22px; font-weight: bold; margin: 16px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Middle Ages Practice Test</h1>
+  <p class="sub">50 questions based on the study guide. Click an answer. If it's wrong, the right answer shows up right away.</p>
+  <div id="tally">Score: 0 / 0 answered</div>
+  <div id="quiz"></div>
+  <div id="final"></div>
+  <button class="reset" onclick="startTest()">Start over (new answer order)</button>
+</div>
+
+<script>
+// Each question: [question, [CORRECT answer first, then wrong answers], explanation].
+// Choices are shuffled when the page loads.
+var QUESTIONS = [
+  // 1. Germanic tribes and where they settled
+  ["Which Germanic tribe settled in Spain?", ["Visigoths", "Ostrogoths", "Vandals", "Angles"], "The Visigoths settled in Spain."],
+  ["Which tribe settled in Italy after Rome fell in the West?", ["Ostrogoths", "Franks", "Angles and Saxons", "Visigoths"], "The Ostrogoths settled in Italy. (Later the Lombards took northern Italy.)"],
+  ["Which tribe settled in Gaul, the land that became France?", ["Franks", "Vandals", "Ostrogoths", "Jutes"], "The Franks settled in Gaul. France is named after them."],
+  ["Which tribes settled in Britain and gave England its name?", ["Angles and Saxons", "Visigoths and Vandals", "Franks and Lombards", "Magyars and Huns"], "The Angles and Saxons settled in Britain. \"England\" comes from \"Angle-land.\""],
+  ["Which tribe crossed into North Africa and sacked Rome in 455?", ["Vandals", "Franks", "Angles", "Burgundians"], "The Vandals settled in North Africa. Our word \"vandalism\" comes from them."],
+  ["Which tribe settled in northern Italy, in the region still called Lombardy?", ["Lombards", "Saxons", "Visigoths", "Jutes"], "The Lombards gave their name to Lombardy in northern Italy."],
+
+  // 2. Fall of Rome in the West
+  ["In what year did Rome fall in the West?", ["476", "800", "1066", "1215"], "The Western Roman Empire fell in AD 476."],
+  ["Who was the last Roman emperor in the West?", ["Romulus Augustulus", "Julius Caesar", "Charlemagne", "Constantine"], "Romulus Augustulus was the last Western Roman emperor. He was only a teenager."],
+  ["Who overthrew the last Roman emperor in the West?", ["Odoacer", "Charles Martel", "William the Conqueror", "Otto the Great"], "Odoacer, a Germanic leader, overthrew Romulus Augustulus in 476."],
+  ["Odoacer, who ended the Western Roman Empire, was a...", ["Germanic (barbarian) leader", "Roman senator", "Viking king", "Pope"], "Odoacer was a Germanic chieftain who had served in the Roman army."],
+
+  // 3. Characteristics of the Early Middle Ages
+  ["Which was a characteristic of the Early Middle Ages?", ["Trade broke down", "Trade grew across the empire", "Cities grew larger", "More people learned to read"], "After Rome fell, trade was disrupted and businesses collapsed."],
+  ["What happened to cities in the Early Middle Ages?", ["Cities declined and were often abandoned", "Cities became much larger", "Cities became centers of learning", "Every city got a new emperor"], "Without Rome's government, cities declined. People moved away."],
+  ["Where did most people move to during the Early Middle Ages?", ["The countryside", "Big cities", "Rome", "North Africa"], "Population shifted from the cities to rural areas, where people could farm."],
+  ["What happened to learning in the Early Middle Ages?", ["Learning declined; few people could read", "Every child went to school", "Learning moved to big universities", "Greek became the common language"], "Learning declined. Mostly priests and monks could read and write."],
+  ["Which of these was NOT a characteristic of the Early Middle Ages?", ["A strong central government in Rome", "Decline of trade", "Decline of cities", "Decline of learning"], "After 476, there was no strong central government in the West. That is what caused the other problems."],
+
+  // 4. Only unifying structure
+  ["What was the only unifying structure in the West after Rome fell?", ["The Church", "The Roman army", "The Senate", "Parliament"], "The (Roman Catholic) Church was the only thing holding western Europe together."],
+  ["Who was the head of the Church in western Europe?", ["The pope", "The king of France", "The Archbishop of Canterbury", "The emperor in Rome"], "The pope in Rome led the Church in the West."],
+
+  // 5. How feudalism developed
+  ["How did feudalism develop as the Western Roman Empire fell apart?", ["Defenseless people turned to powerful lords for protection in exchange for land and service", "The pope ordered everyone to become a knight", "Kings sold land to merchants", "The Romans built new forts for everyone"], "With no Roman government to protect them, defenseless people looked to strong nobles. They gave land and service in return for protection."],
+  ["Under feudalism, what did a lord give a vassal in exchange for loyalty and military service?", ["Land (a fief)", "Gold coins", "A seat in Parliament", "A university degree"], "Lords gave land, called a fief."],
+  ["Why did people need the protection of lords?", ["There was no strong government to keep order", "The Roman army was too strong", "The pope told them to", "Trade was booming"], "After Rome fell, invaders and outlaws were everywhere, and no government could stop them."],
+
+  // 6. Charles Martel, Battle of Tours
+  ["Who fought at the Battle of Tours?", ["Charles Martel", "William the Conqueror", "Henry II", "Odoacer"], "Charles Martel led the Franks at the Battle of Tours."],
+  ["In 732, Charles Martel stopped which invaders at the Battle of Tours?", ["Muslims", "Vikings", "Romans", "Normans"], "Charles Martel stopped a Muslim army moving north from Spain into France."],
+  ["Why is the Battle of Tours important?", ["It saved Christianity in western Europe", "It ended the Roman Empire", "It made William king of England", "It created Parliament"], "By stopping the Muslim advance, Charles Martel saved Christianity in the West."],
+  ["Charles Martel was the grandfather of which famous ruler?", ["Charlemagne", "King John", "Henry IV", "Thomas Becket"], "Charles Martel's grandson was Charlemagne."],
+
+  // 7. Vassalage
+  ["What term describes the relationship between a lord and a landholder?", ["Vassalage", "Investiture", "Chivalry", "Excommunication"], "Vassalage is the relationship between a lord and the vassal who holds his land."],
+  ["Under vassalage, who are you loyal to?", ["The lord above you", "The serfs below you", "Only the pope", "No one"], "You owe loyalty to the lord directly above you."],
+  ["A person who receives land from a lord and swears loyalty is called a...", ["vassal", "serf", "page", "pope"], "A vassal holds land from a lord and swears loyalty to him."],
+
+  // 8. Code of Chivalry
+  ["Which is part of the Code of Chivalry?", ["Be loyal to your lord", "Run away from danger", "Take land from the poor", "Ignore the Church"], "Knights had to be loyal to their lord."],
+  ["The Code of Chivalry required knights to...", ["protect the weak, especially women", "avoid going to church", "fight only for money", "never tell the truth"], "Knights were expected to protect the weak and defenseless."],
+  ["Which of these is NOT part of the Code of Chivalry?", ["Cheat in battle to win", "Be brave", "Defend the Church", "Be courteous and honest"], "Chivalry meant fighting fairly. Cheating broke the code."],
+  ["Chivalry was a code of behavior for...", ["knights", "monks", "serfs", "merchants"], "Chivalry was the knights' code of honor."],
+
+  // 9. Charlemagne crowned; Otto the Great
+  ["What happened to Charlemagne on Christmas Day in 800?", ["The pope crowned him Holy Roman Emperor", "He was killed by Vikings", "He signed the Magna Carta", "He lost the Battle of Tours"], "Charlemagne was praying at St. Peter's when the pope came up behind him and crowned him."],
+  ["Where was Charlemagne when the pope crowned him?", ["Praying at St. Peter's in Rome", "On a battlefield in Spain", "In Canterbury Cathedral", "At the castle of Canossa"], "He went to St. Peter's to pray, and the pope snuck up behind him with a crown."],
+  ["What big question did Charlemagne's crowning raise?", ["Who had more power, the pope or the emperor?", "Who would rule England?", "Should knights get paid?", "Where should the capital be?"], "If the pope crowned the emperor, did that make the pope more powerful? This became a long-running fight."],
+  ["Which later German ruler was also crowned emperor by the pope, raising the same power question?", ["Otto the Great", "Henry II", "King John", "William the Conqueror"], "Otto the Great was crowned in 962, which brought up the same question of who had the power."],
+
+  // 10. Hastings 1066
+  ["In what year was the Battle of Hastings?", ["1066", "476", "800", "1215"], "The Battle of Hastings was in 1066."],
+  ["Who won the Battle of Hastings?", ["William the Conqueror", "Harold", "Charles Martel", "Henry IV"], "William, Duke of Normandy, won and became William the Conqueror."],
+  ["What language did William the Conqueror bring to England?", ["French", "Latin", "German", "Greek"], "William brought the French language to England."],
+
+  // 11. Henry II and Thomas Becket
+  ["What was Thomas Becket's title in the Church?", ["Archbishop of Canterbury", "Pope", "Abbot of Cluny", "Bishop of Rome"], "Thomas Becket was the Archbishop of Canterbury, the top church leader in England."],
+  ["What did Henry II say out loud about Thomas Becket?", ["\"Can no one rid me of this troublesome monk?\"", "\"Make him the next king.\"", "\"Give him more land.\"", "\"I will sign the Magna Carta.\""], "Henry II said, \"Can no one rid me of this troublesome monk?\" (sometimes quoted as \"turbulent priest\")."],
+  ["What did the four knights do after hearing Henry II's words?", ["They killed Thomas Becket", "They made Becket king", "They sent Becket to Rome", "They knighted Becket"], "Four knights took Henry's words as an order and killed Becket in 1170."],
+  ["Where was Thomas Becket killed?", ["Canterbury Cathedral", "St. Peter's in Rome", "Hastings", "Worms"], "Becket was killed in Canterbury Cathedral. His tomb became a place of pilgrimage."],
+
+  // 12. Investiture, Concordat of Worms
+  ["What was the fight between Henry IV and Pope Gregory VII about?", ["Investiture (who could appoint bishops)", "Who owned England", "The Magna Carta", "The Battle of Tours"], "The investiture controversy was about whether kings or the pope could appoint bishops."],
+  ["What ended the investiture conflict?", ["The Concordat of Worms", "The Magna Carta", "The Battle of Hastings", "The Domesday Book"], "The Concordat of Worms (1122) ended the fight."],
+  ["Under the Concordat of Worms, who gave final approval of all bishops?", ["The pope", "The king", "Parliament", "The knights"], "The pope had final approval. Kings gave a scepter for land; the pope gave a ring and staff."],
+
+  // 13. Magna Carta
+  ["Which king signed the Magna Carta?", ["King John", "Henry II", "William the Conqueror", "Charlemagne"], "King John of England signed the Magna Carta in 1215."],
+  ["What did the Magna Carta do?", ["Limited the power of the king", "Made the king all-powerful", "Ended the Roman Empire", "Created the Church"], "The Magna Carta limited the king's power. Even the king had to obey the law."],
+
+  // 14. Stages of knighthood
+  ["What are the stages of becoming a knight, in order?", ["Page, squire, knight", "Squire, page, knight", "Serf, vassal, knight", "Knight, squire, page"], "A boy became a page (around age 7), then a squire (around 14), then a knight (around 21)."],
+  ["A squire was a young man who...", ["served a knight and trained for battle", "farmed the lord's land", "copied books in a monastery", "sat in Parliament"], "Squires served a knight, cared for his armor and horse, and trained to fight."],
+
+  // 15. Parliament
+  ["What are the two houses of Parliament?", ["House of Lords and House of Commons", "Senate and House of Representatives", "House of Kings and House of Knights", "House of Bishops and House of Serfs"], "England's Parliament has the House of Lords and the House of Commons."]
+];
+
+var answered = 0, correct = 0, order = [];
+
+function shuffle(a) {
+  for (var k = a.length - 1; k > 0; k--) {
+    var r = Math.floor(Math.random() * (k + 1)), t = a[k];
+    a[k] = a[r]; a[r] = t;
+  }
+  return a;
+}
+
+function startTest() {
+  answered = 0; correct = 0; order = [];
+  var html = "";
+  for (var i = 0; i < QUESTIONS.length; i++) {
+    var q = QUESTIONS[i];
+    var idx = shuffle([0, 1, 2, 3]);
+    order.push(idx);
+    html += '<div class="q" id="q' + i + '"><h2><span class="num">' + (i + 1) + '.</span> ' + q[0] + '</h2>';
+    for (var j = 0; j < idx.length; j++) {
+      html += '<button class="opt" id="q' + i + 'o' + j + '" onclick="pick(' + i + ',' + j + ')">' +
+        String.fromCharCode(65 + j) + '. ' + q[1][idx[j]] + '</button>';
+    }
+    html += '<div class="fb" id="fb' + i + '"></div></div>';
+  }
+  document.getElementById("quiz").innerHTML = html;
+  document.getElementById("final").innerHTML = "";
+  updateTally();
+  window.scrollTo(0, 0);
+}
+
+function pick(i, j) {
+  var q = QUESTIONS[i], idx = order[i], rightPos = -1;
+  for (var k = 0; k < idx.length; k++) {
+    if (idx[k] === 0) { rightPos = k; }
+    document.getElementById("q" + i + "o" + k).disabled = true;
+  }
+  var fb = document.getElementById("fb" + i);
+  document.getElementById("q" + i + "o" + rightPos).className = "opt right";
+  if (j === rightPos) {
+    correct++;
+    fb.className = "fb good";
+    fb.innerHTML = "<b>Correct!</b> " + q[2];
+  } else {
+    document.getElementById("q" + i + "o" + j).className = "opt wrong";
+    fb.className = "fb bad";
+    fb.innerHTML = "<b>Not quite. The correct answer is " + String.fromCharCode(65 + rightPos) + ": " + q[1][0] + ".</b> " + q[2];
+  }
+  answered++;
+  updateTally();
+  if (answered === QUESTIONS.length) {
+    var pct = Math.round(correct * 100 / QUESTIONS.length);
+    document.getElementById("final").innerHTML = "Done! You got " + correct + " out of " + QUESTIONS.length + " (" + pct + "%).";
+  }
+}
+
+function updateTally() {
+  document.getElementById("tally").innerHTML = "Score: " + correct + " / " + answered + " answered (of " + QUESTIONS.length + ")";
+}
+
+startTest();
+</script>
+</body>
+</html>
