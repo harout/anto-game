@@ -310,7 +310,7 @@
   <div id="podGrid"></div>
   <div id="podInfo"></div>
   <div id="driverRow"></div>
-  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v111</span></div>
+  <div id="nameRow"><label>✏ DRIVER NAME <input id="drvName" maxlength="14" autocomplete="off" spellcheck="false" placeholder="type your name"></label><button id="nameGo" title="Press after typing your name to save it">✔ ENTER</button><span style="margin-left:10px;font-size:10px;letter-spacing:1px;color:#8a6a4a;align-self:center">v112</span></div>
   <div class="msub">Choose your track</div>
   <div id="trackTabs"></div>
   <div id="trackGrid"></div>
@@ -1206,19 +1206,22 @@
     let seed = 20261114; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     let caveNo = 0, dir = 1;
     mark.climbStart = segments.length; mark.gaps = [];
-    const GAP = 1640;                                                   // ≈ 40 s of racing between caves
-    for (let g = 1; g <= 15; g++) {
-      const gapStart = segments.length, targetY = g * (SUMMIT_Y / 15) - 1200; mark.gaps.push({ start: segments.length, steeps: [] });
+    const SHORT = !!TOUR;                                               // 🌌 in the Grand Tour the climb is MUCH shorter: 3 caves up a smaller mountain
+    const NCAVES = SHORT ? 3 : 15, TOPY = SHORT ? SUMMIT_Y * 0.2 : SUMMIT_Y; mark.ncaves = NCAVES;
+    const GAP = SHORT ? 420 : 1640;                                     // ≈ 40 s of racing between caves (≈ 10 s in the Tour)
+    for (let g = 1; g <= NCAVES; g++) {
+      const gapStart = segments.length, targetY = g * (TOPY / NCAVES) - 1200; mark.gaps.push({ start: segments.length, steeps: [] });
       const sweep = () => addRoad(40, 120 + (rnd() * 80 | 0), 40, (rnd() < .5 ? -1 : 1) * (0.6 + rnd() * 1.0), { hill: 0 });
       const steep = () => { mark.gaps[mark.gaps.length - 1].steeps.push(segments.length); addRoad(15, 50, 15, (rnd() - 0.5) * 1.2, { hill: 3400 }); };   // ▲ very steep climb
       const turn = () => { dir = -dir; addRoad(8, 12 + (rnd() * 6 | 0), 8, dir * (3 + rnd() * 3.5), { hill: 80 }); };
       if (g % 3 === 1) {                                                // ❄ winter forest area (×5) with a frozen river in it
-        addRoad(20, 120, 20, (rnd() - 0.5) * 1.6, { hill: 300, winter: true });
+        const wl = SHORT ? 40 : 120;
+        addRoad(20, wl, 20, (rnd() - 0.5) * 1.6, { hill: 300, winter: true });
         addRoad(0, 10, 0, 0, { river: true, winter: true, frozen: true });
-        addRoad(20, 120, 20, (rnd() - 0.5) * 1.6, { hill: 300, winter: true });
+        addRoad(20, wl, 20, (rnd() - 0.5) * 1.6, { hill: 300, winter: true });
       }
       if (g === 2 || g === 6 || g === 11) { addRoad(0, 30, 0, 0); mark.rivers.push(segments.length); addRoad(0, 12, 0, 0, RIV); }  // mountain streams
-      const turnsHere = g <= 5 ? 4 : 3;                                 // 5×4 + 10×3 = 50 turns
+      const turnsHere = SHORT ? 2 : g <= 5 ? 4 : 3;                     // 5×4 + 10×3 = 50 turns (6 in the Tour)
       for (let t = 0; t < turnsHere; t++) { sweep(); turn(); if (t === 0 || t === 2) steep(); }
       if (g === 8) addRoad(0, 60, 0, 0, Object.assign({ hill: 0 }, CLEAR));           // breather straight with a big ramp
       while (segments.length - gapStart < GAP) sweep();
@@ -1229,7 +1232,8 @@
     }
     mark.summit = segments.length;
     addRoad(10, 40, 10, 0, { summit: true });     // ❄ THE SUMMIT — 8,849 m
-    for (let k = 0; k < 10; k++) addRoad(40, 160, 40, (k & 1 ? -1 : 1) * 1.3, { hill: -11000 });   // the long, very steep way down
+    const DOWN = SHORT ? 2 : 10, drop = (TOPY - 10000) / DOWN;
+    for (let k = 0; k < DOWN; k++) addRoad(40, 160, 40, (k & 1 ? -1 : 1) * 1.3, { hill: -drop });   // the long, very steep way down
     addRoad(0, 90, 0, 0, Object.assign({ hill: -5000 }, CLEAR));     // ★ Moss straight
     addRoad(30, 40, 30, -3.5, { hill: -5000 });   // home turn, down to the valley floor
     addRoad(0, 70, 0, 0, CLEAR);                  // finish straight
@@ -1884,15 +1888,16 @@
     }
     if (TRACK_ID === 3) {
     fork(mark.rivers[1] + 14 + 18, mark.redwood + 5, 1);                       // ⑂ fork 1: valley trail around the steep ridge
-    fork(mark.gaps[3].start + 30, mark.gaps[3].cave - 40, -1);                 // ⑂ fork 2: snowy forest trail
-    fork(mark.gaps[8].start + 20, mark.gaps[8].cave - 40, 1);                  // ⑂ fork 3: high trail
+    const G = mark.gaps, short = G.length < 15;                                // (the Grand Tour has a short climb with only 3 caves)
+    if (!short) fork(G[3].start + 30, G[3].cave - 40, -1);                     // ⑂ fork 2: snowy forest trail
+    if (!short) fork(G[8].start + 20, G[8].cave - 40, 1);                      // ⑂ fork 3: high trail
     const clearAt = e => { for (let k = e - 12; k < e + 70; k++) { const g = segments[k]; if (g.cave || g.river || g.rough || g.summit || g.gap) return false; } return true; };
     const freeEntry = e => { while (!clearAt(e)) e++; return e; };
-    for (const [gi, sd] of [[0, 1], [1, -1], [5, -1], [10, 1], [13, -1]]) {   // ⑂ more forks on the climb
+    for (const [gi, sd] of short ? [[1, -1]] : [[0, 1], [1, -1], [5, -1], [10, 1], [13, -1]]) {   // ⑂ more forks on the climb
       const gp = mark.gaps[gi]; fork(freeEntry(gp.start + 20), gp.cave - 40, sd);
     }
     fork(freeEntry(mark.summit + 90), segments.length - 260, 1);               // ⑂ the long way down: a winding trail off the summit
-    for (const [gi, sd] of [[2, -1], [6, 1], [11, -1]]) {                      // 🤫 secret paths up the steep hills
+    for (const [gi, sd] of short ? [[2, -1]] : [[2, -1], [6, 1], [11, -1]]) {  // 🤫 secret paths up the steep hills
       const gp = mark.gaps[gi]; secret(gp.steeps[0] + 4, gp.cave - 30, sd);
     }
     }
@@ -2604,7 +2609,7 @@
       const cs = segAt(position + PLAYER_Z);
       if (cs.rough) return '⚠ BUMPY OFF-ROAD ⚠';
       for (let n = 10; n < 60; n++) if (segAt(position + PLAYER_Z + n * SEG).rough) return '⚠ BUMPY OFF-ROAD AHEAD ⚠';
-      if (cs.cave && cs.caveNo) return cs.caveNo === 15 ? '⛰ CAVE 15/15 · THE LAST TUNNEL · TO THE SUMMIT! ⛰' : `CAVE ${cs.caveNo}/15 · CLIMBING TO THE SUMMIT`;
+      if (cs.cave && cs.caveNo) { const nc = mark.ncaves || 15; return cs.caveNo === nc ? `⛰ CAVE ${nc}/${nc} · THE LAST TUNNEL · TO THE SUMMIT! ⛰` : `CAVE ${cs.caveNo}/${nc} · CLIMBING TO THE SUMMIT`; }
       if (cs.summit) return '❄❄ SUMMIT · 8,849 m · AS HIGH AS EVEREST ❄❄';
       if (cs.winter) return '❄ WINTER FOREST ❄';
       if (segAt(position + PLAYER_Z).cave) return slopeAt(position + PLAYER_Z) > 0.005 ? 'CAVE · CLIMBING TO THE SUMMIT · DODGE THE STALACTITES' : 'CAVE · DOWN THE MOUNTAIN · DODGE THE STALACTITES';
